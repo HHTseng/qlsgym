@@ -116,10 +116,16 @@ def exact_engine(molecule: Molecule, tau_indices):
     return ExactEngine(molecule, tau_indices=tau_indices)
 
 
-def fno_engine(cfg: BenchmarkConfig, molecule: Molecule, tau_indices, fallback=None):
-    """The surrogate of cfg.fno_tag, with exact fallback where untrained."""
+def default_engine(molecule: Molecule, tau_indices, log=None):
+    """CUDA-Q where it can run, exact otherwise; $QLSGYM_ENGINE forces either."""
+    from ..physics.engines import select_engine
+    return select_engine(molecule, tau_indices=tau_indices, log=log)
+
+
+def fno_engine(cfg: BenchmarkConfig, molecule: Molecule, tau_indices, fallback=None, log=None):
+    """The surrogate of cfg.fno_tag, with the default engine as fallback where untrained."""
     from ..surrogate.manifest import load_manifest
-    fb = exact_engine(molecule, tau_indices) if fallback is None else fallback
+    fb = default_engine(molecule, tau_indices, log=log) if fallback is None else fallback
     return load_manifest(molecule, cfg.fno_tag, tau_indices=tau_indices, device=cfg.device, fallback=fb)
 
 
@@ -140,6 +146,13 @@ def engine_provenance(engine) -> dict:
         d.update(manifest_tag=m.tag, manifest_fingerprint=m.fingerprint, manifest_source=m.source,
                  manifest_created=m.created,
                  entries={k: {"path": e.path, "provenance": e.provenance} for k, e in sorted(m.entries.items())})
+    for attr in ("selection", "settings", "stats"):
+        v = getattr(engine, attr, None)
+        if v is not None:
+            d[attr] = dict(v)
+    fb = getattr(engine, "_fallback", None)
+    if fb is not None:
+        d["fallback"] = engine_provenance(fb)
     if hasattr(engine, "trained"):
         d["trained"] = sorted([list(k) for k in engine.trained])
     if hasattr(engine, "calls"):
@@ -264,8 +277,8 @@ def run_arm(arm: str, cfg: BenchmarkConfig, log=None, progress: bool = False) ->
     elif arm == "random":
         policy = RandomPolicy(library.n_actions)
     elif arm.startswith("planner-"):
-        exact = exact_engine(molecule, taus)
-        engine = exact if arm == "planner-exact" else fno_engine(cfg, molecule, taus, fallback=exact)
+        ref = default_engine(molecule, taus, log=say)
+        engine = ref if arm == "planner-exact" else fno_engine(cfg, molecule, taus, fallback=ref)
         policy = ScorePlannerPolicy(engine, library, score_config(cfg, molecule), tau_mode="library",
                                     n_pool=cfg.n_pool, delta_s=cfg.delta_s)
         policy_desc = f"{arm} (n_pool={cfg.n_pool}, delta_s={cfg.delta_s})"
@@ -273,7 +286,7 @@ def run_arm(arm: str, cfg: BenchmarkConfig, log=None, progress: bool = False) ->
         if arm == "rl-exact":
             env_train, builder = env.clone(cfg.ppo.n_envs), "physics"
         else:
-            engine = fno_engine(cfg, molecule, taus)
+            engine = fno_engine(cfg, molecule, taus, log=say)
             env_train = fno_env(cfg, molecule, library, engine, batch=cfg.ppo.n_envs, progress=progress)
             builder = "FnoEnv:" + cfg.fno_tag
         run_dir = rl_run_dir(cfg, library, arm, molecule=molecule, engine=engine)
@@ -375,8 +388,6 @@ def merge_results(parts: list) -> dict:
                lengths=lengths.tolist(), successes=succ.tolist(), seconds=float(sum(p["seconds"] for p in parts)),
                merged_from=[{"seed": p["config"]["seed"], "n_episodes": p["n_episodes"]} for p in parts])
     out["outcomes"] = {"success": float(succ.mean()), "max_pulses": float(1 - succ.mean())}
-    # A merged record must describe the merge, not part 0: the single-part
-    # n_episodes / seed / timestamp / engine call counts would all be lies.
     out["config"] = dict(head["config"], n_episodes=int(n), seed=None)
     out["seeds"] = [int(x) for x in seeds]
     out["created"] = _dt.datetime.now().isoformat(timespec="seconds")

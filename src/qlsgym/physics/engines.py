@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import sys
+
 import numpy as np
 
 from ..spec import Block, Molecule, Primitive
@@ -10,7 +13,10 @@ from .propagate import transfer_matrix
 from .spectrum import is_on_resonance
 
 __all__ = ["ExactEngine", "TorchExactEngine", "TrivialEngine", "NoisyExactEngine",
-           "TableEngine", "BlockSubstituteEngine"]
+           "TableEngine", "BlockSubstituteEngine", "select_engine", "engine_choice", "ENGINE_ENV"]
+
+ENGINE_ENV = "QLSGYM_ENGINE"
+CHOICES = ("auto", "cudaq", "exact")
 
 
 class _EngineBase:
@@ -402,3 +408,41 @@ class TableEngine(_EngineBase):
             tables[(sigma, float(omega))] = [(sec.states, engine.columns(sec, sigma, float(omega)))
                                              for sec in engine.sectors(sigma, float(omega))]
         return cls(engine.molecule, tables, engine.tau_indices)
+
+
+# Which engine the gym reaches for
+
+
+def engine_choice(prefer: str | None = None) -> str:
+    """"auto" (CUDA-Q when it can run), "cudaq" or "exact", from prefer, else $QLSGYM_ENGINE."""
+    c = str(prefer if prefer is not None else os.environ.get(ENGINE_ENV, "auto")).strip().lower()
+    if c not in CHOICES:
+        raise ValueError(f"engine must be one of {CHOICES}, got {c!r}")
+    return c
+
+
+def select_engine(molecule: Molecule, tau_indices=None, prefer: str | None = None, log=None):
+    """The default dynamics engine, with the choice and its reason on engine.selection.
+
+    "auto" takes CudaqEngine when CUDA-Q, a GPU and the dynamics target are all there, and
+    ExactEngine otherwise; the fallback is announced, never silent.
+    """
+    choice = engine_choice(prefer)
+    if choice == "exact":
+        return _announce(ExactEngine(molecule, tau_indices=tau_indices), choice, "asked for", log)
+
+    from .cudaq_engine import CudaqEngine, dynamics_available
+
+    ok, reason = dynamics_available()
+    if ok:
+        return _announce(CudaqEngine(molecule, tau_indices=tau_indices), choice, reason, log)
+    if choice == "cudaq":
+        raise RuntimeError(f"engine 'cudaq' was requested but cannot run here: {reason}")
+    return _announce(ExactEngine(molecule, tau_indices=tau_indices), choice, reason, log)
+
+
+def _announce(engine, choice: str, reason: str, log=None):
+    engine.selection = {"requested": choice, "selected": type(engine).__name__, "reason": reason}
+    msg = f"[qlsgym] engine: {type(engine).__name__} (requested {choice}; {reason})"
+    (log or (lambda s: print(s, file=sys.stderr, flush=True)))(msg)
+    return engine
