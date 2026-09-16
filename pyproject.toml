@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qlsgym"
+version = "0.2.0"
+description = "Quantum-logic-spectroscopy state-preparation gym: one environment, several molecules (H3O+, ThF+), exact or learned (FNO) dynamics."
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.24", "torch>=2.3", "scipy>=1.10"]
+
+[project.optional-dependencies]
+gym = ["gymnasium>=0.29"]
+fno = ["neuraloperator", "tensorly", "tensorly-torch"]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: takes more than a few seconds (deselect with -m 'not slow')"]
