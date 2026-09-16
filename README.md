@@ -8,7 +8,7 @@ Hamiltonian and training of neural operators for the dynamic surrogate.
 The package is designed to be modular and extensible, allowing for integration of
  new molecules, action libraries, and dynamics surrogates.
 
-Currently we support the ThF⁺ and H₃O⁺ molecules, and the FNO or exact dynamics engines.
+Currently we support the ThF⁺ and H₃O⁺ molecules, and the exact, CUDA-Q or FNO dynamics engines.
 
 ## The problem
 
@@ -67,6 +67,23 @@ belief = np.full(mol.n_states, 1 / mol.n_states)
 p0, p1 = engine.branches_all_tau(belief, mol.trap.nu_f, "+")   # (n_tau, n_states) each
 ```
 
+The code also integrates several engines for the dynamics:
+
+|---|---|
+| `ExactEngine` | `eigh` of each block Hamiltonian, then `U(tau)` for the whole tau grid |
+| `CudaqEngine` | `cudaq.evolve` on the `dynamics` (cuDensityMat) |
+| `FnoEngine` | the trained surrogate, with one of the above as fallback |
+
+
+To select one:
+
+```python
+from qlsgym.physics.engines import select_engine
+
+engine = select_engine(mol, tau_indices)       # CUDA-Q if it can run here, else exact
+engine.selection            # {'requested': 'auto', 'selected': ..., 'reason': ...}
+```
+
 A single-trajectory Gymnasium env (`pip install qlsgym[gym]`):
 
 ```python
@@ -107,7 +124,7 @@ python scripts/benchmark.py table h3o
 src/qlsgym/
   spec.py          the contract: Molecule, Block, TauBatchedEngine
   molecules/       h3o, thf, synthetic -- build a Molecule from data/
-  physics/         exact dynamics: hamiltonian, propagate, spectrum, engines
+  physics/         exact dynamics: hamiltonian, propagate, spectrum, engines, cudaq_engine
   surrogate/       FNO: embedding, model, dataset, train, manifest, in-loop engine
   env/             action library, transfer-matrix cache, PurificationEnv, gym wrapper
   policies/        sweeping, physics elimination, score planner, rollout driver

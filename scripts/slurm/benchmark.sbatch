@@ -5,7 +5,7 @@
 #SBATCH --error=/dev/null
 #
 # One benchmark arm.  Everything is chosen by environment variable:
-# ARM MOL NEPS SEED DEVICE LIBRARY FNO_TAG NPOOL MAXPULSES EXTRA OUTROOT
+# ARM MOL NEPS SEED DEVICE LIBRARY FNO_TAG NPOOL MAXPULSES EXTRA OUTROOT ENGINE
 #
 #   ARM=sweeping MOL=h3o sbatch --partition=sapphire --time=2:00:00 \
 #       --cpus-per-task=4 --mem=16G scripts/slurm/benchmark.sbatch
@@ -28,6 +28,9 @@ set -euo pipefail
 : "${LIBRARY:=physics_subset}"
 : "${FNO_TAG:=prod}"
 : "${NPOOL:=16}"
+# the published arms were measured with the exact engine; ENGINE=auto opts into CUDA-Q
+: "${ENGINE:=${QLSGYM_ENGINE:-exact}}"
+export QLSGYM_ENGINE="$ENGINE"
 : "${MAXPULSES:=}"
 : "${EXTRA:=}"
 
@@ -57,7 +60,7 @@ fi
 STAMP="${SLURM_JOB_ID:-local}${SLURM_ARRAY_TASK_ID:+_$SLURM_ARRAY_TASK_ID}"
 exec > "${LOGS}/bench_${MOL}_${ARM}_${STAMP}.out" 2>&1
 
-echo "arm=$ARM molecule=$MOL episodes=$NEPS seed=$SEED device=$DEVICE library=$LIBRARY max_pulses=${MAXPULSES:-<molecule default>}"
+echo "arm=$ARM molecule=$MOL episodes=$NEPS seed=$SEED device=$DEVICE library=$LIBRARY max_pulses=${MAXPULSES:-<molecule default>} engine=$ENGINE"
 [[ "$DEVICE" == cuda* ]] && nvidia-smi -L || true
 
 srun python "${QLSGYM_REPO}/scripts/benchmark.py" run "$MOL" "$ARM" \

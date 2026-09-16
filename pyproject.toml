@@ -13,10 +13,12 @@ dependencies = ["numpy>=1.24", "torch>=2.3", "scipy>=1.10"]
 gym = ["gymnasium>=0.29"]
 fno = ["neuraloperator", "tensorly", "tensorly-torch"]
 test = ["pytest"]
+cudaq = ["cudaq>=0.15"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["slow: takes more than a few seconds (deselect with -m 'not slow')"]
+markers = ["slow: takes more than a few seconds (deselect with -m 'not slow')",
+           "gpu: needs the CUDA-Q dynamics target (skipped without a GPU)"]

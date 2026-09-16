@@ -18,16 +18,19 @@ FNOREPL_WORK = os.environ.get("FNOREPL_WORK", "")
 TOL = 1e-6
 
 
-def test_build_manifest_refuses_current_thf_checkpoint():
-    """A real ThF+ checkpoint trained on the pre-D14 tables cannot enter a manifest."""
+def test_build_manifest_accepts_retrained_thf_checkpoint():
+    """The ThF+ checkpoints were retrained on the D14 tables on 2026-09-16; the guard must now
+    admit them.  Refusal of a stale stamp is covered by test_surrogate_provenance.py against
+    constructed stamps, which does not depend on what happens to be on disk.
+    """
     run = os.path.join(THFFNO_WORK, "runs", "prod_a1.0_block0")
     if not os.path.isdir(run):
         pytest.skip(f"no run at {run} (SKIPPED)")
     mol = load_molecule("thf")
-    for flag in (False, True):
-        with pytest.raises(StaleCheckpoint, match="resonance check failed") as exc:
-            build_manifest(mol, "stale", {(0, "+"): run}, source="thffno", allow_unprovenanced=flag)
-        assert "retrain on the current tables" in str(exc.value) and run in str(exc.value)
+    man = build_manifest(mol, "current", {(0, "+"): run}, source="thffno")
+    entry = man["entries"]["0,+"]
+    assert entry["provenance"] == "tables-sha256"
+    assert man["fingerprint"] == mol.fingerprint()
 
 
 def test_thf_mix_sp_block0_port_matches_thffno():
@@ -43,9 +46,8 @@ def test_thf_mix_sp_block0_port_matches_thffno():
     from thffno.fno_engine import FnoEngine as SourceFnoEngine
 
     mol = load_molecule("thf")
-    with pytest.raises(StaleCheckpoint, match="resonance check failed"):
-        check_checkpoint_provenance(torch.load(ckpt, map_location="cpu", weights_only=False),
-                                    os.path.dirname(ckpt), mol, 0, "+", allow_unprovenanced=True)
+    check_checkpoint_provenance(torch.load(ckpt, map_location="cpu", weights_only=False),
+                                os.path.dirname(ckpt), mol, 0, "+")
     mine = FnoEngine(mol, {(0, "+"): ckpt}, fallback=ExactEngine(mol), device="cpu", legacy=True)
     try:
         theirs = SourceFnoEngine({0: ckpt}, device="cpu", allow_unprovenanced=True)
