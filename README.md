@@ -4,6 +4,18 @@ This branch studies **ThF⁺ state purification** using a Fourier neural operato
 
 Native qlsgym branch **FNO_RL_agents**, based on main commit 2a7ee186f09c54b78d5987bcd0a6bb2399749e28. Experiment code and historical FNO results were selectively transferred from [the earlier RL branch](https://github.com/HHTseng/rl_qls_paper_replication/tree/FNO_RL_agents), commit d306d34; unrelated experiments were not merged. The underlying library remains intact.
 
+## Current conclusions — completed 17 September 2026
+
+All **24/24 production FNO models**, two full GPU paper-style audits, and **15/15 learned-agent runs** are complete. PPO, SAC and DDQN each have five training seeds at approximately one million transitions per seed; all 18 controllers have 5000 exact and 5000 FNO evaluation episodes. The server's final test run passed **166 tests** (17 skipped, three deselected). No further GPU jobs were started for this analysis.
+
+- **Physics elimination is strongest:** exact failure 29.36%, average actions 51.49. SAC reaches 71.69%/66.83; PPO 76.75%/69.07. Both learned averages improve over random, but neither approaches physics elimination.
+- **SAC is not a statistically established winner over PPO.** Five-seed confidence intervals overlap; SAC seed 4 fails 99.48% of exact episodes, versus 56.06–71.44% for its other seeds. Report every seed, not just the best checkpoint/seed. SAC also optimizes a different discounted soft objective.
+- **DDQN failed all 25,000 exact episodes.** Nonzero exploratory training success did not translate to a successful deployed greedy policy. This is a failure of the tested configuration, not proof that DDQN cannot solve the task.
+- **FNO accuracy is not closed-loop certification.** Physics elimination fails 71.76% under FNO but only 29.36% exactly: a 42.40-percentage-point pessimistic surrogate gap. Conditional-branch and identity errors remain material; block 11, σ=+, is a distinct accuracy outlier.
+- **Speed depends on amortization:** FNO is approximately 86–103× faster for fresh 128-frequency batches in the two audited blocks, but cached exact propagation is approximately 7–80× faster across tested workloads. These are block propagation timings, not end-to-end RL speedups.
+
+See the [detailed final analysis](docs/THF_FINAL_ANALYSIS.md), [complete report](docs/THF_RESULTS.md), and exact ranking below. Lower failure and failure-penalized average actions are better.
+
 ## Physics and environment
 
 | Quantity | ThF⁺ experiment |
@@ -72,7 +84,7 @@ Repeat for all 12 blocks and both polarizations, then assemble the full manifest
     python scripts/prepare_thf_fno.py manifest --work "$QLSGYM_WORK" \
       --tag rlprod120v2 --sigmas both --device cpu
 
-Paper-style tests and the **full** RL grid are coordinated by scripts/run_thf_final_study.sh in tmux. It waits for current FNO queues; do not start duplicate GPU jobs. On successful completion it validates all results, redraws figures, refreshes this README/report, tests, commits and pushes this branch. [Execution details](docs/THF_FINAL_RL_STUDY.md).
+Paper-style tests and the **full** RL grid were coordinated by scripts/run_thf_final_study.sh in tmux and completed on 17 September 2026. The pipeline validates results, redraws figures, refreshes this README/report, tests and commits. Its server-side push encountered a GitHub DNS failure; the completed commit was recovered locally for publication. For a new study, use a distinct run generation rather than overwriting these locked results. [Execution details](docs/THF_FINAL_RL_STUDY.md).
 
 <!-- FNO_RESULTS_START -->
 ## Production FNO accuracy
@@ -223,7 +235,7 @@ No learned advantage was established. Physics elimination's exact/FNO discrepanc
 ## Reports and next work
 
 - [Detailed numerical report](docs/THF_RESULTS.md), [paper-style audit](docs/FNO_PAPER_METRICS.md), [locked RL study](docs/THF_FINAL_RL_STUDY.md).
-- Complete all production models and five-seed exact ranking; inspect transfer gaps before declaring a learned winner.
+- Completed: all production models, five-seed learned grid, exact ranking and full GPU audits. Next: investigate SAC seed collapse and DDQN greedy-policy failure; run exact-trained controls and validate the block-11 σ=+ outlier before extending training or tuning.
 - If peaked/conditional errors persist, train on exact collected beliefs/vertices and test identity/linearity constraints, not just more epochs.
 - Add remaining-budget observations; compare exact-trained RL and stronger full-library sweeping schedules.
 - Tune hyperparameters only on separate validation seeds after checking model validity; keep final holdout locked. Match discounts for equal-objective claims.

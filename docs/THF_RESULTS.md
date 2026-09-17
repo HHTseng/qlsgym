@@ -8,7 +8,7 @@ ThF+ has 192 molecular states, 12 Hamiltonian blocks, seven retained motional le
 
 The early 8192-transition pilot did not establish a learned advantage: exact physics elimination achieved 51.455 average actions and 28% failure, versus PPO/SAC ~74 actions and 85–86.5% failure; sweeping failed 100%. Its surrogate incorrectly predicted 100% failure for physics elimination. Historical SAC also used an inconsistent entropy scale, corrected in the final grid.
 
-Those are feasibility results only. A final learned ranking requires the locked complete grid and exact hold-out evaluation.
+The locked full grid is now complete. Physics elimination remains strongest; SAC is numerically best among learned agents but has substantial seed variability, and SAC/PPO confidence intervals overlap. DDQN failed every exact rollout. See [final analysis](THF_FINAL_ANALYSIS.md) for seed diagnostics, transfer gaps and prioritized next experiments.
 
 ## Production FNO accuracy
 
