@@ -50,7 +50,7 @@ def main():
             axis.set_xticks(x, [r["block"] for r in group])
             axis.set_xlabel(f"Block (sigma {sigma})")
             axis.grid(axis="y", alpha=0.2)
-        axes[0].set_ylabel("Independent on-resonance median infidelity; lower better")
+        axes[0].set_ylabel("On-resonance population infidelity\nIndependent median; lower better")
         axes[1].legend(fontsize=8)
         figure.suptitle(f"ThF+ production FNO: {len(rows)}/24 completed pairs, 120 epochs")
         figure.tight_layout()

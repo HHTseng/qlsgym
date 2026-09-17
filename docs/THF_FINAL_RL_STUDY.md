@@ -4,7 +4,7 @@
 
 Compare PPO, categorical SAC and Double DQN trained on the **same complete 24-pair production FNO**, versus sweeping, random and physics-elimination baselines. Judge operational performance in the exact environment, not training reward or a smoke test. No hyperparameter tuning or favorable-seed selection using this holdout.
 
-Task: ThF+ 192-state belief, 312 actions (288 Raman and 24 primitives), thermal initialization 4 K, target $\max_i s_i\ge0.98$, horizon $H=80$, heating parameter $\rho=0$, indicator penalty. Raman dynamics use FNO; primitives remain exact. Both polarizations/all 12 blocks must be trained; manifest coverage is **1.0**, no partial-coverage fallbacks accepted.
+Task: ThF+ 192-state belief, 312 actions (288 Raman and 24 primitives), thermal initialization 4 K, target $\max_i s_i\ge0.98$, horizon $H=80$, overlap-penalty weight $\rho=0$ (disabled). Each applied action has reward −1 including the successful action. Raman dynamics use FNO; primitives remain exact. Both polarizations/all 12 blocks must be trained; manifest coverage is **1.0**, no partial-coverage fallbacks accepted.
 
 ## Full grid
 

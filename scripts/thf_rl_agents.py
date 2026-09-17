@@ -134,7 +134,7 @@ def build_environments(args, batch: int):
     from qlsgym.env.env import EnvConfig, PurificationEnv
     from qlsgym.physics.engines import ExactEngine
     from qlsgym.surrogate.fno_env import FnoEnv
-    from qlsgym.surrogate.manifest import load_manifest
+    from qlsgym.surrogate.manifest import load_manifest, sha256_file
 
     molecule = qlsgym.load_molecule("thf")
     library = ActionLibrary.physics_subset(molecule)
@@ -189,6 +189,8 @@ def build_environments(args, batch: int):
         "manifest_tag": engine.manifest.tag,
         "manifest_fingerprint": engine.manifest.fingerprint,
         "manifest_sha256": hashlib.sha256(Path(args.manifest).read_bytes()).hexdigest(),
+        "checkpoint_sha256": {key: sha256_file(entry.path)
+                              for key, entry in sorted(engine.manifest.entries.items())},
         "covered_block_polarizations": sorted([list(item) for item in engine.trained]),
         "manifest_pair_coverage": coverage,
         "train_dynamics": "FnoEnv: covered Raman blocks use FNO; primitives and uncovered blocks remain exact",
@@ -372,7 +374,8 @@ def load_records(directory: Path) -> list[dict]:
     fingerprints = {record["contract"]["molecule_fingerprint"] for record in records}
     libraries = {record["contract"]["library_tag"] for record in records}
     manifests = {
-        (record["contract"]["manifest_tag"], record["contract"].get("manifest_sha256"))
+        (record["contract"]["manifest_tag"], record["contract"].get("manifest_sha256"),
+         json.dumps(record["contract"].get("checkpoint_sha256"), sort_keys=True))
         for record in records
     }
     tasks = {

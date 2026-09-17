@@ -45,6 +45,7 @@ done
 # Failure stops the pipeline; never substitute exact fallback for missing FNOs.
 "$STUDY_PYTHON" scripts/collect_thf_fno.py --work "$STUDY_WORK" --tag "$STUDY_TAG" --require-complete
 "$STUDY_PYTHON" scripts/prepare_thf_fno.py manifest --work "$STUDY_WORK" --tag "$STUDY_TAG" --sigmas both --device cpu
+cp "$STUDY_WORK/checkpoints/thf/$STUDY_TAG.json" "results/thf_fno_blocks/manifest_$STUDY_TAG.json"
 
 echo "$(date -Is) full paper-style held-out audits (100 frequencies x 500 initial states per stratum)"
 "$STUDY_PYTHON" scripts/thf_fno_paper_metrics.py --work "$STUDY_WORK" --tag "$STUDY_TAG" \

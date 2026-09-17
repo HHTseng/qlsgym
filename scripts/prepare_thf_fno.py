@@ -20,7 +20,7 @@ import numpy as np
 import qlsgym
 from qlsgym.surrogate.dataset import DataConfig
 from qlsgym.surrogate.fno import FNOConfig
-from qlsgym.surrogate.manifest import build_manifest
+from qlsgym.surrogate.manifest import Manifest, build_manifest, manifest_path
 from qlsgym.surrogate.train import TrainConfig, evaluate_stratified, load_model, train
 
 
@@ -264,6 +264,17 @@ def make_manifest(args) -> None:
         check_load=True,
         device=args.device,
     )
+    destination = manifest_path(molecule.name, args.tag, work=str(work))
+    if Path(destination).exists():
+        previous = Manifest.load(destination)
+        # Rebuilding an identical manifest must not change its hash just by
+        # regenerating the creation timestamp during a partial-job restart.
+        generated_created = manifest.created
+        manifest.created = previous.created
+        if manifest.to_json() == previous.to_json():
+            print(f"reuse identical manifest {destination}")
+            return
+        manifest.created = generated_created
     path = manifest.save(work=str(work))
     print(manifest.table())
     print(f"wrote {path}")

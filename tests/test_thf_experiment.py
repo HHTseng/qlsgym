@@ -33,6 +33,7 @@ def records(tmp_path):
 
 @pytest.mark.parametrize("field,value", [
     ("manifest_sha256", "weights-v2"),
+    ("checkpoint_sha256", {"0,+": "weights-v2"}),
     ("manifest_tag", "production"),
     ("p_target", 0.99),
     ("max_pulses", 200),

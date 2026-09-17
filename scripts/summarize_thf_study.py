@@ -36,7 +36,8 @@ def validate_grid(records):
                 or contract["manifest_pair_coverage"] != 1.0
                 or contract["p_target"] != 0.98 or contract["max_pulses"] != 80
                 or contract["rho"] != 0 or contract["n_states"] != 192
-                or contract["n_actions"] != 312 or contract["n_nu"] != 7):
+                or contract["n_actions"] != 312 or contract["n_nu"] != 7
+                or len(contract.get("checkpoint_sha256", {})) != 24):
             raise ValueError(f"not the locked final contract: {job}")
         for engine in ("exact", "fno"):
             result = record["evaluation"][engine]
@@ -120,8 +121,8 @@ def main():
     figure, axes = plt.subplots(1, 3, figsize=(15, 4.5))
     x = np.arange(len(rows))
     for axis, key, ci_key, scale, label in (
-            (axes[0], "average_actions", "actions_ci95", 1, "Average actions (failure = 80); lower better"),
-            (axes[1], "unfinished_fraction", "failure_ci95", 100, "Unfinished/failure rate (%); lower better")):
+            (axes[0], "average_actions", "actions_ci95", 1, "Average actions (failure = 80)\nLower better"),
+            (axes[1], "unfinished_fraction", "failure_ci95", 100, "Unfinished/failure rate (%)\nLower better")):
         value = np.array([r["exact"][key] for r in rows]) * scale
         bounds = np.array([r["exact"][ci_key] for r in rows]) * scale
         axis.bar(x, value, color="#0072B2")

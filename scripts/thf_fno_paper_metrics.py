@@ -8,6 +8,7 @@ All reference dynamics are exact PyTorch block propagation, NOT CUDA-Q.
 import argparse
 import hashlib
 import json
+import platform
 import time
 from pathlib import Path
 
@@ -54,16 +55,21 @@ def trajectory_diagnostics(model, molecule, block, sigma, device):
     np.fill_diagonal(vertices, 0.995)
     vertex_errors = []
     conditional_tv, branch_probability_error = [], []
+    vertex_curves, conditional_curves, mass_curves = [], [], []
     for lo in range(0, m, 8):
         q = torch.as_tensor(vertices[lo:lo + 8], device=device)
         true = torch.einsum("pjm,bm->bpj", columns, q)
         pred = model(embedding.build(q, torch.tensor([omega], device=device))).transpose(1, 2).double()
-        vertex_errors.extend(infidelity_curve(pred, true).mean(1).cpu().tolist())
+        error = infidelity_curve(pred, true)
+        vertex_errors.extend(error.mean(1).cpu().tolist())
+        vertex_curves.append(error.cpu().numpy())
         u, v = true.reshape(len(q), -1, 2, m), pred.reshape(len(q), -1, 2, m)
         pi, pi_hat = u.sum(-1), v.sum(-1)
         tv = 0.5 * (u / pi.clamp_min(1e-15)[..., None] - v / pi_hat.clamp_min(1e-15)[..., None]).abs().sum(-1)
         conditional_tv.extend(tv[pi >= 1e-3].cpu().tolist())
         branch_probability_error.extend((pi - pi_hat).abs().flatten().cpu().tolist())
+        conditional_curves.append(tv.cpu().numpy())
+        mass_curves.append(pi.cpu().numpy())
     q = torch.as_tensor(population[:2], device=device)
     outputs = model(embedding.build(q, torch.tensor([omega], device=device))).double()
     mixed = model(embedding.build(q.mean(0, keepdim=True), torch.tensor([omega], device=device))).double()
@@ -83,7 +89,10 @@ def trajectory_diagnostics(model, molecule, block, sigma, device):
     }
     raw = {"tau": molecule.tau_grid(), "truth": truth[0].cpu().numpy(),
            "prediction": prediction[0].cpu().numpy(), "infidelity": infidelity.cpu().numpy(),
-           "mre_percent": mre.cpu().numpy(), "active": active.cpu().numpy()}
+           "mre_percent": mre.cpu().numpy(), "active": active.cpu().numpy(),
+           "near_pure_infidelity": np.concatenate(vertex_curves),
+           "near_pure_conditional_tv": np.concatenate(conditional_curves),
+           "near_pure_branch_mass": np.concatenate(mass_curves)}
     return summary, raw
 
 
@@ -146,7 +155,7 @@ def draw_accuracy(summary, trajectory, raw, path, title):
         axes[0, 0].plot(tau[::10], trajectory["truth"][::10, channel], "o", color=color, ms=2, fillstyle="none")
     axes[0, 0].set_ylabel("Population (line FNO, circle exact)")
     axes[0, 0].legend(fontsize=6, ncol=2)
-    axes[0, 0].set_title("Representative resonant trajectory; <=12 active channels")
+    axes[0, 0].set_title("Representative resonant trajectory\nUp to 12 active channels", fontsize=10)
     axes[1, 0].semilogy(tau, np.maximum(trajectory["infidelity"], 1e-12), color="#0072B2")
     axes[1, 0].set_ylabel("Full-channel population infidelity")
     right = axes[1, 0].twinx()
@@ -165,7 +174,7 @@ def draw_accuracy(summary, trajectory, raw, path, title):
         axes[1, 1].semilogy([np.median(ws[b]) for b in bins], [np.median(err[b]) for b in bins], color=color, label=name)
     axes[0, 1].legend(fontsize=8)
     axes[0, 1].set_ylabel("Initial-state-averaged infidelity")
-    axes[0, 1].set_title("Median, 25-75%, 5-95% across uniform test frequencies")
+    axes[0, 1].set_title("Uniform unseen frequencies\nMedian, 25-75%, 5-95% bands", fontsize=10)
     axes[1, 1].axhline(3e-3, color="black", ls="--", lw=0.8, label="paper reference 3e-3 (different molecule)")
     axes[1, 1].set_xlabel("Drive omega/(2 pi) (kHz)")
     axes[1, 1].set_ylabel("Initial-state/time-averaged infidelity")
@@ -175,6 +184,31 @@ def draw_accuracy(summary, trajectory, raw, path, title):
     for axis in axes.flat:
         axis.grid(alpha=0.2)
     figure.suptitle(title)
+    figure.tight_layout()
+    figure.savefig(path, dpi=180)
+    plt.close(figure)
+
+
+def draw_branch_errors(trajectory, path, title):
+    figure, axes = plt.subplots(1, 2, figsize=(9, 3.8))
+    tau = trajectory["tau"]
+    joint = trajectory["near_pure_infidelity"]
+    tv = trajectory["near_pure_conditional_tv"].copy()
+    tv[trajectory["near_pure_branch_mass"] < 1e-3] = np.nan
+    conditional = tv.transpose(0, 2, 1).reshape(-1, len(tau))
+    for axis, values, label, color in ((axes[0], joint, "Joint population infidelity", "#0072B2"),
+                                       (axes[1], conditional, "Conditional-branch TV", "#D55E00")):
+        bands = np.nanpercentile(values, [5, 25, 50, 75, 95], axis=0)
+        axis.fill_between(tau, bands[0], bands[4], color=color, alpha=0.12, label="5-95%")
+        axis.fill_between(tau, bands[1], bands[3], color=color, alpha=0.25, label="25-75%")
+        axis.plot(tau, bands[2], color=color, label="Median")
+        axis.set_xlabel("Single-pulse time tau (ms)")
+        axis.set_ylabel(label + " (lower better)")
+        axis.grid(alpha=0.2)
+        axis.legend(fontsize=7)
+    axes[0].set_title("Across near-pure input vertices", fontsize=10)
+    axes[1].set_title("Across vertices/outcomes; exact branch mass >= 0.001", fontsize=9)
+    figure.suptitle(title, fontsize=11)
     figure.tight_layout()
     figure.savefig(path, dpi=180)
     plt.close(figure)
@@ -206,9 +240,14 @@ def main():
                "checkpoint": str(checkpoint), "checkpoint_sha256": hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
                "n_test_freq_per_stratum": args.n_freq, "n_initial_states": args.n_init,
                "frequency_seed": 20260918, "population_seed": 20260919,
-               "device": args.device, "reference": "exact PyTorch eigendecomposition, not CUDA-Q"}
+               "device": args.device, "hardware": (torch.cuda.get_device_name(args.device)
+                   if args.device.startswith("cuda") else platform.processor() or platform.machine()),
+               "torch": torch.__version__, "torch_threads": torch.get_num_threads(),
+               "timing_repeats": args.repeats, "fno_metadata": model.metadata(),
+               "reference": "exact PyTorch eigendecomposition, not CUDA-Q"}
     raw = {}
     for name, alpha in (("diffuse", 1.0), ("control_mix", -2.0)):
+        print(f"evaluate {name}: {args.n_freq} frequencies/stratum x {args.n_init} initial states", flush=True)
         metrics, arrays = evaluate_stratified(
             model, molecule, args.block, args.sigma, n_uniform=args.n_freq,
             n_on=args.n_freq, n_off=args.n_freq, n_init=args.n_init,
@@ -226,7 +265,10 @@ def main():
     np.savez_compressed(args.output / f"{stem}_trajectory.npz", **trajectory)
     draw_accuracy(summary, trajectory, raw, args.output / f"{stem}_accuracy.png",
                   f"ThF+ block {args.block}, sigma {args.sigma}; {args.n_freq} frequencies x {args.n_init} initial states\nPaper-style metrics; best_onres selection, exact PyTorch reference")
+    draw_branch_errors(trajectory, args.output / f"{stem}_branch_errors.png",
+                       f"ThF+ block {args.block}, sigma {args.sigma}: low joint error need not imply accurate conditional branches")
     if not args.skip_timing:
+        print(f"benchmark batch sizes {args.batch_sizes}, repeats={args.repeats}", flush=True)
         summary["timing"] = benchmark(model, molecule, args.block, args.sigma, args.device, args.batch_sizes, args.repeats)
         figure, axes = plt.subplots(1, 2, figsize=(9, 3.5))
         for axis, kind in zip(axes, ("states", "frequencies")):

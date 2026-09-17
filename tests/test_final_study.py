@@ -34,7 +34,8 @@ def grid():
             records.append({"job": {"agent": agent, "train_seed": seed, "preset": "final",
                                     "eval_episodes": 5000, "eval_seed": 20001, "evaluation_batch": 128},
                             "contract": {"manifest_pair_coverage": 1., "p_target": .98, "max_pulses": 80,
-                                         "rho": 0., "n_states": 192, "n_actions": 312, "n_nu": 7},
+                                         "rho": 0., "n_states": 192, "n_actions": 312, "n_nu": 7,
+                                         "checkpoint_sha256": {str(k): "hash" for k in range(24)}},
                             "training": {"config": config, "env_steps": 1000064},
                             "evaluation": {"exact": copy.deepcopy(result), "fno": copy.deepcopy(result)}})
     return records

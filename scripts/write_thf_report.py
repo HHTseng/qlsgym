@@ -34,11 +34,17 @@ def main():
                       f"- Near-pure conditional-branch P95 TV: {t['near_pure_conditional_tv_p95_true_mass_ge_1e-3']:.5g}, excluding exact branch masses <10⁻³.",
                       f"- Input-mixture linearity TV: {t['input_linearity_mean_tv']:.5g} (ideal 0).", "",
                       f"![Paper-style FNO accuracy](results/{folder}/{stem}_accuracy.png)"]
+            branch_plot = root / "results" / folder / f"{stem}_branch_errors.png"
+            if branch_plot.exists():
+                paper += ["", f"![Near-pure measurement-branch errors](results/{folder}/{stem}_branch_errors.png)"]
             if "timing" in item:
                 cold = [r["cold_exact_speedup"] for r in item["timing"]]
                 cached = [r["cached_exact_speedup"] for r in item["timing"]]
                 paper += ["", f"Exact-build/FNO speedup range: {min(cold):.2f}–{max(cold):.2f}×; cached-exact/FNO: {min(cached):.3g}–{max(cached):.3g}×. These compare different amortization regimes, not the paper's CUDA-Q benchmark.", "",
                           f"![Propagation timings](results/{folder}/{stem}_timing.png)"]
+    if paper:
+        paper += ["", "The CPU preview finds 5.2% zero-time identity TV, 4.1% input-linearity TV, and conditional-branch P95 TV ≈21% despite near-pure mean joint infidelity ≈0.0042. Large MRE spikes are driven by small positive true populations; infidelity and absolute/TV diagnostics give complementary context. A few-percent joint error is not a closed-loop certification.", "",
+                  "For the preview's fixed-frequency state batches, fresh exact propagation can amortize one eigendecomposition over many input states; FNO becomes slower at batch32. For fresh frequency batches FNO reaches ≈8.9× speedup, but cached exact remains ≈90–1000× faster across tested workloads. These CPU timings do not predict GPU timing; the full pipeline logs GPU audits separately. A compact fixed312-action problem can favor exact tables; FNO's stronger motivation is larger or changing/continuous control sets."]
     final_path = root / "results/thf_rl_final/summary.md"
     rl = final_path.read_text() if final_path.exists() else "## Final RL ranking\n\n**Pending, not a completed ranking.** The tmux pipeline waits for all 24 production models, then runs three baselines plus PPO, categorical SAC and DDQN × seeds 0–4 at ~1M transitions each. Every controller has 5000 exact and 5000 FNO rollouts. No pilot/smoke scores are pooled into this ranking."
     # README uses repository-relative images; the docs report needs ../ paths.
