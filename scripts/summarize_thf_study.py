@@ -159,7 +159,7 @@ def main():
               "Order is descriptive: exact failure rate, then average actions. PPO/DDQN use γ=1; SAC uses γ=0.99 with an entropy bonus, so these are operational performance scores, not equal training objectives.", "",
               "Learned-policy intervals bootstrap five training-seed means; baseline mean intervals bootstrap rollouts and failure intervals use Wilson bounds. Five seeds do not establish statistical dominance. Inspect individual JSONs and the FNO-to-exact gap before interpreting a learned advantage."]
     section = "\n".join(lines)
-    (args.output / "summary.md").write_text(section + "\n")
+    (args.output / "summary.md").write_text(section.replace("](results/thf_rl_final/", "](") + "\n")
     text = args.readme.read_text()
     start, stop = "<!-- FINAL_RL_RESULTS_START -->", "<!-- FINAL_RL_RESULTS_END -->"
     if text.count(start) != 1 or text.count(stop) != 1:

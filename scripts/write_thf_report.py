@@ -42,11 +42,17 @@ def main():
                 cached = [r["cached_exact_speedup"] for r in item["timing"]]
                 paper += ["", f"Exact-build/FNO speedup range: {min(cold):.2f}–{max(cold):.2f}×; cached-exact/FNO: {min(cached):.3g}–{max(cached):.3g}×. These compare different amortization regimes, not the paper's CUDA-Q benchmark.", "",
                           f"![Propagation timings](results/{folder}/{stem}_timing.png)"]
-    if paper:
-        paper += ["", "The CPU preview finds 5.2% zero-time identity TV, 4.1% input-linearity TV, and conditional-branch P95 TV ≈21% despite near-pure mean joint infidelity ≈0.0042. Large MRE spikes are driven by small positive true populations; infidelity and absolute/TV diagnostics give complementary context. A few-percent joint error is not a closed-loop certification.", "",
-                  "For the preview's fixed-frequency state batches, fresh exact propagation can amortize one eigendecomposition over many input states; FNO becomes slower at batch32. For fresh frequency batches FNO reaches ≈8.9× speedup, but cached exact remains ≈90–1000× faster across tested workloads. These CPU timings do not predict GPU timing; the full pipeline logs GPU audits separately. A compact fixed312-action problem can favor exact tables; FNO's stronger motivation is larger or changing/continuous control sets."]
+    preview_path = root / "results/thf_fno_preview/rlprod120v2_sp_block0_summary.json"
+    if preview_path.exists():
+        preview = json.loads(preview_path.read_text())
+        t = preview["trajectory"]
+        cold = [r["cold_exact_speedup"] for r in preview["timing"] if r["kind"] == "frequencies"]
+        cached = [1/r["cached_exact_speedup"] for r in preview["timing"]]
+        paper += ["", f"The CPU preview finds {100*t['tau0_identity_tv']:.1f}% zero-time identity TV, {100*t['input_linearity_mean_tv']:.1f}% input-linearity TV, and conditional-branch P95 TV ≈{100*t['near_pure_conditional_tv_p95_true_mass_ge_1e-3']:.0f}% despite near-pure mean joint infidelity ≈{t['near_pure_vertex_mean_infidelity']:.4f}. Large MRE spikes are driven by small positive true populations; infidelity and absolute/TV diagnostics give complementary context. Low joint error is not a closed-loop certification.", "",
+                  f"For fixed-frequency state batches, exact propagation amortizes one eigendecomposition over many input states. Fresh frequency batches reach up to {max(cold):.1f}× FNO speedup, but cached exact is {min(cached):.0f}–{max(cached):.0f}× faster across tested workloads. These CPU timings do not predict GPU timings; full audits log those separately. A compact fixed312-action problem can favor exact tables; FNO's stronger motivation is larger or changing/continuous control sets."]
     final_path = root / "results/thf_rl_final/summary.md"
-    rl = final_path.read_text() if final_path.exists() else "## Final RL ranking\n\n**Pending, not a completed ranking.** The tmux pipeline waits for all 24 production models, then runs three baselines plus PPO, categorical SAC and DDQN × seeds 0–4 at ~1M transitions each. Every controller has 5000 exact and 5000 FNO rollouts. No pilot/smoke scores are pooled into this ranking."
+    rl = (final_path.read_text().replace("](thf_final_ranking.png)", "](results/thf_rl_final/thf_final_ranking.png)")
+          if final_path.exists() else "## Final RL ranking\n\n**Pending, not a completed ranking.** The tmux pipeline waits for all 24 production models, then runs three baselines plus PPO, categorical SAC and DDQN × seeds 0–4 at ~1M transitions each. Every controller has 5000 exact and 5000 FNO rollouts. No pilot/smoke scores are pooled into this ranking.")
     # README uses repository-relative images; the docs report needs ../ paths.
     report = ["# ThF+ FNO and RL results", "",
               "This report is regenerated from tracked numerical artifacts. Training weights/caches remain on the server. It adapts metrics from [arXiv:2608.03702](https://arxiv.org/pdf/2608.03702), not its molecule or hardware.", "",
