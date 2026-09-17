@@ -100,13 +100,15 @@ Accuracy on resonance improved strongly over the 30-epoch pilot, but a few-perce
 
 ![Paper-style FNO accuracy](results/thf_fno_preview/rlprod120v2_sp_block0_accuracy.png)
 
-Exact-build/FNO speedup range: 0.26–8.88×; cached-exact/FNO: 0.000988–0.0111×. These compare different amortization regimes, not the paper's CUDA-Q benchmark.
+![Near-pure measurement-branch errors](results/thf_fno_preview/rlprod120v2_sp_block0_branch_errors.png)
+
+Exact-build/FNO speedup range: 0.32–11.15×; cached-exact/FNO: 0.00153–0.0171×. These compare different amortization regimes, not the paper's CUDA-Q benchmark.
 
 ![Propagation timings](results/thf_fno_preview/rlprod120v2_sp_block0_timing.png)
 
-The CPU preview finds 5.2% zero-time identity TV, 4.1% input-linearity TV, and conditional-branch P95 TV ≈21% despite near-pure mean joint infidelity ≈0.0042. Large MRE spikes are driven by small positive true populations; infidelity and absolute/TV diagnostics give complementary context. A few-percent joint error is not a closed-loop certification.
+The CPU preview finds 5.2% zero-time identity TV, 4.1% input-linearity TV, and conditional-branch P95 TV ≈21% despite near-pure mean joint infidelity ≈0.0042. Large MRE spikes are driven by small positive true populations; infidelity and absolute/TV diagnostics give complementary context. Low joint error is not a closed-loop certification.
 
-For the preview's fixed-frequency state batches, fresh exact propagation can amortize one eigendecomposition over many input states; FNO becomes slower at batch32. For fresh frequency batches FNO reaches ≈8.9× speedup, but cached exact remains ≈90–1000× faster across tested workloads. These CPU timings do not predict GPU timing; the full pipeline logs GPU audits separately. A compact fixed312-action problem can favor exact tables; FNO's stronger motivation is larger or changing/continuous control sets.
+For fixed-frequency state batches, exact propagation amortizes one eigendecomposition over many input states. Fresh frequency batches reach up to 11.2× FNO speedup, but cached exact is 58–655× faster across tested workloads. These CPU timings do not predict GPU timings; full audits log those separately. A compact fixed312-action problem can favor exact tables; FNO's stronger motivation is larger or changing/continuous control sets.
 <!-- FNO_RESULTS_END -->
 
 <!-- FINAL_RL_RESULTS_START -->

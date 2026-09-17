@@ -11,6 +11,30 @@
   "frequency_seed": 20260918,
   "population_seed": 20260919,
   "device": "cpu",
+  "hardware": "x86_64",
+  "torch": "2.5.1+cu121",
+  "torch_threads": 4,
+  "timing_repeats": 3,
+  "fno_metadata": {
+    "in_channels": 49,
+    "out_channels": 52,
+    "block_index": 0,
+    "sigma": "+",
+    "config": {
+      "n_modes": 60,
+      "hidden_channels": 256,
+      "n_layers": 4,
+      "lifting_channel_ratio": 5,
+      "projection_channel_ratio": 5,
+      "factorization": "tucker",
+      "rank": 0.8,
+      "domain_padding": 0.1,
+      "positional_embedding": "grid"
+    },
+    "molecule": "thf",
+    "fingerprint": "d7deb43457d3",
+    "n_nu": 7
+  },
   "reference": "exact PyTorch eigendecomposition, not CUDA-Q",
   "diffuse": {
     "n_linewidths": 1.0,
@@ -135,56 +159,56 @@
     {
       "kind": "states",
       "batch_size": 1,
-      "fno_median_s": 0.01616129302419722,
-      "exact_build_and_apply_median_s": 0.03410787717439234,
-      "exact_cached_columns_median_s": 6.075296550989151e-05,
-      "cold_exact_speedup": 2.1104670971143773,
-      "cached_exact_speedup": 0.0037591649021480006
+      "fno_median_s": 0.016265460988506675,
+      "exact_build_and_apply_median_s": 0.03161916811950505,
+      "exact_cached_columns_median_s": 4.025106318295002e-05,
+      "cold_exact_speedup": 1.9439454031980676,
+      "cached_exact_speedup": 0.002474634024291829
     },
     {
       "kind": "states",
       "batch_size": 8,
-      "fno_median_s": 0.03511946205981076,
-      "exact_build_and_apply_median_s": 0.03311677696183324,
-      "exact_cached_columns_median_s": 6.509991362690926e-05,
-      "cold_exact_speedup": 0.9429750633831802,
-      "cached_exact_speedup": 0.0018536705806039915
+      "fno_median_s": 0.033567436039447784,
+      "exact_build_and_apply_median_s": 0.03119647200219333,
+      "exact_cached_columns_median_s": 7.583200931549072e-05,
+      "cold_exact_speedup": 0.9293671391979971,
+      "cached_exact_speedup": 0.002259094475561805
     },
     {
       "kind": "states",
       "batch_size": 32,
-      "fno_median_s": 0.1245356909930706,
-      "exact_build_and_apply_median_s": 0.03208545898087323,
-      "exact_cached_columns_median_s": 0.0001230479683727026,
-      "cold_exact_speedup": 0.25764067091945975,
-      "cached_exact_speedup": 0.0009880538453795483
+      "fno_median_s": 0.11120865098200738,
+      "exact_build_and_apply_median_s": 0.03532447409816086,
+      "exact_cached_columns_median_s": 0.00016982597298920155,
+      "cold_exact_speedup": 0.31764142255332334,
+      "cached_exact_speedup": 0.0015270931846541142
     },
     {
       "kind": "frequencies",
       "batch_size": 1,
-      "fno_median_s": 0.01602901006117463,
-      "exact_build_and_apply_median_s": 0.03102920181117952,
-      "exact_cached_columns_median_s": 4.269205965101719e-05,
-      "cold_exact_speedup": 1.9358152308069392,
-      "cached_exact_speedup": 0.0026634245962840605
+      "fno_median_s": 0.01648973789997399,
+      "exact_build_and_apply_median_s": 0.03126336308196187,
+      "exact_cached_columns_median_s": 3.9933016523718834e-05,
+      "cold_exact_speedup": 1.8959284417741524,
+      "cached_exact_speedup": 0.0024216889780753776
     },
     {
       "kind": "frequencies",
       "batch_size": 8,
-      "fno_median_s": 0.03504251898266375,
-      "exact_build_and_apply_median_s": 0.30576869496144354,
-      "exact_cached_columns_median_s": 0.00038834777660667896,
-      "cold_exact_speedup": 8.725648264975288,
-      "cached_exact_speedup": 0.01108218780729783
+      "fno_median_s": 0.03237096802331507,
+      "exact_build_and_apply_median_s": 0.2942756521515548,
+      "exact_cached_columns_median_s": 0.0004638289101421833,
+      "cold_exact_speedup": 9.09072759083398,
+      "cached_exact_speedup": 0.014328546177800806
     },
     {
       "kind": "frequencies",
       "batch_size": 32,
-      "fno_median_s": 0.13580314186401665,
-      "exact_build_and_apply_median_s": 1.2057736560236663,
-      "exact_cached_columns_median_s": 0.0014923678245395422,
-      "cold_exact_speedup": 8.878834756496577,
-      "cached_exact_speedup": 0.010989199543217419
+      "fno_median_s": 0.11177272000350058,
+      "exact_build_and_apply_median_s": 1.2464379591401666,
+      "exact_cached_columns_median_s": 0.0019115169998258352,
+      "cold_exact_speedup": 11.151540009951711,
+      "cached_exact_speedup": 0.017101820549468322
     }
   ]
 }
