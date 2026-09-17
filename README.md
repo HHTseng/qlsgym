@@ -77,12 +77,34 @@ Paper-style tests and the **full** RL grid are coordinated by scripts/run_thf_fi
 <!-- FNO_RESULTS_START -->
 ## Production FNO accuracy
 
-Completed checkpoints with independent held-out tests: **2/24**. All completed models trained for 120 epochs; checkpoints are preselected `best_onres.pt`, never test-selected.
+Completed checkpoints with independent held-out tests: **24/24**. All completed models trained for 120 epochs; checkpoints are preselected `best_onres.pt`, never test-selected.
 
 | Block | σ | On-resonance median infidelity, diffuse ↓ | On-resonance median, control mixture ↓ | Control-mixture P95 ↓ | Static/no-change median |
 |---:|:---:|---:|---:|---:|---:|
 | 0 | + | 0.00622 | 0.02051 | 0.02180 | 0.17603 |
+| 1 | + | 0.00594 | 0.02051 | 0.02131 | 0.19463 |
+| 2 | + | 0.00424 | 0.01245 | 0.01309 | 0.14371 |
+| 3 | + | 0.00388 | 0.01345 | 0.01431 | 0.15958 |
+| 4 | + | 0.00207 | 0.00613 | 0.00646 | 0.10285 |
+| 5 | + | 0.00205 | 0.00647 | 0.00685 | 0.11909 |
+| 6 | + | 0.00117 | 0.00360 | 0.00411 | 0.06656 |
+| 7 | + | 0.00111 | 0.00346 | 0.00382 | 0.06888 |
+| 8 | + | 0.00049 | 0.00145 | 0.00171 | 0.04142 |
+| 9 | + | 0.00045 | 0.00150 | 0.00169 | 0.04153 |
+| 10 | + | 0.00020 | 0.00040 | 0.00046 | 0.06502 |
+| 11 | + | 0.04455 | 0.05790 | 0.07685 | 0.06502 |
+| 0 | - | 0.00578 | 0.01864 | 0.01937 | 0.15703 |
 | 1 | - | 0.00817 | 0.02600 | 0.02715 | 0.17144 |
+| 2 | - | 0.00368 | 0.01141 | 0.01224 | 0.12984 |
+| 3 | - | 0.00429 | 0.01362 | 0.01443 | 0.14811 |
+| 4 | - | 0.00202 | 0.00648 | 0.00691 | 0.09330 |
+| 5 | - | 0.00174 | 0.00595 | 0.00630 | 0.10941 |
+| 6 | - | 0.00113 | 0.00316 | 0.00358 | 0.05713 |
+| 7 | - | 0.00104 | 0.00322 | 0.00368 | 0.05737 |
+| 8 | - | 0.00044 | 0.00131 | 0.00167 | 0.04071 |
+| 9 | - | 0.00046 | 0.00129 | 0.00160 | 0.04093 |
+| 10 | - | 0.00014 | 0.00036 | 0.00126 | 0.05233 |
+| 11 | - | 0.00016 | 0.00034 | 0.00038 | 0.05233 |
 
 ![Production FNO independent errors](results/thf_fno_blocks/thf_production_accuracy.png)
 
@@ -108,17 +130,66 @@ Exact-build/FNO speedup range: 0.32–11.15×; cached-exact/FNO: 0.00153–0.017
 
 ![Propagation timings](results/thf_fno_preview/rlprod120v2_sp_block0_timing.png)
 
+### Full paper-style audit: block 1, σ=-
+
+100 new frequencies/stratum × 500 initial states; device `cuda:1`. Reference: exact PyTorch, not CUDA-Q.
+
+- Representative resonant trajectory: time-average population infidelity 0.016159.
+- Zero-time identity total-variation error: 0.067162 (ideal 0).
+- Near-pure input mean/P95 infidelity: 0.004456/0.0065554.
+- Near-pure conditional-branch P95 TV: 0.50592, excluding exact branch masses <10⁻³.
+- Input-mixture linearity TV: 0.027968 (ideal 0).
+
+![Paper-style FNO accuracy](results/thf_fno_validation/rlprod120v2_sm_block1_accuracy.png)
+
+![Near-pure measurement-branch errors](results/thf_fno_validation/rlprod120v2_sm_block1_branch_errors.png)
+
+Exact-build/FNO speedup range: 0.91–103.15×; cached-exact/FNO: 0.0145–0.141×. These compare different amortization regimes, not the paper's CUDA-Q benchmark.
+
+![Propagation timings](results/thf_fno_validation/rlprod120v2_sm_block1_timing.png)
+
+### Full paper-style audit: block 0, σ=+
+
+100 new frequencies/stratum × 500 initial states; device `cuda:0`. Reference: exact PyTorch, not CUDA-Q.
+
+- Representative resonant trajectory: time-average population infidelity 0.0073515.
+- Zero-time identity total-variation error: 0.052159 (ideal 0).
+- Near-pure input mean/P95 infidelity: 0.0041929/0.005594.
+- Near-pure conditional-branch P95 TV: 0.21304, excluding exact branch masses <10⁻³.
+- Input-mixture linearity TV: 0.04103 (ideal 0).
+
+![Paper-style FNO accuracy](results/thf_fno_validation/rlprod120v2_sp_block0_accuracy.png)
+
+![Near-pure measurement-branch errors](results/thf_fno_validation/rlprod120v2_sp_block0_branch_errors.png)
+
+Exact-build/FNO speedup range: 0.79–85.98×; cached-exact/FNO: 0.0124–0.116×. These compare different amortization regimes, not the paper's CUDA-Q benchmark.
+
+![Propagation timings](results/thf_fno_validation/rlprod120v2_sp_block0_timing.png)
+
 The CPU preview finds 5.2% zero-time identity TV, 4.1% input-linearity TV, and conditional-branch P95 TV ≈21% despite near-pure mean joint infidelity ≈0.0042. Large MRE spikes are driven by small positive true populations; infidelity and absolute/TV diagnostics give complementary context. Low joint error is not a closed-loop certification.
 
 For fixed-frequency state batches, exact propagation amortizes one eigendecomposition over many input states. Fresh frequency batches reach up to 11.2× FNO speedup, but cached exact is 58–655× faster across tested workloads. These CPU timings do not predict GPU timings; full audits log those separately. A compact fixed312-action problem can favor exact tables; FNO's stronger motivation is larger or changing/continuous control sets.
 <!-- FNO_RESULTS_END -->
 
 <!-- FINAL_RL_RESULTS_START -->
-## Final RL ranking — pending
+## Final exact-simulator ranking
 
-Locked grid: **five seeds × approximately one million transitions** for each of PPO/SAC/DDQN, plus sweeping/random/physics elimination. Each controller gets **5000 exact +5000 FNO rollouts**. RL starts after all production models and full paper-style audits complete; only a complete validated 18-record grid is labeled final.
+Complete locked grid: 15 learned policies and three baselines. Each policy has 5000 exact and 5000 surrogate rollouts.
 
-PPO/DDQN use $\gamma=1$; SAC uses $\gamma=0.99$ and entropy regularization. Scores compare operational performance, not identical training objectives. SAC temperature is now scaled consistently with reward normalization; old smoke scores remain separate.
+| Controller | Training seeds | Exact average actions ↓ (95% CI) | Exact failure ↓ (95% CI) | FNO average actions | FNO failure |
+|---|---:|---:|---:|---:|---:|
+| Physics elimination | 0 | 51.49 [50.78, 52.22] | 29.36% [28.11, 30.64] | 69.20 | 71.76% |
+| Discrete SAC | 5 | 66.83 [62.10, 73.37] | 71.69% [61.18, 86.19] | 68.19 | 73.44% |
+| PPO | 5 | 69.07 [67.17, 70.97] | 76.75% [73.14, 80.36] | 69.80 | 77.21% |
+| Random | 0 | 74.57 [74.11, 75.01] | 85.62% [84.62, 86.57] | 76.18 | 88.46% |
+| Sweeping | 0 | 79.97 [79.94, 80.00] | 99.92% [99.79, 99.97] | 79.93 | 99.82% |
+| Double DQN | 5 | 80.00 [80.00, 80.00] | 100.00% [100.00, 100.00] | 79.86 | 99.60% |
+
+![Final ThF+ RL ranking](results/thf_rl_final/thf_final_ranking.png)
+
+Order is descriptive: exact failure rate, then average actions. PPO/DDQN use γ=1; SAC uses γ=0.99 with an entropy bonus, so these are operational performance scores, not equal training objectives.
+
+Learned-policy intervals bootstrap five training-seed means; baseline mean intervals bootstrap rollouts and failure intervals use Wilson bounds. Five seeds do not establish statistical dominance. Inspect individual JSONs and the FNO-to-exact gap before interpreting a learned advantage.
 <!-- FINAL_RL_RESULTS_END -->
 
 ## Metric interpretation

@@ -1,0 +1,683 @@
+{
+ "molecule": "thf",
+ "tag": "rlprod120v2",
+ "fingerprint": "d7deb43457d3",
+ "source": "qlsgym",
+ "note": "ThF+ rlprod120v2 FNO for RL; alpha=-2 mixture; 24/24 block-polarization pairs",
+ "created": "2026-09-17T07:12:11",
+ "validated": {},
+ "entries": {
+  "0,+": {
+   "block_index": 0,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block0/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block0",
+   "summary": {
+    "best_onres_epoch": 116,
+    "best_onres_infidelity": 0.016851990412807938,
+    "best_epoch": 94,
+    "n_parameters": 7823556
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "0,-": {
+   "block_index": 0,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block0/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block0",
+   "summary": {
+    "best_onres_epoch": 118,
+    "best_onres_infidelity": 0.015965241411031894,
+    "best_epoch": 107,
+    "n_parameters": 7823556
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "1,+": {
+   "block_index": 1,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block1/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block1",
+   "summary": {
+    "best_onres_epoch": 119,
+    "best_onres_infidelity": 0.01619111875612725,
+    "best_epoch": 83,
+    "n_parameters": 7823556
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "1,-": {
+   "block_index": 1,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block1/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block1",
+   "summary": {
+    "best_onres_epoch": 117,
+    "best_onres_infidelity": 0.022523919684831962,
+    "best_epoch": 78,
+    "n_parameters": 7823556
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "2,+": {
+   "block_index": 2,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block2/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block2",
+   "summary": {
+    "best_onres_epoch": 119,
+    "best_onres_infidelity": 0.011223007304510842,
+    "best_epoch": 107,
+    "n_parameters": 7803068
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "2,-": {
+   "block_index": 2,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block2/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block2",
+   "summary": {
+    "best_onres_epoch": 119,
+    "best_onres_infidelity": 0.009771448493039743,
+    "best_epoch": 118,
+    "n_parameters": 7803068
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "3,+": {
+   "block_index": 3,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block3/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block3",
+   "summary": {
+    "best_onres_epoch": 118,
+    "best_onres_infidelity": 0.010478413874219182,
+    "best_epoch": 115,
+    "n_parameters": 7803068
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "3,-": {
+   "block_index": 3,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block3/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block3",
+   "summary": {
+    "best_onres_epoch": 115,
+    "best_onres_infidelity": 0.011855842599484329,
+    "best_epoch": 100,
+    "n_parameters": 7803068
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "4,+": {
+   "block_index": 4,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block4/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block4",
+   "summary": {
+    "best_onres_epoch": 118,
+    "best_onres_infidelity": 0.006119269985800957,
+    "best_epoch": 103,
+    "n_parameters": 7782580
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "4,-": {
+   "block_index": 4,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block4/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block4",
+   "summary": {
+    "best_onres_epoch": 113,
+    "best_onres_infidelity": 0.005865374511277306,
+    "best_epoch": 112,
+    "n_parameters": 7782580
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "5,+": {
+   "block_index": 5,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block5/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block5",
+   "summary": {
+    "best_onres_epoch": 119,
+    "best_onres_infidelity": 0.006254037266340081,
+    "best_epoch": 114,
+    "n_parameters": 7782580
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "5,-": {
+   "block_index": 5,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block5/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block5",
+   "summary": {
+    "best_onres_epoch": 116,
+    "best_onres_infidelity": 0.006102446886611795,
+    "best_epoch": 115,
+    "n_parameters": 7782580
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "6,+": {
+   "block_index": 6,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block6/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block6",
+   "summary": {
+    "best_onres_epoch": 110,
+    "best_onres_infidelity": 0.004242967385566017,
+    "best_epoch": 109,
+    "n_parameters": 7762092
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "6,-": {
+   "block_index": 6,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block6/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block6",
+   "summary": {
+    "best_onres_epoch": 116,
+    "best_onres_infidelity": 0.003252144018752349,
+    "best_epoch": 108,
+    "n_parameters": 7762092
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "7,+": {
+   "block_index": 7,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block7/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block7",
+   "summary": {
+    "best_onres_epoch": 113,
+    "best_onres_infidelity": 0.003607106729632073,
+    "best_epoch": 118,
+    "n_parameters": 7762092
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "7,-": {
+   "block_index": 7,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block7/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block7",
+   "summary": {
+    "best_onres_epoch": 118,
+    "best_onres_infidelity": 0.0031817599782683658,
+    "best_epoch": 115,
+    "n_parameters": 7762092
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "8,+": {
+   "block_index": 8,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block8/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block8",
+   "summary": {
+    "best_onres_epoch": 119,
+    "best_onres_infidelity": 0.0012507305742389323,
+    "best_epoch": 117,
+    "n_parameters": 7741604
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "8,-": {
+   "block_index": 8,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block8/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block8",
+   "summary": {
+    "best_onres_epoch": 119,
+    "best_onres_infidelity": 0.0011971537205903635,
+    "best_epoch": 113,
+    "n_parameters": 7741604
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "9,+": {
+   "block_index": 9,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block9/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block9",
+   "summary": {
+    "best_onres_epoch": 118,
+    "best_onres_infidelity": 0.001327085810702519,
+    "best_epoch": 119,
+    "n_parameters": 7741604
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "9,-": {
+   "block_index": 9,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block9/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block9",
+   "summary": {
+    "best_onres_epoch": 117,
+    "best_onres_infidelity": 0.0013223256352010635,
+    "best_epoch": 114,
+    "n_parameters": 7741604
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "10,+": {
+   "block_index": 10,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block10/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block10",
+   "summary": {
+    "best_onres_epoch": 111,
+    "best_onres_infidelity": 0.00028893972172491263,
+    "best_epoch": 112,
+    "n_parameters": 7723676
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "10,-": {
+   "block_index": 10,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block10/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block10",
+   "summary": {
+    "best_onres_epoch": 119,
+    "best_onres_infidelity": 0.0006638699157283163,
+    "best_epoch": 117,
+    "n_parameters": 7723676
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "11,+": {
+   "block_index": 11,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block11/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sp_block11",
+   "summary": {
+    "best_onres_epoch": 26,
+    "best_onres_infidelity": 0.03124482766651872,
+    "best_epoch": 26,
+    "n_parameters": 7723676
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "11,-": {
+   "block_index": 11,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block11/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlprod120v2_sm_block11",
+   "summary": {
+    "best_onres_epoch": 115,
+    "best_onres_infidelity": 0.00026991676406325584,
+    "best_epoch": 119,
+    "n_parameters": 7723676
+   },
+   "train_data": {
+    "n_freq": 24000,
+    "n_init": 1000,
+    "n_pairs": 32000,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  }
+ }
+}
