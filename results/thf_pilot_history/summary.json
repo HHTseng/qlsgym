@@ -1,0 +1,74 @@
+[
+  {
+    "agent": "sweeping",
+    "evaluation_runs": 1,
+    "exact_average_actions": 80.0,
+    "exact_cvar10_actions": 80.0,
+    "exact_p85_actions": 80.0,
+    "exact_unfinished_fraction": 1.0,
+    "fno_average_actions": 80.0,
+    "fno_unfinished_fraction": 1.0,
+    "sim_to_exact_gap": 0.0,
+    "training_seeds": 0
+  },
+  {
+    "agent": "random",
+    "evaluation_runs": 1,
+    "exact_average_actions": 74.315,
+    "exact_cvar10_actions": 80.0,
+    "exact_p85_actions": 80.0,
+    "exact_unfinished_fraction": 0.88,
+    "fno_average_actions": 78.595,
+    "fno_unfinished_fraction": 0.97,
+    "sim_to_exact_gap": -4.280000000000001,
+    "training_seeds": 0
+  },
+  {
+    "agent": "physics_elimination",
+    "evaluation_runs": 1,
+    "exact_average_actions": 51.455,
+    "exact_cvar10_actions": 80.0,
+    "exact_p85_actions": 80.0,
+    "exact_unfinished_fraction": 0.28,
+    "fno_average_actions": 80.0,
+    "fno_unfinished_fraction": 1.0,
+    "sim_to_exact_gap": -28.545,
+    "training_seeds": 0
+  },
+  {
+    "agent": "ppo",
+    "evaluation_runs": 1,
+    "exact_average_actions": 74.255,
+    "exact_cvar10_actions": 80.0,
+    "exact_p85_actions": 80.0,
+    "exact_unfinished_fraction": 0.865,
+    "fno_average_actions": 74.01,
+    "fno_unfinished_fraction": 0.845,
+    "sim_to_exact_gap": 0.24499999999999034,
+    "training_seeds": 1
+  },
+  {
+    "agent": "sac_discrete",
+    "evaluation_runs": 1,
+    "exact_average_actions": 73.86,
+    "exact_cvar10_actions": 80.0,
+    "exact_p85_actions": 80.0,
+    "exact_unfinished_fraction": 0.85,
+    "fno_average_actions": 77.14,
+    "fno_unfinished_fraction": 0.935,
+    "sim_to_exact_gap": -3.280000000000001,
+    "training_seeds": 1
+  },
+  {
+    "agent": "ddqn",
+    "evaluation_runs": 1,
+    "exact_average_actions": 80.0,
+    "exact_cvar10_actions": 80.0,
+    "exact_p85_actions": 80.0,
+    "exact_unfinished_fraction": 1.0,
+    "fno_average_actions": 79.72,
+    "fno_unfinished_fraction": 0.995,
+    "sim_to_exact_gap": 0.28000000000000114,
+    "training_seeds": 1
+  }
+]

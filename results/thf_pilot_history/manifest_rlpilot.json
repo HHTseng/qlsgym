@@ -1,0 +1,659 @@
+{
+ "molecule": "thf",
+ "tag": "rlpilot",
+ "fingerprint": "d7deb43457d3",
+ "source": "qlsgym",
+ "note": "ThF+ rlpilot FNO for RL; alpha=-2 mixture; 24/24 block-polarization pairs",
+ "created": "2026-09-16T15:00:57",
+ "validated": {},
+ "entries": {
+  "0,+": {
+   "block_index": 0,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block0/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block0",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 24,
+    "n_parameters": 307882
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "0,-": {
+   "block_index": 0,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block0/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block0",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 28,
+    "n_parameters": 307882
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "1,+": {
+   "block_index": 1,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block1/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block1",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 29,
+    "n_parameters": 307882
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "1,-": {
+   "block_index": 1,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block1/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block1",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 28,
+    "n_parameters": 307882
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "2,+": {
+   "block_index": 2,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block2/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block2",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 29,
+    "n_parameters": 302754
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "2,-": {
+   "block_index": 2,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block2/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block2",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 28,
+    "n_parameters": 302754
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "3,+": {
+   "block_index": 3,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block3/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block3",
+   "summary": {
+    "best_onres_epoch": 28,
+    "best_epoch": 27,
+    "n_parameters": 302754
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "3,-": {
+   "block_index": 3,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block3/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block3",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 28,
+    "n_parameters": 302754
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "4,+": {
+   "block_index": 4,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block4/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block4",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 27,
+    "n_parameters": 297626
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "4,-": {
+   "block_index": 4,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block4/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block4",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 28,
+    "n_parameters": 297626
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "5,+": {
+   "block_index": 5,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block5/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block5",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 26,
+    "n_parameters": 297626
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "5,-": {
+   "block_index": 5,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block5/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block5",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 28,
+    "n_parameters": 297626
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "6,+": {
+   "block_index": 6,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block6/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block6",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 28,
+    "n_parameters": 292498
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "6,-": {
+   "block_index": 6,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block6/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block6",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 29,
+    "n_parameters": 292498
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "7,+": {
+   "block_index": 7,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block7/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block7",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 29,
+    "n_parameters": 292498
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "7,-": {
+   "block_index": 7,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block7/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block7",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 29,
+    "n_parameters": 292498
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "8,+": {
+   "block_index": 8,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block8/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block8",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 28,
+    "n_parameters": 287370
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "8,-": {
+   "block_index": 8,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block8/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block8",
+   "summary": {
+    "best_onres_epoch": 28,
+    "best_epoch": 29,
+    "n_parameters": 287370
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "9,+": {
+   "block_index": 9,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block9/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block9",
+   "summary": {
+    "best_onres_epoch": 29,
+    "best_epoch": 29,
+    "n_parameters": 287370
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "9,-": {
+   "block_index": 9,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block9/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block9",
+   "summary": {
+    "best_onres_epoch": 28,
+    "best_epoch": 29,
+    "n_parameters": 287370
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "10,+": {
+   "block_index": 10,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block10/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block10",
+   "summary": {
+    "best_onres_epoch": 27,
+    "best_epoch": 29,
+    "n_parameters": 282882
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "10,-": {
+   "block_index": 10,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block10/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block10",
+   "summary": {
+    "best_onres_epoch": 27,
+    "best_epoch": 29,
+    "n_parameters": 282882
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "11,+": {
+   "block_index": 11,
+   "sigma": "+",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block11/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block11",
+   "summary": {
+    "best_onres_epoch": 27,
+    "best_epoch": 26,
+    "n_parameters": 282882
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  },
+  "11,-": {
+   "block_index": 11,
+   "sigma": "-",
+   "path": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block11/best_onres.pt",
+   "run_dir": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block11",
+   "summary": {
+    "best_onres_epoch": 27,
+    "best_epoch": 27,
+    "n_parameters": 282882
+   },
+   "train_data": {
+    "n_freq": 512,
+    "n_init": 1000,
+    "n_pairs": 4096,
+    "pairing": "random",
+    "seed": 1234,
+    "alpha": -2.0,
+    "freq_sampling": "mixture",
+    "resonant_frac": 0.5,
+    "resonant_spread": 3.0,
+    "omega_lo": null,
+    "omega_hi": null
+   },
+   "parity_residual": null,
+   "provenance": "tables-sha256",
+   "provenance_detail": {}
+  }
+ }
+}

@@ -24,7 +24,7 @@ def _env(setup, batch=8):
     return PurificationEnv(mol, lib, tables, EnvConfig(rho=0.0), batch=batch)
 
 
-@pytest.mark.parametrize("target", ["gae", "qmdp"])
+@pytest.mark.parametrize("target", ["gae", "qmdp", "qmdp_gae"])
 def test_train_runs_and_records(setup, target):
     env = _env(setup)
     cfg = PPOConfig(n_envs=8, n_steps=6, total_steps=8 * 6 * 3, minibatches=2, epochs=2,

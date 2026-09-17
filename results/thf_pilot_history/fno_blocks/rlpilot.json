@@ -1,0 +1,477 @@
+{
+  "tag": "rlpilot",
+  "qlsgym_git_sha": "2a7ee186f09c54b78d5987bcd0a6bb2399749e28",
+  "configuration_example": {
+    "molecule": "thf",
+    "fingerprint": "d7deb43457d3",
+    "block": 0,
+    "sigma": "+",
+    "preset": "pilot",
+    "device": "cuda:0",
+    "output": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block0",
+    "train_config": {
+      "batch_size": 32,
+      "epochs": 30,
+      "lr": 0.0005,
+      "weight_decay": 0.0003,
+      "scheduler_step": 5,
+      "scheduler_gamma": 0.7,
+      "activity_lambda": 1,
+      "activity_eps": 1e-8,
+      "reduction": "sum",
+      "per_sample_sqrt": true,
+      "train_seed": 1234,
+      "val_seed": 1,
+      "sel_n_freq": 32,
+      "sel_n_init": 32,
+      "sel_seed": 777,
+      "fno": {
+        "n_modes": 40,
+        "hidden_channels": 64,
+        "n_layers": 3,
+        "lifting_channel_ratio": 5,
+        "projection_channel_ratio": 5,
+        "factorization": "tucker",
+        "rank": 0.8,
+        "domain_padding": 0.1,
+        "positional_embedding": "grid"
+      }
+    },
+    "train_data": {
+      "n_freq": 512,
+      "n_init": 1000,
+      "n_pairs": 4096,
+      "pairing": "random",
+      "seed": 1234,
+      "alpha": -2,
+      "freq_sampling": "mixture",
+      "resonant_frac": 0.5,
+      "resonant_spread": 3,
+      "omega_lo": null,
+      "omega_hi": null
+    },
+    "val_data": {
+      "n_freq": 100,
+      "n_init": 100,
+      "n_pairs": 512,
+      "pairing": "random",
+      "seed": 1,
+      "alpha": -2,
+      "freq_sampling": "mixture",
+      "resonant_frac": 0.5,
+      "resonant_spread": 3,
+      "omega_lo": null,
+      "omega_hi": null
+    }
+  },
+  "blocks": [
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block0",
+      "block": 0,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.034852051408961415,
+        "best_epoch": 28,
+        "best_onres": 0.39437569387342863,
+        "best_onres_epoch": 29,
+        "n_parameters": 307882
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 60.073633670806885,
+      "final_val": 0.03488414199091494,
+      "final_onres": 0.39437569387342863,
+      "onres_static": 0.14934534676979952
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block1",
+      "block": 1,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.035418761195614934,
+        "best_epoch": 28,
+        "best_onres": 0.4113226720486842,
+        "best_onres_epoch": 29,
+        "n_parameters": 307882
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 58.638995885849,
+      "final_val": 0.035438455757685006,
+      "final_onres": 0.4113226720486842,
+      "onres_static": 0.164708085123825
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block10",
+      "block": 10,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.009259608632419258,
+        "best_epoch": 29,
+        "best_onres": 0.041408405339969014,
+        "best_onres_epoch": 27,
+        "n_parameters": 282882
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 57.78542113304138,
+      "final_val": 0.009259608632419258,
+      "final_onres": 0.04173056940415108,
+      "onres_static": 0.03726833961983758
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block11",
+      "block": 11,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.00827265449333936,
+        "best_epoch": 27,
+        "best_onres": 0.04143509859148231,
+        "best_onres_epoch": 27,
+        "n_parameters": 282882
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 46.03893327713013,
+      "final_val": 0.00837614547344856,
+      "final_onres": 0.04158349467554959,
+      "onres_static": 0.03724188713094636
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block2",
+      "block": 2,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.033634664257988334,
+        "best_epoch": 28,
+        "best_onres": 0.2719435062549534,
+        "best_onres_epoch": 29,
+        "n_parameters": 302754
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 55.71833801269531,
+      "final_val": 0.03389734530355781,
+      "final_onres": 0.2719435062549534,
+      "onres_static": 0.11835413781948574
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block3",
+      "block": 3,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.03535766981076449,
+        "best_epoch": 28,
+        "best_onres": 0.28352654447167736,
+        "best_onres_epoch": 29,
+        "n_parameters": 302754
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 57.35926866531372,
+      "final_val": 0.035573460860177875,
+      "final_onres": 0.28352654447167736,
+      "onres_static": 0.12870546403439367
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block4",
+      "block": 4,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.02890001703053713,
+        "best_epoch": 28,
+        "best_onres": 0.23829477349363076,
+        "best_onres_epoch": 29,
+        "n_parameters": 297626
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 55.67601799964905,
+      "final_val": 0.029075987869873643,
+      "final_onres": 0.23829477349363076,
+      "onres_static": 0.10707375146143758
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block5",
+      "block": 5,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.028971119201742113,
+        "best_epoch": 28,
+        "best_onres": 0.22825848949823138,
+        "best_onres_epoch": 29,
+        "n_parameters": 297626
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 55.809144258499146,
+      "final_val": 0.028992036706767976,
+      "final_onres": 0.22825848949823138,
+      "onres_static": 0.11634170297283766
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block6",
+      "block": 6,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.025675063603557646,
+        "best_epoch": 29,
+        "best_onres": 0.12777902193269344,
+        "best_onres_epoch": 29,
+        "n_parameters": 292498
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 56.13606142997742,
+      "final_val": 0.025675063603557646,
+      "final_onres": 0.12777902193269344,
+      "onres_static": 0.06704180927148197
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block7",
+      "block": 7,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.02644513128325343,
+        "best_epoch": 29,
+        "best_onres": 0.13412808428997125,
+        "best_onres_epoch": 29,
+        "n_parameters": 292498
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 56.27147388458252,
+      "final_val": 0.02644513128325343,
+      "final_onres": 0.13412808428997125,
+      "onres_static": 0.07234869632631825
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block8",
+      "block": 8,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.01682436215924099,
+        "best_epoch": 29,
+        "best_onres": 0.0731161001023785,
+        "best_onres_epoch": 28,
+        "n_parameters": 287370
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 55.95853519439697,
+      "final_val": 0.01682436215924099,
+      "final_onres": 0.07319908928116844,
+      "onres_static": 0.04731747284742142
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sm_block9",
+      "block": 9,
+      "sigma": "-",
+      "summary": {
+        "best_val": 0.015543557703495026,
+        "best_epoch": 29,
+        "best_onres": 0.07095982189566767,
+        "best_onres_epoch": 28,
+        "n_parameters": 287370
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 55.63412380218506,
+      "final_val": 0.015543557703495026,
+      "final_onres": 0.07117703945620749,
+      "onres_static": 0.04766616310314044
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block0",
+      "block": 0,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.03555798903107643,
+        "best_epoch": 24,
+        "best_onres": 0.39268296710844797,
+        "best_onres_epoch": 29,
+        "n_parameters": 307882
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 59.52494168281555,
+      "final_val": 0.03582585952244699,
+      "final_onres": 0.39268296710844797,
+      "onres_static": 0.1483812558511559
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block1",
+      "block": 1,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.035476485500112176,
+        "best_epoch": 29,
+        "best_onres": 0.39116709511288517,
+        "best_onres_epoch": 29,
+        "n_parameters": 307882
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 57.32310628890991,
+      "final_val": 0.035476485500112176,
+      "final_onres": 0.39116709511288517,
+      "onres_static": 0.16254176985939417
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block10",
+      "block": 10,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.00904292096674908,
+        "best_epoch": 29,
+        "best_onres": 0.05025219110580882,
+        "best_onres_epoch": 27,
+        "n_parameters": 282882
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 56.67193841934204,
+      "final_val": 0.00904292096674908,
+      "final_onres": 0.0508001296094281,
+      "onres_static": 0.04578966509366434
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block11",
+      "block": 11,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.009069898675079457,
+        "best_epoch": 26,
+        "best_onres": 0.050024153276734755,
+        "best_onres_epoch": 27,
+        "n_parameters": 282882
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 56.13295364379883,
+      "final_val": 0.009198655534419231,
+      "final_onres": 0.05101065888755002,
+      "onres_static": 0.045766763113531186
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block2",
+      "block": 2,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.035037709516473114,
+        "best_epoch": 29,
+        "best_onres": 0.2661930164583768,
+        "best_onres_epoch": 29,
+        "n_parameters": 302754
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 54.89537978172302,
+      "final_val": 0.035037709516473114,
+      "final_onres": 0.2661930164583768,
+      "onres_static": 0.12762565522941008
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block3",
+      "block": 3,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.035329893697053194,
+        "best_epoch": 27,
+        "best_onres": 0.2830277498146359,
+        "best_onres_epoch": 28,
+        "n_parameters": 302754
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 54.80702066421509,
+      "final_val": 0.035402202629484236,
+      "final_onres": 0.283084279861355,
+      "onres_static": 0.1405146339231948
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block4",
+      "block": 4,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.029296961496584117,
+        "best_epoch": 27,
+        "best_onres": 0.20886407005145186,
+        "best_onres_epoch": 29,
+        "n_parameters": 297626
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 53.95740365982056,
+      "final_val": 0.029487932799383998,
+      "final_onres": 0.20886407005145186,
+      "onres_static": 0.11081335404373473
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block5",
+      "block": 5,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.02950346504803747,
+        "best_epoch": 26,
+        "best_onres": 0.21407537257326872,
+        "best_onres_epoch": 29,
+        "n_parameters": 297626
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 53.62308168411255,
+      "final_val": 0.029516495647840202,
+      "final_onres": 0.21407537257326872,
+      "onres_static": 0.12042950350632652
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block6",
+      "block": 6,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.02484957710839808,
+        "best_epoch": 28,
+        "best_onres": 0.15581902550821805,
+        "best_onres_epoch": 29,
+        "n_parameters": 292498
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 54.30793857574463,
+      "final_val": 0.02485586446709931,
+      "final_onres": 0.15581902550821805,
+      "onres_static": 0.0664213946899829
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block7",
+      "block": 7,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.02430119924247265,
+        "best_epoch": 29,
+        "best_onres": 0.1577693366224833,
+        "best_onres_epoch": 29,
+        "n_parameters": 292498
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 54.691702127456665,
+      "final_val": 0.02430119924247265,
+      "final_onres": 0.1577693366224833,
+      "onres_static": 0.07159684038990129
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block8",
+      "block": 8,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.012400775856804103,
+        "best_epoch": 28,
+        "best_onres": 0.06647317142010402,
+        "best_onres_epoch": 29,
+        "n_parameters": 287370
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 56.48179244995117,
+      "final_val": 0.012608666263986379,
+      "final_onres": 0.06647317142010402,
+      "onres_static": 0.04415550549277453
+    },
+    {
+      "directory": "/home/htseng/Downloads/qlsgym_work/runs/rlpilot_sp_block9",
+      "block": 9,
+      "sigma": "+",
+      "summary": {
+        "best_val": 0.013621716003399342,
+        "best_epoch": 29,
+        "best_onres": 0.06728816183638817,
+        "best_onres_epoch": 29,
+        "n_parameters": 287370
+      },
+      "epochs_completed": 30,
+      "training_wall_clock_s": 56.15807032585144,
+      "final_val": 0.013621716003399342,
+      "final_onres": 0.06728816183638817,
+      "onres_static": 0.044507814222532034
+    }
+  ]
+}

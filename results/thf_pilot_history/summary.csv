@@ -1,0 +1,7 @@
+agent,evaluation_runs,training_seeds,exact_average_actions,exact_unfinished_fraction,exact_p85_actions,exact_cvar10_actions,fno_average_actions,fno_unfinished_fraction,sim_to_exact_gap
+sweeping,1,0,80.0,1.0,80.0,80.0,80.0,1.0,0.0
+random,1,0,74.315,0.88,80.0,80.0,78.595,0.97,-4.280000000000001
+physics_elimination,1,0,51.455,0.28,80.0,80.0,80.0,1.0,-28.545
+ppo,1,1,74.255,0.865,80.0,80.0,74.01,0.845,0.24499999999999034
+sac_discrete,1,1,73.86,0.85,80.0,80.0,77.14,0.935,-3.280000000000001
+ddqn,1,1,80.0,1.0,80.0,80.0,79.72,0.995,0.28000000000000114

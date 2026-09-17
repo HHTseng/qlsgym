@@ -18,7 +18,7 @@ from ..policies.rollout import RolloutResult, rollout
 SNAPSHOT_SEED = 4242
 
 OBS_TRANSFORMS = ("p", "sqrt")
-VALUE_TARGETS = ("gae", "qmdp")
+VALUE_TARGETS = ("gae", "qmdp", "qmdp_gae")
 
 
 @dataclass(frozen=True)
@@ -223,6 +223,33 @@ def _better(a: dict, b: dict | None) -> bool:
     return a["mean_pulses"] < b["mean_pulses"]
 
 
+def compute_advantages(reward, value, terminal, last_value, branch_target,
+                       gamma, gae_lambda, value_target):
+    """Sampled or branch-expected GAE, with buffers shaped [time, batch].
+
+    Legacy ``qmdp`` is one-step actor-critic. ``qmdp_gae`` accumulates
+    expected TD residuals along sampled paths, stopping at episode boundaries.
+    Branch targets already contain separate branch terminal/budget masks.
+    """
+    torch = _torch()
+    if value_target == "qmdp":
+        return branch_target - value, branch_target
+    advantage = torch.zeros_like(reward)
+    running = torch.zeros_like(last_value)
+    for t in reversed(range(len(reward))):
+        continue_mask = 1.0 - terminal[t]
+        if value_target == "qmdp_gae":
+            residual = branch_target[t] - value[t]
+        elif value_target == "gae":
+            next_value = last_value if t == len(reward) - 1 else value[t + 1]
+            residual = reward[t] + gamma * continue_mask * next_value - value[t]
+        else:
+            raise ValueError(f"unknown value target: {value_target}")
+        running = residual + gamma * gae_lambda * continue_mask * running
+        advantage[t] = running
+    return advantage, advantage + value
+
+
 def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | None = None,
               log=None, on_snapshot=None) -> TrainResult:
     """Train on env (its batch is set to cfg.n_envs); evaluate greedy snapshots on env_eval
@@ -268,7 +295,7 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
                 obs_buf[t], act_buf[t], logp_buf[t], val_buf[t] = x, a, logp, value
                 rew_buf[t] = tr.reward.to(torch.float32) * r_scale
                 term_buf[t] = ended.to(torch.float32)
-                if cfg.value_target == "qmdp":
+                if cfg.value_target in ("qmdp", "qmdp_gae"):
                     _, v0 = net(transform_obs(tr.s0, cfg.obs))
                     _, v1 = net(transform_obs(tr.s1, cfg.obs))
                     trunc_next = (env.steps >= env.cfg.max_pulses).to(torch.float32)
@@ -287,19 +314,8 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
         net.train()
 
         # advantages
-        if cfg.value_target == "gae":
-            adv = torch.zeros_like(rew_buf)
-            gae = torch.zeros(B, device=device)
-            for t in reversed(range(T)):
-                nxt = last_value if t == T - 1 else val_buf[t + 1]
-                nonterm = 1.0 - term_buf[t]
-                delta = rew_buf[t] + cfg.gamma * nxt * nonterm - val_buf[t]
-                gae = delta + cfg.gamma * cfg.gae_lambda * nonterm * gae
-                adv[t] = gae
-            ret = adv + val_buf
-        else:
-            ret = q_buf
-            adv = q_buf - val_buf
+        adv, ret = compute_advantages(rew_buf, val_buf, term_buf, last_value,
+                                      q_buf, cfg.gamma, cfg.gae_lambda, cfg.value_target)
 
         # PPO update
         n = B * T
