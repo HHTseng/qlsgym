@@ -47,6 +47,8 @@ Report each learned seed and equal-weight average overfive seeds. Learned mean/f
 
 The authorized server pipeline runs in tmux `thf_final_study`. It waits for the two existing FNO queues, validates all24 completed120-epoch checkpoints/audits, assembles one full manifest, runs the two full paper-style tests, evaluates baselines, then executes15 learned jobs across two sequential GPU queues. No competing training jobs share a GPU. Each job has an individual log; failed/partial checkpoints are never silently overwritten. A failed pipeline stops, leaving logs; learning jobs are not optimizer-state resumable, so an interrupted model needs inspection/new output folder.
 
+Audit completion/finite numerical outputs are execution prerequisites, **not a claim that an accuracy threshold was met**. We still run and label a model-limited operational ranking if residual errors remain large, then interpret transfer gaps alongside branch/identity diagnostics. Nonfinite, negative or unnormalized evaluation beliefs raise an error instead of silently scoring broken dynamics as failures. Checkpoint SHA256 maps lock all24 weights as well as the manifest JSON hash.
+
 ```bash
 export QLSGYM_WORK=/home/htseng/Downloads/qlsgym_work
 export STUDY_PYTHON=/home/htseng/anaconda3/envs/qlsgym/bin/python

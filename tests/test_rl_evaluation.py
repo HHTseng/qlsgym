@@ -55,3 +55,17 @@ def test_no_action_failures_receive_horizon_cost(environment):
     assert result["average_actions"] == 4
     assert result["actual_lengths"] == [0] * 13
     assert result["outcomes"]["no_action"] == 1
+
+
+@pytest.mark.parametrize("invalid", [float("nan"), -0.1, 1.1])
+def test_invalid_dynamics_is_not_silently_ranked(environment, monkeypatch, invalid):
+    original = PurificationEnv.step
+
+    def bad_step(self, actions):
+        result = original(self, actions)
+        result.belief[0, 0] = invalid
+        return result
+
+    monkeypatch.setattr(PurificationEnv, "step", bad_step)
+    with pytest.raises(ValueError, match="invalid dynamics"):
+        evaluate_policy(environment, RandomPolicy(environment.n_actions), 5, 17, batch_size=4)

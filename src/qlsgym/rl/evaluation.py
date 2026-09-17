@@ -62,9 +62,14 @@ def evaluate_policy(environment, policy, episodes, seed, batch_size=128):
                 break
             transition = env.step(actions)
             state = transition.belief
+            next_beliefs = state.detach().cpu().numpy()
+            live_beliefs = next_beliefs[alive]
+            if (not np.isfinite(live_beliefs).all() or (live_beliefs < -1e-10).any()
+                    or (np.abs(live_beliefs.sum(1) - 1) > 1e-6).any()):
+                raise ValueError("invalid dynamics: nonfinite/negative/unnormalized conditional belief")
             just = transition.done.cpu().numpy() & alive
             used[just] = t + 1
-            target[just] = state.argmax(-1).cpu().numpy()[just]
+            target[just] = next_beliefs.argmax(-1)[just]
             ok |= just
             alive &= ~just
         actual_lengths.extend(used.tolist())

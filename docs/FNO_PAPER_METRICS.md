@@ -33,6 +33,8 @@ Uniform frequency sampling reproduces the paper-style view but misses most narro
 
 Here $D_{\mathrm{TV}}(p,\widehat p)=\tfrac12\|p-\widehat p\|_1\le\sqrt{I_p}$. For example $I_p=0.02$ permits TV up to 0.141. Conditional normalization can amplify errors as $O(D_{\mathrm{TV}}/\pi_k)$; an apparently small joint error may be disastrous for a rare measurement branch. S18's exact branch expectation reduces sampling variance **under the surrogate**, not its systematic dynamics error.
 
+A physics-constrained next model could predict transfer columns once per frequency and use $G_\theta(q,\omega,\tau)=\widehat T_\theta(\omega,\tau)q$, with $\widehat T\ge0$, $\mathbf1^\top\widehat T=\mathbf1^\top$, and $\widehat T(\omega,0)=(I,0)^\top$. This guarantees input linearity/zero-time identity and amortizes inference across state batches; it is a proposed follow-up, **not** a constraint imposed on the present trained FNO or an experiment already executed.
+
 ## Timing: two honest baselines
 
 For each batch size and workload, report synchronized median times after warmup and speedup $T_{\mathrm{exact}}/T_{\mathrm{FNO}}$ (larger faster). Workloads: (i) many input populations at fixed frequency; (ii) many frequencies at a fixed population. FNO time includes embedding and full 200-time forward prediction.

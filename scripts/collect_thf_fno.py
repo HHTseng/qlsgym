@@ -32,6 +32,9 @@ def main():
             heldout = json.loads((directory / "heldout_summary.json").read_text())
             if summary["epochs_completed"] != 120 or heldout["molecule_fingerprint"] != mol.fingerprint():
                 raise ValueError(f"wrong training/physics contract: {directory}")
+            for mode in ("diffuse_alpha1", "control_mix_alpha_minus2"):
+                if not all(np.isfinite(value) for value in heldout[mode].values()):
+                    raise ValueError(f"nonfinite independent audit metrics: {directory}")
             rows.append({"block": block, "sigma": sigma, "summary": summary, "heldout": heldout})
     if args.require_complete and missing:
         raise ValueError(f"unfinished/missing production checkpoints: {missing}")
