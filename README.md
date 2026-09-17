@@ -17,6 +17,8 @@ Native qlsgym branch **FNO_RL_agents**, based on main commit 2a7ee186f09c54b78d5
 | Episode | $\max_i s_i\ge0.98$ target; $H=80$ actions; $\rho=0$ |
 | Dynamics | FNO Raman propagation; primitives exact; final ranking evaluated exactly |
 
+The environment carries **populations, not coherences**: each pulse starts from a diagonal molecular mixture with the motion in its ground state. Posterior populations after readout/cooling define the next input. “Exact” below means exact within this effective-Hamiltonian, seven-level, population-reset model, not experimental certification.
+
 For action $a$, define unnormalized branch population $u_k(s,a)\ge0$, Born probability $\pi_k=\sum_i u_{k,i}$ and conditional belief $s'_k=u_k/\pi_k$. The quantum belief MDP has
 
 $$P(s'|s,a)=\sum_{k=0}^1\pi_k(s,a)\delta(s'-s'_k),\qquad \sum_k\pi_k=1.$$
@@ -25,7 +27,7 @@ For a block with $m_f$ states, FNO maps $(s_f,\omega,\sigma)$ to joint populatio
 
 ### Sampled versus branch-expected updates
 
-Let $c_k=1$ only when branch $k$ is nonterminal and budget remains. The [earlier RL paper](https://arxiv.org/pdf/2410.11839) motivates sampled S17 and branch-expected S18 updates, written here with terminal/budget masks:
+Let $c_k=1$ only when branch $k$ is nonterminal and budget remains. Write $Q(s,a)$ for action value, $V(s)$ for the appropriate next-state value (maximum-Q for Q-learning), $r_k$ for branch reward, $\gamma$ for discount and $\eta$ for learning rate. The [earlier RL paper](https://arxiv.org/pdf/2410.11839) motivates these S17-style sampled and S18-style branch-expected targets, with terminal/budget masks:
 
 $$\text{S17:}\quad y=r_K+\gamma c_KV(s'_K),\quad K\sim\{\pi_k\};\qquad Q\leftarrow Q+\eta(y-Q),$$
 

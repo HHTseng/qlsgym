@@ -10,6 +10,8 @@ $$G_{\theta}^{f,\sigma}:(q,\omega)\mapsto\{\widehat p(\tau_r)\}_{r=1}^{200},\qqu
 
 The two groups of $m_f$ output channels are joint probabilities of molecular state and motional outcome $k=0$ or $k=1$ (ground versus **all** excited motional levels). ThF+ actually propagates seven motional levels; the two-channel readout is not a two-level Hamiltonian truncation. Exact propagation gives $p(\tau)=T_{\omega,\sigma}(\tau)q$, linear in $q$.
 
+The reference input density operator is $\rho(q)=\sum_i q_i|i,0\rangle\langle i,0|$. The environment reconstructs this diagonal, ground-motion input from each conditional population posterior before the next pulse: it does not carry inter-pulse coherences. “Exact” means propagation of this specified effective/truncated population-reset model. These tests do not certify arbitrary coherent inputs, motional-cutoff convergence or agreement with experiment; a separate exact cutoff test is useful before asserting physical convergence.
+
 For normalized joint distributions, the paper's population fidelity and infidelity are
 
 $$F_p(\tau)=\left[\sum_{b=1}^{2m_f}\sqrt{p_b(\tau)\widehat p_b(\tau)}\right]^2,\qquad I_p(\tau)=1-F_p(\tau)\in[0,1].$$
