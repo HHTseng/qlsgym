@@ -1,0 +1,72 @@
+{
+  "original_manifest": "rlprod120v2",
+  "mix_manifest": "mix",
+  "rows": [
+    {
+      "agent": "sweeping",
+      "original_exact_average_actions": 79.9738,
+      "mix_exact_average_actions": 79.9738,
+      "actions_delta_mix_minus_original": 0.0,
+      "original_exact_failure": 0.9992,
+      "mix_exact_failure": 0.9992,
+      "failure_delta_mix_minus_original": 0.0,
+      "original_transfer_failure_gap": 0.0010000000000000009,
+      "mix_transfer_failure_gap": 0.0010000000000000009
+    },
+    {
+      "agent": "random",
+      "original_exact_average_actions": 74.566,
+      "mix_exact_average_actions": 74.566,
+      "actions_delta_mix_minus_original": 0.0,
+      "original_exact_failure": 0.8562,
+      "mix_exact_failure": 0.8562,
+      "failure_delta_mix_minus_original": 0.0,
+      "original_transfer_failure_gap": -0.028400000000000092,
+      "mix_transfer_failure_gap": -0.005800000000000027
+    },
+    {
+      "agent": "physics_elimination",
+      "original_exact_average_actions": 51.4892,
+      "mix_exact_average_actions": 51.4892,
+      "actions_delta_mix_minus_original": 0.0,
+      "original_exact_failure": 0.29359999999999997,
+      "mix_exact_failure": 0.29359999999999997,
+      "failure_delta_mix_minus_original": 0.0,
+      "original_transfer_failure_gap": -0.42400000000000004,
+      "mix_transfer_failure_gap": -0.3378
+    },
+    {
+      "agent": "ppo",
+      "original_exact_average_actions": 69.0694,
+      "mix_exact_average_actions": 68.14508,
+      "actions_delta_mix_minus_original": -0.9243200000000087,
+      "original_exact_failure": 0.7674799999999999,
+      "mix_exact_failure": 0.73888,
+      "failure_delta_mix_minus_original": -0.02859999999999996,
+      "original_transfer_failure_gap": -0.0046399999999999775,
+      "mix_transfer_failure_gap": 0.00047999999999992493
+    },
+    {
+      "agent": "sac_discrete",
+      "original_exact_average_actions": 66.8332,
+      "mix_exact_average_actions": 66.07344,
+      "actions_delta_mix_minus_original": -0.75976,
+      "original_exact_failure": 0.71688,
+      "mix_exact_failure": 0.69408,
+      "failure_delta_mix_minus_original": -0.02279999999999993,
+      "original_transfer_failure_gap": -0.01747999999999994,
+      "mix_transfer_failure_gap": -0.028199999999999892
+    },
+    {
+      "agent": "ddqn",
+      "original_exact_average_actions": 80.0,
+      "mix_exact_average_actions": 78.87556,
+      "actions_delta_mix_minus_original": -1.124440000000007,
+      "original_exact_failure": 1.0,
+      "mix_exact_failure": 0.9856,
+      "failure_delta_mix_minus_original": -0.014399999999999968,
+      "original_transfer_failure_gap": 0.0040400000000000436,
+      "mix_transfer_failure_gap": -0.0041200000000001236
+    }
+  ]
+}

@@ -150,16 +150,20 @@ def main():
     figure.savefig(args.output / "thf_final_ranking.png", dpi=180)
     plt.close(figure)
 
-    lines = ["## Final exact-simulator ranking", "", "Complete locked grid: 15 learned policies and three baselines. Each policy has 5000 exact and 5000 surrogate rollouts.", "",
+    manifest_tag = records[0]["contract"]["manifest_tag"]
+    figure_link = f"{args.output.as_posix().rstrip('/')}/thf_final_ranking.png"
+    lines = [f"## External `{manifest_tag}` FNO exact-simulator ranking", "", "Complete locked grid: 15 learned policies and three baselines. Each policy has 5000 exact and 5000 surrogate rollouts.", "",
              "| Controller | Training seeds | Exact average actions ↓ (95% CI) | Exact failure ↓ (95% CI) | FNO average actions | FNO failure |", "|---|---:|---:|---:|---:|---:|"]
     for row in ranking:
         e, f = row["exact"], row["fno"]
         lines.append(f"| {LABELS[row['agent']]} | {row['training_seeds']} | {e['average_actions']:.2f} [{e['actions_ci95'][0]:.2f}, {e['actions_ci95'][1]:.2f}] | {100*e['unfinished_fraction']:.2f}% [{100*e['failure_ci95'][0]:.2f}, {100*e['failure_ci95'][1]:.2f}] | {f['average_actions']:.2f} | {100*f['unfinished_fraction']:.2f}% |")
-    lines += ["", "![Final ThF+ RL ranking](results/thf_rl_final/thf_final_ranking.png)", "",
+    lines += ["", f"![External {manifest_tag} ThF+ RL ranking]({figure_link})", "",
               "Order is descriptive: exact failure rate, then average actions. PPO/DDQN use γ=1; SAC uses γ=0.99 with an entropy bonus, so these are operational performance scores, not equal training objectives.", "",
               "Learned-policy intervals bootstrap five training-seed means; baseline mean intervals bootstrap rollouts and failure intervals use Wilson bounds. Five seeds do not establish statistical dominance. Inspect individual JSONs and the FNO-to-exact gap before interpreting a learned advantage."]
     section = "\n".join(lines)
-    (args.output / "summary.md").write_text(section.replace("](results/thf_rl_final/", "](") + "\n")
+    (args.output / "summary.md").write_text(
+        section.replace(f"]({figure_link})", "](thf_final_ranking.png)") + "\n"
+    )
     text = args.readme.read_text()
     start, stop = "<!-- FINAL_RL_RESULTS_START -->", "<!-- FINAL_RL_RESULTS_END -->"
     if text.count(start) != 1 or text.count(stop) != 1:

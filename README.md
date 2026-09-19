@@ -4,17 +4,17 @@ This branch studies **ThF⁺ state purification** using a Fourier neural operato
 
 Native qlsgym branch **FNO_RL_agents**, based on main commit 2a7ee186f09c54b78d5987bcd0a6bb2399749e28. Experiment code and historical FNO results were selectively transferred from [the earlier RL branch](https://github.com/HHTseng/rl_qls_paper_replication/tree/FNO_RL_agents), commit d306d34; unrelated experiments were not merged. The underlying library remains intact.
 
-## Current conclusions — completed 17 September 2026
+## Current conclusions — downloaded `mix` rerun completed 18 September 2026
 
-All **24/24 production FNO models**, two full GPU paper-style audits, and **15/15 learned-agent runs** are complete. PPO, SAC and DDQN each have five training seeds at approximately one million transitions per seed; all 18 controllers have 5000 exact and 5000 FNO evaluation episodes. The server's final test run passed **166 tests** (17 skipped, three deselected). No further GPU jobs were started for this analysis.
+The downloaded `munozariasjm/thf_qls_fno` manifest has **24/24 block/polarization checkpoints** (fingerprint `d7deb43457d3`). On Tara, PPO, SAC and DDQN were each rerun with five training seeds at approximately one million transitions per seed. All 18 controllers have 5000 exact and 5000 FNO evaluation episodes under the same locked contract as the original `rlprod120v2` study.
 
-- **Physics elimination is strongest:** exact failure 29.36%, average actions 51.49. SAC reaches 71.69%/66.83; PPO 76.75%/69.07. Both learned averages improve over random, but neither approaches physics elimination.
-- **SAC is not a statistically established winner over PPO.** Five-seed confidence intervals overlap; SAC seed 4 fails 99.48% of exact episodes, versus 56.06–71.44% for its other seeds. Report every seed, not just the best checkpoint/seed. SAC also optimizes a different discounted soft objective.
-- **DDQN failed all 25,000 exact episodes.** Nonzero exploratory training success did not translate to a successful deployed greedy policy. This is a failure of the tested configuration, not proof that DDQN cannot solve the task.
-- **FNO accuracy is not closed-loop certification.** Physics elimination fails 71.76% under FNO but only 29.36% exactly: a 42.40-percentage-point pessimistic surrogate gap. Conditional-branch and identity errors remain material; block 11, σ=+, is a distinct accuracy outlier.
-- **Speed depends on amortization:** FNO is approximately 86–103× faster for fresh 128-frequency batches in the two audited blocks, but cached exact propagation is approximately 7–80× faster across tested workloads. These are block propagation timings, not end-to-end RL speedups.
+- **Physics elimination remains strongest:** exact failure is 29.36% and average actions are 51.49. The exact baseline values reproduce the original run because the policy and evaluation seed are unchanged.
+- **The downloaded model gives a small learned-policy improvement, not a qualitative recovery.** SAC reaches 69.41% exact failure and 66.07 actions; PPO reaches 73.89% and 68.15. Relative to the original FNO, failure improves by 2.28 percentage points for SAC and 2.86 points for PPO, but neither approaches physics elimination.
+- **DDQN remains ineffective:** exact failure is 98.56% (78.88 actions), versus 100% with the original FNO. A few successful episodes do not establish a useful greedy policy.
+- **The FNO is still not closed-loop certified.** Physics elimination fails 63.14% under `mix` but 29.36% exactly, a 33.78-point pessimistic gap. That is better than the original model's 42.40-point gap but remains large enough to distort long-horizon control.
+- **Transfer agreement depends on the visited state distribution.** PPO's aggregate exact-minus-FNO failure gap is only +0.05 points and SAC's is -2.82 points, even though the physics heuristic exposes much larger model bias. Learned-policy agreement alone therefore cannot validate the surrogate over the relevant state space.
 
-See the [detailed final analysis](docs/THF_FINAL_ANALYSIS.md), [complete report](docs/THF_RESULTS.md), and exact ranking below. Lower failure and failure-penalized average actions are better.
+See the [downloaded-model summary](results/thf_rl_mix_tara/summary.md), [generation comparison](results/thf_rl_mix_tara/generation_comparison.md), [detailed original analysis](docs/THF_FINAL_ANALYSIS.md), and exact ranking below. Lower failure and failure-penalized average actions are better.
 
 ## Physics and environment
 
@@ -49,12 +49,19 @@ They represent the same expected physical Bellman operator with correct branches
 
 ## Install and reproduce
 
-Python≥3.11, PyTorch≥2.3. Production runs use conda environment /home/htseng/anaconda3/envs/qlsgym on wcs164084 (two RTX 2080 Ti, 11 GiB each).
+Python≥3.11, PyTorch≥2.3. The original production runs used `/home/htseng/anaconda3/envs/qlsgym` on wcs164084; the downloaded-`mix` rerun used `/home/htseng/.conda/envs/qlsgym` on Tara.
 
     python -m pip install -e '.[gym,fno,analysis,test]'
     export QLSGYM_WORK=/path/to/qlsgym_work
     export PYTHONPATH="$PWD/src"
     python -m pytest -q -m 'not slow'
+
+Run one locked downloaded-`mix` job, or use `scripts/run_thf_mix_tara_study.sh` to reproduce the Tara queue:
+
+    python scripts/thf_rl_agents.py run --agent ppo --preset final \
+      --manifest "$QLSGYM_WORK/checkpoints/thf/mix.json" --fno-tag mix \
+      --min-manifest-coverage 1.0 --seed 0 --device cuda:0 \
+      --eval-batch 128 --output results/thf_rl_mix_tara
 
 Exact environment:
 
@@ -84,10 +91,10 @@ Repeat for all 12 blocks and both polarizations, then assemble the full manifest
     python scripts/prepare_thf_fno.py manifest --work "$QLSGYM_WORK" \
       --tag rlprod120v2 --sigmas both --device cpu
 
-Paper-style tests and the **full** RL grid were coordinated by scripts/run_thf_final_study.sh in tmux and completed on 17 September 2026. The pipeline validates results, redraws figures, refreshes this README/report, tests and commits. Its server-side push encountered a GitHub DNS failure; the completed commit was recovered locally for publication. For a new study, use a distinct run generation rather than overwriting these locked results. [Execution details](docs/THF_FINAL_RL_STUDY.md).
+Paper-style tests and the original **full** RL grid were coordinated by scripts/run_thf_final_study.sh in tmux and completed on 17 September 2026. The downloaded-`mix` rerun used `scripts/run_thf_mix_tara_study.sh` on Tara GPUs 0, 2 and 3; GPU 1 was unavailable to PyTorch. It writes a distinct generation under `results/thf_rl_mix_tara`, validates all 18 records before aggregation, and leaves the original locked results intact. [Execution details](docs/THF_FINAL_RL_STUDY.md).
 
 <!-- FNO_RESULTS_START -->
-## Production FNO accuracy
+## Original locally trained production FNO accuracy
 
 Completed checkpoints with independent held-out tests: **24/24**. All completed models trained for 120 epochs; checkpoints are preselected `best_onres.pt`, never test-selected.
 
@@ -184,25 +191,51 @@ For fixed-frequency state batches, exact propagation amortizes one eigendecompos
 <!-- FNO_RESULTS_END -->
 
 <!-- FINAL_RL_RESULTS_START -->
-## Final exact-simulator ranking
+## External `mix` FNO exact-simulator ranking
 
 Complete locked grid: 15 learned policies and three baselines. Each policy has 5000 exact and 5000 surrogate rollouts.
 
 | Controller | Training seeds | Exact average actions ↓ (95% CI) | Exact failure ↓ (95% CI) | FNO average actions | FNO failure |
 |---|---:|---:|---:|---:|---:|
-| Physics elimination | 0 | 51.49 [50.78, 52.22] | 29.36% [28.11, 30.64] | 69.20 | 71.76% |
-| Discrete SAC | 5 | 66.83 [62.10, 73.37] | 71.69% [61.18, 86.19] | 68.19 | 73.44% |
-| PPO | 5 | 69.07 [67.17, 70.97] | 76.75% [73.14, 80.36] | 69.80 | 77.21% |
-| Random | 0 | 74.57 [74.11, 75.01] | 85.62% [84.62, 86.57] | 76.18 | 88.46% |
-| Sweeping | 0 | 79.97 [79.94, 80.00] | 99.92% [99.79, 99.97] | 79.93 | 99.82% |
-| Double DQN | 5 | 80.00 [80.00, 80.00] | 100.00% [100.00, 100.00] | 79.86 | 99.60% |
+| Physics elimination | 0 | 51.49 [50.78, 52.22] | 29.36% [28.11, 30.64] | 64.52 | 63.14% |
+| Discrete SAC | 5 | 66.07 [62.67, 70.87] | 69.41% [63.28, 77.18] | 68.03 | 72.23% |
+| PPO | 5 | 68.15 [67.39, 68.91] | 73.89% [72.12, 75.67] | 69.14 | 73.84% |
+| Random | 0 | 74.57 [74.11, 75.01] | 85.62% [84.62, 86.57] | 75.91 | 86.20% |
+| Double DQN | 5 | 78.88 [78.03, 79.58] | 98.56% [97.48, 99.46] | 79.69 | 98.97% |
+| Sweeping | 0 | 79.97 [79.94, 80.00] | 99.92% [99.79, 99.97] | 79.94 | 99.82% |
 
-![Final ThF+ RL ranking](results/thf_rl_final/thf_final_ranking.png)
+![External mix ThF+ RL ranking](results/thf_rl_mix_tara/thf_final_ranking.png)
 
 Order is descriptive: exact failure rate, then average actions. PPO/DDQN use γ=1; SAC uses γ=0.99 with an entropy bonus, so these are operational performance scores, not equal training objectives.
 
 Learned-policy intervals bootstrap five training-seed means; baseline mean intervals bootstrap rollouts and failure intervals use Wilson bounds. Five seeds do not establish statistical dominance. Inspect individual JSONs and the FNO-to-exact gap before interpreting a learned advantage.
 <!-- FINAL_RL_RESULTS_END -->
+
+## Original production FNO versus downloaded `mix` FNO
+
+All entries use the same five-seed, one-million-transition, 5000-exact-rollout contract. Deltas are `mix - original`; negative is better for both exact metrics.
+
+| Controller | Original exact actions | `mix` exact actions | Delta | Original exact failure | `mix` exact failure | Delta |
+|---|---:|---:|---:|---:|---:|---:|
+| Sweeping | 79.97 | 79.97 | +0.00 | 99.92% | 99.92% | +0.00 pp |
+| Random | 74.57 | 74.57 | +0.00 | 85.62% | 85.62% | +0.00 pp |
+| Physics elimination | 51.49 | 51.49 | +0.00 | 29.36% | 29.36% | +0.00 pp |
+| PPO | 69.07 | 68.15 | -0.92 | 76.75% | 73.89% | -2.86 pp |
+| Discrete SAC | 66.83 | 66.07 | -0.76 | 71.69% | 69.41% | -2.28 pp |
+| Double DQN | 80.00 | 78.88 | -1.12 | 100.00% | 98.56% | -1.44 pp |
+
+Transfer failure gap is exact failure minus FNO failure. Negative values mean the FNO environment is pessimistic.
+
+| Controller | Original transfer gap | `mix` transfer gap |
+|---|---:|---:|
+| Sweeping | +0.10 pp | +0.10 pp |
+| Random | -2.84 pp | -0.58 pp |
+| Physics elimination | -42.40 pp | -33.78 pp |
+| PPO | -0.46 pp | +0.05 pp |
+| Discrete SAC | -1.75 pp | -2.82 pp |
+| Double DQN | +0.40 pp | -0.41 pp |
+
+![Original production FNO versus downloaded mix](results/thf_rl_mix_tara/thf_mix_vs_rlprod120v2.png)
 
 ## Metric interpretation
 
@@ -235,7 +268,7 @@ No learned advantage was established. Physics elimination's exact/FNO discrepanc
 ## Reports and next work
 
 - [Detailed numerical report](docs/THF_RESULTS.md), [paper-style audit](docs/FNO_PAPER_METRICS.md), [locked RL study](docs/THF_FINAL_RL_STUDY.md).
-- Completed: all production models, five-seed learned grid, exact ranking and full GPU audits. Next: investigate SAC seed collapse and DDQN greedy-policy failure; run exact-trained controls and validate the block-11 σ=+ outlier before extending training or tuning.
+- Completed: the original and downloaded-`mix` five-seed grids, exact rankings, generation comparison and original-model GPU audits. Next: train paired agents with exact dynamics to separate RL limitations from surrogate bias, and evaluate `mix` on the policy-induced belief/branch distribution before extending training or tuning.
 - If peaked/conditional errors persist, train on exact collected beliefs/vertices and test identity/linearity constraints, not just more epochs.
 - Add remaining-budget observations; compare exact-trained RL and stronger full-library sweeping schedules.
 - Tune hyperparameters only on separate validation seeds after checking model validity; keep final holdout locked. Match discounts for equal-objective claims.
