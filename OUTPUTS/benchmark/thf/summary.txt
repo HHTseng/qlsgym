@@ -1,0 +1,19 @@
+           arm   success   pulses   P85      n
+      sweeping     0.835    416.6     -    200
+        random     0.930    323.4   619    200
+ planner-exact     1.000     50.8    90    200
+   planner-fno     1.000     51.3    98    200
+      rl-exact     1.000    150.2   265    200
+        rl-fno     0.990    124.0   220    200
+
+figure key (the arms are also named by the figure's legend):
+           arm   colour  style  class
+      sweeping       C4      :  baseline
+        random       C1      :  baseline
+ planner-exact       C2     --  exact dynamics
+   planner-fno       C2      -  surrogate in the loop
+      rl-exact       C0     --  exact dynamics
+        rl-fno       C0      -  surrogate in the loop
+     85% guide     0.78      -  horizontal guide
+   task budget     0.55      -  vertical guide
+           P85      arm    arm  vertical mark at each arm's P85
