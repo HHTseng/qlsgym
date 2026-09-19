@@ -14,6 +14,7 @@ gym = ["gymnasium>=0.29"]
 fno = ["neuraloperator", "tensorly", "tensorly-torch"]
 test = ["pytest"]
 analysis = ["matplotlib>=3.7"]
+tune = ["optuna>=4,<5"]
 cudaq = ["cudaq>=0.15"]
 
 [tool.setuptools.packages.find]

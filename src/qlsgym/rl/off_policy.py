@@ -290,7 +290,7 @@ class DDQNAgent(_OffPolicyAgent):
                 target_param.mul_(1.0 - cfg.tau).add_(online_param, alpha=cfg.tau)
         return {"loss": float(loss.detach()), "epsilon": self.epsilon()}
 
-    def train(self, log_points: int = 8) -> AgentStats:
+    def train(self, log_points: int = 8, on_log=None) -> AgentStats:
         cfg = self.config
         state = self.env.reset(seed=cfg.seed, batch=cfg.n_envs)
         iterations = max(1, math.ceil(cfg.total_steps / cfg.n_envs))
@@ -311,6 +311,8 @@ class DDQNAgent(_OffPolicyAgent):
                     self.stats.gradient_steps += 1
             if (iteration + 1) % log_every == 0 or iteration + 1 == iterations:
                 self._log("ddqn", last)
+                if on_log is not None:
+                    on_log(self, self.stats.history[-1])
         self.stats.wall_clock_s = time.perf_counter() - start
         return self.stats
 
@@ -419,7 +421,7 @@ class DiscreteSACAgent(_OffPolicyAgent):
             "alpha": float(self.network.log_alpha.detach().exp()),
         }
 
-    def train(self, log_points: int = 8) -> AgentStats:
+    def train(self, log_points: int = 8, on_log=None) -> AgentStats:
         cfg = self.config
         state = self.env.reset(seed=cfg.seed, batch=cfg.n_envs)
         iterations = max(1, math.ceil(cfg.total_steps / cfg.n_envs))
@@ -440,6 +442,8 @@ class DiscreteSACAgent(_OffPolicyAgent):
                     self.stats.gradient_steps += 1
             if (iteration + 1) % log_every == 0 or iteration + 1 == iterations:
                 self._log("sac_discrete", last)
+                if on_log is not None:
+                    on_log(self, self.stats.history[-1])
         self.stats.wall_clock_s = time.perf_counter() - start
         return self.stats
 

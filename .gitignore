@@ -5,4 +5,11 @@ __pycache__/
 _work/
 results/**/models/
 results/**/logs/
+results/**/optuna.sqlite3
+results/**/promotion/
+results/**/final/
+results/**/started_at.txt
+results/**/completed_at.txt
+results/**/promotion_jobs.json
+results/**/final_jobs.json
 *.pt

@@ -51,7 +51,7 @@ They represent the same expected physical Bellman operator with correct branches
 
 Python≥3.11, PyTorch≥2.3. The original production runs used `/home/htseng/anaconda3/envs/qlsgym` on wcs164084; the downloaded-`mix` rerun used `/home/htseng/.conda/envs/qlsgym` on Tara.
 
-    python -m pip install -e '.[gym,fno,analysis,test]'
+    python -m pip install -e '.[gym,fno,analysis,test,tune]'
     export QLSGYM_WORK=/path/to/qlsgym_work
     export PYTHONPATH="$PWD/src"
     python -m pytest -q -m 'not slow'
@@ -62,6 +62,42 @@ Run one locked downloaded-`mix` job, or use `scripts/run_thf_mix_tara_study.sh` 
       --manifest "$QLSGYM_WORK/checkpoints/thf/mix.json" --fno-tag mix \
       --min-manifest-coverage 1.0 --seed 0 --device cuda:0 \
       --eval-batch 128 --output results/thf_rl_mix_tara
+
+### Two-GPU Optuna optimization with the downloaded FNO fixed
+
+`scripts/run_thf_mix_optuna.sh` runs the complete optimization and confirmation
+pipeline on two GPUs (Tara GPUs 0 and 2 by default):
+
+    cd ~/qlsgym_FNO_RL_optuna
+    export QLSGYM_WORK=$HOME/qlsgym_work
+    GPUS="0 2" TRIALS_PER_WORKER=40 \
+      scripts/run_thf_mix_optuna.sh
+
+The two workers jointly run 80 broad trials for each of PPO, categorical SAC,
+and DDQN. Each trial has at most 250,000 FNO transitions, and successive-halving
+pruning can stop it after any of four validation rungs. Training length is a
+fidelity budget rather than a free parameter: otherwise Optuna can prefer short,
+cheap trials even though the scientific comparison requires equal training.
+The search covers learning rate, hidden width/depth, PPO rollout and update
+geometry, discount/GAE/value target, entropy and clipping, SAC temperature and
+target entropy, DDQN exploration, replay batch size, target-update rate, and
+gradient-to-environment update ratio.
+
+Broad search and promotion select configurations only from fixed-seed FNO
+validation using
+
+$$J=p_{\mathrm{success}}+0.02\left(1-\frac{\bar A}{H}\right),\qquad H=80,$$
+
+so success dominates and failure-penalized action count $\bar A$ breaks close
+ties. The top three configurations per agent are retrained for one million
+transitions with seeds 100 and 101. The winner is retrained with seeds 0--4 and
+evaluated on 5,000 FNO plus 5,000 exact episodes per seed using holdout seed
+20001. The exact results are therefore an audit of transfer and do not influence
+selection. Outputs, Optuna storage, logs, selected configurations, models, and
+figures are written to `results/thf_rl_optuna_mix`. Monitor a running study with:
+
+    python scripts/optimize_thf_mix_rl.py status \
+      --output results/thf_rl_optuna_mix
 
 Exact environment:
 
