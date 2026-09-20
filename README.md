@@ -55,6 +55,50 @@ complete 240-trial export is in
 
 ![PED-ANOVA parameter importance](results/thf_rl_optuna_mix/parameter_importance.png)
 
+## Focused SAC refinement from the earlier RL repository
+
+The strong discrete-SAC result in
+[`rl_qls_paper_replication_FNO_RL_agents`](https://github.com/HHTseng/rl_qls_paper_replication/tree/FNO_RL_agents)
+is useful optimizer evidence, but it is not a direct ThF+ FNO result. Its selected
+H3O+ configuration came from a 12-trial validation screen using exact action
+tables, 130 states, 218 actions, $H=400$, purity 0.99, and the sampled S17 target.
+This repository uses the downloaded ThF+ `mix` FNO, 192 states, 312 actions,
+$H=80$, purity 0.98, and the S18 expectation over both measurement branches.
+
+The comparison identified four settings omitted or underrepresented in the
+first ThF+ SAC search:
+
+- H3O+ used 16 environments and two gradient steps per collection step, or
+  $2/16=0.125$ updates per transition. The previous selected ThF+ trial used
+  $4/(2\times128)=0.015625$, eight times fewer updates per transition.
+- H3O+ used raw belief $p$; ThF+ SAC fixed the input to $\sqrt p$.
+- H3O+ selected automatic temperature tuning with target entropy
+  $0.215\log|\mathcal A|$; the previous ThF+ winner disabled tuning at 0.771.
+- H3O+ selected reward divisor $R=5$ and initial $\alpha=0.027$. The focused
+  search varies $R$ and the dimensionless ratio $\widetilde\alpha=\alpha R$ so
+  reward and entropy scales remain interpretable together.
+
+`scripts/refine_thf_mix_sac.py` therefore searches `n_envs`, updates per
+transition, raw versus square-root beliefs, reward/temperature scale, entropy
+target, replay warmup and capacity, learning rate, discount, target-update rate,
+batch size, width, and depth. It keeps the FNO manifest, action library,
+environment, and S18 target fixed. Each broad trial trains paired seeds at
+300,000 transitions; four candidates are promoted at one million transitions,
+and the winner is confirmed with five fresh seeds. Exact dynamics remain an
+audit and never select a configuration.
+
+Run the resumable two-GPU pipeline on Tara with GPUs 0 and 2:
+
+    tmux new-session -d -s thf_mix_sac_refine \
+      'cd ~/qlsgym_FNO_RL_optuna && bash scripts/run_thf_mix_sac_refine.sh'
+
+Monitor it with:
+
+    source /usr/local/anaconda3/etc/profile.d/conda.sh
+    conda activate qlsgym
+    python scripts/refine_thf_mix_sac.py status \
+      --output results/thf_rl_optuna_mix_sac_refine
+
 ## Current conclusions — downloaded `mix` rerun completed 18 September 2026
 
 The downloaded `munozariasjm/thf_qls_fno` manifest has **24/24 block/polarization checkpoints** (fingerprint `d7deb43457d3`). On Tara, PPO, SAC and DDQN were each rerun with five training seeds at approximately one million transitions per seed. All 18 controllers have 5000 exact and 5000 FNO evaluation episodes under the same locked contract as the original `rlprod120v2` study.

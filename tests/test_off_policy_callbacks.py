@@ -2,7 +2,9 @@ import numpy as np
 import pytest
 import torch
 
-from qlsgym.rl.off_policy import DDQNAgent, DDQNConfig
+from qlsgym.rl.off_policy import (
+    DDQNAgent, DDQNConfig, DiscreteSACAgent, SACConfig, transform_belief,
+)
 
 
 class TinyTransition:
@@ -65,3 +67,35 @@ def test_ddqn_training_callback_runs_at_each_log_point():
     stats = agent.train(log_points=4, on_log=lambda model, record: calls.append(record["env_steps"]))
     assert calls == [2, 4, 6, 8]
     assert stats.env_steps == 8
+
+
+def test_sac_uses_configured_return_scale(monkeypatch):
+    captured = {}
+
+    def fake_target(branch_reward, branch_probability, branch_continue,
+                    next_logits, target_next_q1, target_next_q2, alpha, gamma):
+        captured["branch_reward"] = branch_reward.detach().clone()
+        return torch.zeros(len(branch_reward), device=branch_reward.device)
+
+    monkeypatch.setattr("qlsgym.rl.off_policy.sac_s18_target", fake_target)
+    config = SACConfig(
+        n_envs=2, total_steps=2, batch_size=2, buffer_size=4,
+        learning_starts=0, return_scale=5.0, autotune_alpha=False, seed=4,
+    )
+    agent = DiscreteSACAgent(TinyEnv(), config)
+    state = agent.env.reset(seed=4, batch=2)
+    action = torch.zeros(2, dtype=torch.long)
+    transition = agent.env.step(action)
+    transition.r0.fill_(-1.0)
+    transition.r1.fill_(-1.0)
+    agent._record_transition(state, action, transition)
+    agent._update()
+    np.testing.assert_allclose(captured["branch_reward"].numpy(), -0.2)
+
+
+def test_belief_transform_supports_raw_and_sqrt_inputs():
+    belief = torch.tensor([[0.0, 0.25, 1.0]])
+    torch.testing.assert_close(transform_belief(belief, "p"), belief)
+    torch.testing.assert_close(
+        transform_belief(belief, "sqrt"), torch.tensor([[0.0, 0.5, 1.0]])
+    )

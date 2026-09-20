@@ -22,9 +22,14 @@ import torch
 import torch.nn as nn
 
 
-def transform_belief(belief: torch.Tensor) -> torch.Tensor:
-    """Variance-stabilising input used by qlsgym's reference PPO."""
-    return belief.to(torch.float32).clamp_min(0.0).sqrt()
+def transform_belief(belief: torch.Tensor, mode: str = "sqrt") -> torch.Tensor:
+    """Map simplex beliefs to raw or variance-stabilised network inputs."""
+    probability = belief.to(torch.float32).clamp_min(0.0)
+    if mode == "p":
+        return probability
+    if mode == "sqrt":
+        return probability.sqrt()
+    raise ValueError("belief transform must be 'p' or 'sqrt'")
 
 
 def build_mlp(n_in: int, n_out: int, hidden: int, depth: int,
@@ -180,6 +185,8 @@ class SACConfig:
     target_entropy_ratio: float = 0.5
     alpha: float = 0.05
     autotune_alpha: bool = True
+    return_scale: float | None = None
+    obs: str = "sqrt"
     hidden: int = 256
     depth: int = 2
     seed: int = 0
@@ -335,6 +342,10 @@ class DiscreteSACAgent(_OffPolicyAgent):
         cfg = self.config
         if cfg.gamma >= 1.0:
             raise ValueError("entropy-regularised SAC requires gamma < 1 for this continuing soft target")
+        if cfg.return_scale is not None and cfg.return_scale <= 0.0:
+            raise ValueError("return_scale must be positive")
+        if cfg.obs not in ("p", "sqrt"):
+            raise ValueError("obs must be 'p' or 'sqrt'")
         torch.manual_seed(cfg.seed)
         super().__init__(env, cfg.n_envs, cfg.buffer_size, cfg.seed)
         self.network = DiscreteSACNetwork(
@@ -350,25 +361,30 @@ class DiscreteSACAgent(_OffPolicyAgent):
 
     def _act(self, state: torch.Tensor) -> torch.Tensor:
         with torch.no_grad():
-            probability = torch.softmax(self.network.actor(transform_belief(state)), dim=-1)
+            probability = torch.softmax(
+                self.network.actor(transform_belief(state, self.config.obs)), dim=-1
+            )
             return torch.multinomial(probability, 1, generator=self.generator).squeeze(-1)
 
     def _update(self) -> dict:
         cfg = self.config
         batch = self.buffer.sample(cfg.batch_size, self.rng, self.device)
-        state = transform_belief(batch["state"])
+        state = transform_belief(batch["state"], cfg.obs)
         action = batch["action"]
         with torch.no_grad():
             shape = batch["next_state"].shape
             next_state = transform_belief(
-                batch["next_state"].reshape(-1, self.n_states)
+                batch["next_state"].reshape(-1, self.n_states), cfg.obs
             )
             next_logits = self.network.actor(next_state).reshape(
                 shape[0], 2, self.n_actions
             )
             next_q1 = self.target_q1(next_state).reshape(shape[0], 2, self.n_actions)
             next_q2 = self.target_q2(next_state).reshape(shape[0], 2, self.n_actions)
-            scale = 1.0 / self.env.cfg.max_pulses
+            return_scale = (
+                self.env.cfg.max_pulses if cfg.return_scale is None else cfg.return_scale
+            )
+            scale = 1.0 / return_scale
             target = sac_s18_target(
                 batch["reward"] * scale,
                 batch["probability"],
@@ -454,17 +470,18 @@ class TorchPolicy:
     stateful = False
 
     def __init__(self, network: nn.Module, device: torch.device | str,
-                 stochastic: bool, seed: int = 0):
+                 stochastic: bool, seed: int = 0, obs: str = "sqrt"):
         self.network = network.eval()
         self.device = torch.device(device)
         self.stochastic = bool(stochastic)
         self.seed = int(seed)
+        self.obs = obs
 
     def act_batch(self, beliefs, t, rng):
         del t
         belief = torch.as_tensor(np.asarray(beliefs), device=self.device)
         with torch.no_grad():
-            logits = self.network(transform_belief(belief)).detach().cpu().numpy()
+            logits = self.network(transform_belief(belief, self.obs)).detach().cpu().numpy()
         if not self.stochastic:
             return logits.argmax(axis=-1).astype(np.int64)
         logits -= logits.max(axis=-1, keepdims=True)
@@ -484,5 +501,6 @@ def ddqn_policy(agent: DDQNAgent) -> TorchPolicy:
 
 def sac_policy(agent: DiscreteSACAgent, stochastic: bool = True) -> TorchPolicy:
     return TorchPolicy(
-        agent.network.actor, agent.device, stochastic=stochastic, seed=agent.config.seed
+        agent.network.actor, agent.device, stochastic=stochastic,
+        seed=agent.config.seed, obs=agent.config.obs,
     )
