@@ -574,16 +574,16 @@ def make_figures(output: Path, studies, rows, baseline):
     plt.close(fig)
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 5), constrained_layout=True)
+    evaluator = optuna.importance.PedAnovaImportanceEvaluator()
     for axis, agent_name in zip(axes, AGENTS):
-        try:
-            importance = optuna.importance.get_param_importances(studies[agent_name])
-        except Exception:
-            importance = {}
+        importance = optuna.importance.get_param_importances(
+            studies[agent_name], evaluator=evaluator
+        )
         items = list(importance.items())[:10][::-1]
         if items:
             axis.barh([item[0] for item in items], [item[1] for item in items], color="#72b7b2")
         axis.set_title(agent_name)
-        axis.set_xlabel("fANOVA importance")
+        axis.set_xlabel("PED-ANOVA importance")
         axis.grid(axis="x", alpha=0.25)
     fig.savefig(output / "parameter_importance.png", dpi=180)
     plt.close(fig)
@@ -664,8 +664,8 @@ def summarize(args):
         "new training seeds. The selected configuration was retrained with five seeds and "
         "evaluated on 5,000 FNO and 5,000 exact holdout episodes per seed.",
         "",
-        "| Agent | Exact failure baseline | Exact failure optimized | Change | "
-        "Exact actions baseline | Exact actions optimized | Change |",
+        "| Agent | Exact failure baseline | Exact failure optimized | Baseline − optimized | "
+        "Exact actions baseline | Exact actions optimized | Baseline − optimized |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
     for agent_name in AGENTS:
@@ -675,14 +675,14 @@ def summarize(args):
         lines.append(
             f"| {agent_name} | {100 * base['unfinished_fraction']:.2f}% | "
             f"{100 * row['exact']['unfinished_fraction']:.2f}% | "
-            f"{delta['exact_failure_percentage_points']:+.2f} pp better | "
+            f"{delta['exact_failure_percentage_points']:+.2f} pp | "
             f"{base['average_actions']:.2f} | {row['exact']['average_actions']:.2f} | "
-            f"{delta['exact_average_actions']:+.2f} better |"
+            f"{delta['exact_average_actions']:+.2f} |"
         )
     lines += [
         "",
-        "| Agent | FNO failure baseline | FNO failure optimized | Change | "
-        "FNO actions baseline | FNO actions optimized | Change |",
+        "| Agent | FNO failure baseline | FNO failure optimized | Baseline − optimized | "
+        "FNO actions baseline | FNO actions optimized | Baseline − optimized |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
     for agent_name in AGENTS:
@@ -692,9 +692,9 @@ def summarize(args):
         lines.append(
             f"| {agent_name} | {100 * base['unfinished_fraction']:.2f}% | "
             f"{100 * row['fno']['unfinished_fraction']:.2f}% | "
-            f"{delta['fno_failure_percentage_points']:+.2f} pp better | "
+            f"{delta['fno_failure_percentage_points']:+.2f} pp | "
             f"{base['average_actions']:.2f} | {row['fno']['average_actions']:.2f} | "
-            f"{delta['fno_average_actions']:+.2f} better |"
+            f"{delta['fno_average_actions']:+.2f} |"
         )
     lines += [
         "",
@@ -717,7 +717,7 @@ def summarize(args):
         "## Figures",
         "",
         "- `optuna_history.png`: every completed broad trial and the best-so-far curve.",
-        "- `parameter_importance.png`: fANOVA importance for the ten most influential settings.",
+        "- `parameter_importance.png`: PED-ANOVA importance for the ten most influential settings.",
         "- `optimized_vs_baseline.png`: locked baseline versus optimized final evaluation.",
         "",
         "Positive changes in the tables mean improvement. Failed episodes are charged the "

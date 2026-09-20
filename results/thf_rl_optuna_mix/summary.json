@@ -1,0 +1,262 @@
+{
+  "broad_studies": {
+    "ddqn": {
+      "best_params": {
+        "batch_size": 512,
+        "depth": 2,
+        "eps_end": 0.013933264600237711,
+        "eps_fraction": 0.5297244240558068,
+        "gamma": 0.99,
+        "gradient_steps": 1,
+        "hidden": 128,
+        "learning_starts": 20480,
+        "lr": 0.0003863012590717139,
+        "tau": 0.00419740649400854,
+        "train_freq": 1
+      },
+      "best_score": 0.113685546875,
+      "best_trial": 72,
+      "states": {
+        "complete": 27,
+        "pruned": 53
+      },
+      "trials": 80
+    },
+    "ppo": {
+      "best_params": {
+        "clip": 0.1,
+        "ent_coef": 0.0005417800781171913,
+        "epochs": 8,
+        "gae_lambda": 0.98,
+        "gamma": 1.0,
+        "hidden": 512,
+        "lr": 0.001346363908197788,
+        "max_grad_norm": 1.0,
+        "minibatches": 16,
+        "n_hidden_layers": 1,
+        "n_steps": 32,
+        "obs": "sqrt",
+        "reward_scale_factor": 2.0,
+        "value_target": "qmdp",
+        "vf_coef": 0.5
+      },
+      "best_score": 0.47697167968750004,
+      "best_trial": 71,
+      "states": {
+        "complete": 30,
+        "pruned": 50
+      },
+      "trials": 80
+    },
+    "sac_discrete": {
+      "best_params": {
+        "alpha_raw": 0.15769283598579759,
+        "autotune_alpha": false,
+        "batch_size": 256,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 2,
+        "hidden": 256,
+        "learning_starts": 5120,
+        "lr": 4.926701462607513e-05,
+        "target_entropy_ratio": 0.549388117228958,
+        "tau": 0.04448394674073764,
+        "train_freq": 2
+      },
+      "best_score": 0.2338779296875,
+      "best_trial": 48,
+      "states": {
+        "complete": 28,
+        "pruned": 52
+      },
+      "trials": 80
+    }
+  },
+  "budget": {
+    "broad_eval_seed": 31001,
+    "broad_steps": 250000,
+    "final_eval_seed": 20001,
+    "full_steps": 1000000,
+    "promotion_eval_seed": 32001
+  },
+  "rows": {
+    "ddqn": {
+      "config": {
+        "batch_size": 512,
+        "buffer_size": 125000,
+        "depth": 2,
+        "eps_end": 0.013933264600237711,
+        "eps_fraction": 0.5297244240558068,
+        "eps_start": 1.0,
+        "gamma": 0.99,
+        "gradient_steps": 1,
+        "hidden": 128,
+        "learning_starts": 20480,
+        "lr": 0.0003863012590717139,
+        "n_envs": 128,
+        "seed": 10072,
+        "tau": 0.00419740649400854,
+        "total_steps": 250000,
+        "train_freq": 1
+      },
+      "config_id": "ddqn_t72",
+      "exact": {
+        "average_actions": 75.99848,
+        "average_actions_sd": 1.8023125123019081,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 4.685204542441919,
+        "mean_pulses_successful_sd": 3.002813603590331,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.05392,
+        "success_fraction_sd": 0.025975603939080997,
+        "unfinished_fraction": 0.9460799999999999,
+        "unfinished_fraction_sd": 0.025975603939080966
+      },
+      "fno": {
+        "average_actions": 77.22847999999999,
+        "average_actions_sd": 1.7452742798769478,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 22.26505252926554,
+        "mean_pulses_successful_sd": 7.419787555712991,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.04908,
+        "success_fraction_sd": 0.03349346204858494,
+        "unfinished_fraction": 0.95092,
+        "unfinished_fraction_sd": 0.03349346204858492
+      },
+      "improvement_vs_locked_baseline": {
+        "exact_average_actions": 2.8770799999999923,
+        "exact_failure_percentage_points": 3.952000000000011,
+        "fno_average_actions": 2.4614400000000103,
+        "fno_failure_percentage_points": 3.8800000000000168
+      },
+      "training_seeds": 5,
+      "trial_number": 72
+    },
+    "ppo": {
+      "config": {
+        "clip": 0.1,
+        "ent_coef": 0.0005417800781171913,
+        "epochs": 8,
+        "eval_every": 15,
+        "eval_greedy": false,
+        "eval_rollouts": 256,
+        "gae_lambda": 0.98,
+        "gamma": 1.0,
+        "hidden": 512,
+        "lr": 0.001346363908197788,
+        "max_grad_norm": 1.0,
+        "minibatches": 16,
+        "n_envs": 128,
+        "n_hidden_layers": 1,
+        "n_steps": 32,
+        "obs": "sqrt",
+        "reward_scale": 0.025,
+        "seed": 10071,
+        "total_steps": 250000,
+        "value_target": "qmdp",
+        "vf_coef": 0.5
+      },
+      "config_id": "ppo_t71",
+      "exact": {
+        "average_actions": 51.370439999999995,
+        "average_actions_sd": 3.5288854144049497,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 30.907695039923976,
+        "mean_pulses_successful_sd": 1.9000373789898917,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.58224,
+        "success_fraction_sd": 0.057161245612740115,
+        "unfinished_fraction": 0.41776,
+        "unfinished_fraction_sd": 0.057161245612740115
+      },
+      "fno": {
+        "average_actions": 50.855999999999995,
+        "average_actions_sd": 2.8224416132136376,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 32.27855766348517,
+        "mean_pulses_successful_sd": 2.1275467933606085,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.611,
+        "success_fraction_sd": 0.05519583317606503,
+        "unfinished_fraction": 0.38899999999999996,
+        "unfinished_fraction_sd": 0.05519583317606503
+      },
+      "improvement_vs_locked_baseline": {
+        "exact_average_actions": 16.774639999999998,
+        "exact_failure_percentage_points": 32.111999999999995,
+        "fno_average_actions": 18.283320000000003,
+        "fno_failure_percentage_points": 34.94000000000001
+      },
+      "training_seeds": 5,
+      "trial_number": 71
+    },
+    "sac_discrete": {
+      "config": {
+        "alpha": 0.002026280986674276,
+        "autotune_alpha": false,
+        "batch_size": 256,
+        "buffer_size": 125000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 4,
+        "hidden": 256,
+        "learning_starts": 5120,
+        "lr": 3.7034611947922746e-05,
+        "n_envs": 128,
+        "seed": 10058,
+        "target_entropy_ratio": 0.7713394752098243,
+        "tau": 0.027856499454340163,
+        "total_steps": 250000,
+        "train_freq": 2
+      },
+      "config_id": "sac_discrete_t58",
+      "exact": {
+        "average_actions": 71.87688,
+        "average_actions_sd": 1.1615092647069145,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 37.98928734149393,
+        "mean_pulses_successful_sd": 1.8955176833238883,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.19319999999999998,
+        "success_fraction_sd": 0.024922680433693323,
+        "unfinished_fraction": 0.8068,
+        "unfinished_fraction_sd": 0.024922680433693334
+      },
+      "fno": {
+        "average_actions": 71.87572,
+        "average_actions_sd": 1.3503901776893967,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 40.74748823512316,
+        "mean_pulses_successful_sd": 1.657868099411067,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.20692,
+        "success_fraction_sd": 0.03330213206387843,
+        "unfinished_fraction": 0.79308,
+        "unfinished_fraction_sd": 0.03330213206387841
+      },
+      "improvement_vs_locked_baseline": {
+        "exact_average_actions": -5.803439999999995,
+        "exact_failure_percentage_points": -11.271999999999993,
+        "fno_average_actions": -3.848560000000006,
+        "fno_failure_percentage_points": -7.080000000000009
+      },
+      "training_seeds": 5,
+      "trial_number": 58
+    }
+  },
+  "selection_rule": "Optuna and promotion use FNO success plus 0.02 times normalized pulse efficiency; exact dynamics are an audit and the final exact holdout is not used for selection.",
+  "status": "complete"
+}

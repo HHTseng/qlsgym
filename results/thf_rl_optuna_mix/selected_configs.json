@@ -1,0 +1,79 @@
+{
+  "ddqn": {
+    "config": {
+      "batch_size": 512,
+      "buffer_size": 125000,
+      "depth": 2,
+      "eps_end": 0.013933264600237711,
+      "eps_fraction": 0.5297244240558068,
+      "eps_start": 1.0,
+      "gamma": 0.99,
+      "gradient_steps": 1,
+      "hidden": 128,
+      "learning_starts": 20480,
+      "lr": 0.0003863012590717139,
+      "n_envs": 128,
+      "seed": 10072,
+      "tau": 0.00419740649400854,
+      "total_steps": 250000,
+      "train_freq": 1
+    },
+    "config_id": "ddqn_t72",
+    "promotion_runs": 2,
+    "promotion_score_fno": 0.08615106249999999,
+    "trial_number": 72
+  },
+  "ppo": {
+    "config": {
+      "clip": 0.1,
+      "ent_coef": 0.0005417800781171913,
+      "epochs": 8,
+      "eval_every": 15,
+      "eval_greedy": false,
+      "eval_rollouts": 256,
+      "gae_lambda": 0.98,
+      "gamma": 1.0,
+      "hidden": 512,
+      "lr": 0.001346363908197788,
+      "max_grad_norm": 1.0,
+      "minibatches": 16,
+      "n_envs": 128,
+      "n_hidden_layers": 1,
+      "n_steps": 32,
+      "obs": "sqrt",
+      "reward_scale": 0.025,
+      "seed": 10071,
+      "total_steps": 250000,
+      "value_target": "qmdp",
+      "vf_coef": 0.5
+    },
+    "config_id": "ppo_t71",
+    "promotion_runs": 2,
+    "promotion_score_fno": 0.625093625,
+    "trial_number": 71
+  },
+  "sac_discrete": {
+    "config": {
+      "alpha": 0.002026280986674276,
+      "autotune_alpha": false,
+      "batch_size": 256,
+      "buffer_size": 125000,
+      "depth": 1,
+      "gamma": 0.995,
+      "gradient_steps": 4,
+      "hidden": 256,
+      "learning_starts": 5120,
+      "lr": 3.7034611947922746e-05,
+      "n_envs": 128,
+      "seed": 10058,
+      "target_entropy_ratio": 0.7713394752098243,
+      "tau": 0.027856499454340163,
+      "total_steps": 250000,
+      "train_freq": 2
+    },
+    "config_id": "sac_discrete_t58",
+    "promotion_runs": 2,
+    "promotion_score_fno": 0.2201003125,
+    "trial_number": 58
+  }
+}

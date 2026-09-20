@@ -2,7 +2,56 @@
 
 This branch studies **ThF⁺ state purification** using a Fourier neural operator (FNO) transition surrogate and PPO, categorical SAC and Double DQN. It adapts accuracy, timing and finished-episode metrics from [arXiv:2608.03702](https://arxiv.org/pdf/2608.03702), not that paper's molecule or hardware.
 
-Native qlsgym branch **FNO_RL_agents**, based on main commit 2a7ee186f09c54b78d5987bcd0a6bb2399749e28. Experiment code and historical FNO results were selectively transferred from [the earlier RL branch](https://github.com/HHTseng/rl_qls_paper_replication/tree/FNO_RL_agents), commit d306d34; unrelated experiments were not merged. The underlying library remains intact.
+Optimization branch **FNO_RL_optuna** extends native qlsgym branch **FNO_RL_agents**, based on main commit 2a7ee186f09c54b78d5987bcd0a6bb2399749e28. Experiment code and historical FNO results were selectively transferred from [the earlier RL branch](https://github.com/HHTseng/rl_qls_paper_replication/tree/FNO_RL_agents), commit d306d34; unrelated experiments were not merged. The underlying library remains intact.
+
+## Optuna optimization — completed 19 September 2026
+
+With the downloaded `mix` FNO fixed, two Tara H100 GPUs completed 240 broad
+Optuna trials, 18 one-million-transition promotion runs, and 15 final runs
+(three agents × five training seeds). Broad search and promotion used only FNO
+validation; exact dynamics were reserved as an audit. Each final seed used
+5,000 FNO and 5,000 exact holdout episodes.
+
+| Agent | Exact failure baseline | Optimized | Difference | Exact actions baseline | Optimized | Difference |
+|---|---:|---:|---:|---:|---:|---:|
+| PPO | 73.89% | **41.78%** | **32.11 pp lower** | 68.15 | **51.37** | **16.77 lower** |
+| SAC | **69.41%** | 80.68% | 11.27 pp higher | **66.07** | 71.88 | 5.80 higher |
+| DDQN | 98.56% | **94.61%** | **3.95 pp lower** | 78.88 | **76.00** | **2.88 lower** |
+
+- **PPO is highly tunable:** exact success rises from 26.11% to 58.22%, with
+  5.72-percentage-point standard deviation across training seeds. The chosen
+  shallow 512-unit network uses `lr=1.35e-3`, `clip=0.1`, eight epochs, 16
+  minibatches, undiscounted one-step QMDP values, and low entropy regularization.
+- **Optimization does not close the control gap.** Physics elimination still has
+  29.36% exact failure, 12.42 points below optimized PPO. Its 51.49 average
+  actions are close to PPO's 51.37 because PPO succeeds less often but uses only
+  30.91 actions on its successful episodes.
+- **SAC did not improve under this selection protocol.** The promoted setting
+  reduced the learning rate to `3.70e-5`, disabled temperature tuning, and
+  performed worse than the locked SAC configuration at one million transitions.
+  Short-budget FNO ranking is therefore not a reliable guarantee of long-budget
+  improvement for SAC.
+- **DDQN improves modestly but remains ineffective:** exact success is 5.39%
+  and varies substantially with training seed.
+- PED-ANOVA attributes 59.6% of PPO's broad-trial variation to learning rate,
+  followed by entropy coefficient (12.3%). SAC is controlled mainly by initial
+  temperature (26.9%), target-update rate (26.2%), and learning rate (20.8%);
+  DDQN is controlled mainly by network depth (35.9%) and target-update rate
+  (22.4%). These are search-local associations, not causal effects.
+- Optimized PPO's exact-minus-FNO failure gap is 2.88 points, but the fixed FNO
+  still gives the physics policy a 33.78-point gap. Hyperparameter search can
+  find a controller that tolerates the surrogate; it does not validate or fix
+  the surrogate's closed-loop dynamics.
+
+See the [optimization report](results/thf_rl_optuna_mix/summary.md),
+[`summary.json`](results/thf_rl_optuna_mix/summary.json), and
+[`selected_configs.json`](results/thf_rl_optuna_mix/selected_configs.json).
+
+![Optimized agents versus locked baseline](results/thf_rl_optuna_mix/optimized_vs_baseline.png)
+
+![Optuna history](results/thf_rl_optuna_mix/optuna_history.png)
+
+![PED-ANOVA parameter importance](results/thf_rl_optuna_mix/parameter_importance.png)
 
 ## Current conclusions — downloaded `mix` rerun completed 18 September 2026
 
