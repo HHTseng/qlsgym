@@ -45,7 +45,9 @@ validation; exact dynamics were reserved as an audit. Each final seed used
 
 See the [optimization report](results/thf_rl_optuna_mix/summary.md),
 [`summary.json`](results/thf_rl_optuna_mix/summary.json), and
-[`selected_configs.json`](results/thf_rl_optuna_mix/selected_configs.json).
+[`selected_configs.json`](results/thf_rl_optuna_mix/selected_configs.json). The
+complete 240-trial export is in
+[`broad_trials.json`](results/thf_rl_optuna_mix/broad_trials.json).
 
 ![Optimized agents versus locked baseline](results/thf_rl_optuna_mix/optimized_vs_baseline.png)
 

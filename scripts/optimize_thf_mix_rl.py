@@ -521,7 +521,7 @@ def baseline_rows(path: Path):
     return {row["agent"]: row for row in data["rows"] if row["agent"] in AGENTS}
 
 
-def make_figures(output: Path, studies, rows, baseline):
+def make_figures(output: Path, studies, rows, baseline, importance_by_agent):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -574,11 +574,8 @@ def make_figures(output: Path, studies, rows, baseline):
     plt.close(fig)
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 5), constrained_layout=True)
-    evaluator = optuna.importance.PedAnovaImportanceEvaluator()
     for axis, agent_name in zip(axes, AGENTS):
-        importance = optuna.importance.get_param_importances(
-            studies[agent_name], evaluator=evaluator
-        )
+        importance = importance_by_agent[agent_name]
         items = list(importance.items())[:10][::-1]
         if items:
             axis.barh([item[0] for item in items], [item[1] for item in items], color="#72b7b2")
@@ -600,6 +597,11 @@ def summarize(args):
         raise RuntimeError(f"incomplete final records for: {missing}")
     baseline = baseline_rows(Path(args.baseline))
     studies = {agent: load_study(output, agent, create=False) for agent in AGENTS}
+    evaluator = optuna.importance.PedAnovaImportanceEvaluator()
+    importance_by_agent = {
+        agent: optuna.importance.get_param_importances(studies[agent], evaluator=evaluator)
+        for agent in AGENTS
+    }
     choices = json.loads((output / "selected_configs.json").read_text())
     rows = {}
     for agent_name in AGENTS:
@@ -652,9 +654,26 @@ def summarize(args):
             "final_eval_seed": FINAL_EVAL_SEED,
         },
         "broad_studies": broad,
+        "parameter_importance_ped_anova": importance_by_agent,
         "rows": rows,
     }
     write_json(output / "summary.json", report)
+    trial_records = []
+    for agent_name, study in studies.items():
+        for trial in study.trials:
+            trial_records.append({
+                "agent": agent_name,
+                "number": trial.number,
+                "state": trial.state.name.lower(),
+                "value": trial.value,
+                "duration_s": (
+                    None if trial.duration is None else trial.duration.total_seconds()
+                ),
+                "params": trial.params,
+                "intermediate_values": trial.intermediate_values,
+                "user_attrs": trial.user_attrs,
+            })
+    write_json(output / "broad_trials.json", trial_records)
 
     lines = [
         "# ThF+ downloaded-mix FNO RL optimization",
@@ -724,7 +743,7 @@ def summarize(args):
         "full 80-action horizon, so average actions jointly reflects success and speed.",
     ]
     (output / "summary.md").write_text("\n".join(lines) + "\n")
-    make_figures(output, studies, rows, baseline)
+    make_figures(output, studies, rows, baseline, importance_by_agent)
     print(f"wrote {output / 'summary.md'}")
 
 
