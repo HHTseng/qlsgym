@@ -145,6 +145,10 @@ def main():
             if zoom and (x > 54 or y > 45):
                 continue
             axis.scatter(x, y, s=70, color=colors[row["class"]], zorder=3)
+            if not zoom and row["name"] not in {
+                "Coverage-balanced sweep", "FNO_RL_optuna PPO", "Physics elimination",
+            }:
+                continue
             offset = offsets.get(row["name"], (5, 4))
             axis.annotate(row["name"], (x, y), xytext=offset,
                           textcoords="offset points", fontsize=7.6)
