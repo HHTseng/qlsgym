@@ -2,6 +2,35 @@
 
 I interpret “RNO” as the current FNO/neural-operator dynamics model.
 
+## Execution revision — 21 September 2026
+
+The completed `FNO_RL_optuna` work changes the execution order without changing
+the model diagnosis. Focused SAC tuning reduced exact failure from 69.41% to
+57.07%, while optimized PPO reached 41.78%. These are stronger controls than
+the original plan had available.
+
+The revised, single-GPU sequence is:
+
+1. Reuse the selected PPO and focused-SAC settings for a 100k-transition exact
+   diagnosis, crossing agent with belief-only versus remaining-budget input.
+2. Promote the best exact profile to five fresh one-million-transition seeds.
+   This is the causal RL control for every later surrogate comparison.
+3. Audit the downloaded manifest before retraining. The audit is manifest- and
+   hash-aware, covers all 24 pairs, and reports structural/branch metrics by
+   frequency stratum and population ensemble.
+4. Pilot a transfer-column residual operator on blocks 0± and 1±. It enforces
+   input linearity and τ=0 identity by construction and uses static identity for
+   clearly off-resonant controls. A full 24-pair retrain is allowed only if the
+   four-pair pilot materially improves the declared gates.
+5. Train RL with the improved manifest using the retained Optuna settings, then
+   compare exact-trained, downloaded-FNO-trained, improved-FNO-trained, and
+   hybrid fine-tuned policies on exact dynamics.
+
+All GPU commands set `CUDA_VISIBLE_DEVICES` to one device. Exact holdouts remain
+outside surrogate selection. If the structural pilot fails, compute moves to
+hybrid exact fine-tuning instead of scaling a model that still violates the
+transition-map structure.
+
 ## Decision on the downloaded `mix` checkpoints
 
 The model is useful for prototyping, error discovery, and generating candidate policies. It is not reliable enough to serve as the sole dynamics engine for scientific claims about RL performance.

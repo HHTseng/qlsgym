@@ -23,6 +23,7 @@ from qlsgym import load_molecule
 from qlsgym.surrogate.dataset import random_mixed_populations, transfer_columns
 from qlsgym.surrogate.embedding import TorchEmbedding
 from qlsgym.surrogate.metrics import infidelity_curve
+from qlsgym.surrogate.manifest import load_manifest
 from qlsgym.surrogate.train import evaluate_stratified, load_model
 
 
@@ -216,7 +217,11 @@ def draw_branch_errors(trajectory, path, title):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--work", required=True)
+    parser.add_argument("--work")
+    parser.add_argument(
+        "--manifest",
+        help="manifest JSON to load with provenance checks; overrides --work/--tag run lookup",
+    )
     parser.add_argument("--tag", default="rlprod120v2")
     parser.add_argument("--block", type=int, default=0)
     parser.add_argument("--sigma", choices=("+", "-"), default="+")
@@ -232,12 +237,35 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     molecule = load_molecule("thf")
     sigma_tag = "sp" if args.sigma == "+" else "sm"
-    directory = Path(args.work) / "runs" / f"{args.tag}_{sigma_tag}_block{args.block}"
-    checkpoint = directory / "best_onres.pt"
-    model = load_model(str(checkpoint), args.device, molecule=molecule)
+    manifest_metadata = None
+    if args.manifest:
+        engine = load_manifest(
+            molecule,
+            args.tag,
+            device=args.device,
+            path=str(Path(args.manifest).expanduser().resolve()),
+            blocks={(args.block, args.sigma)},
+        )
+        key = f"{args.block},{args.sigma}"
+        checkpoint = Path(engine.manifest.entries[key].path)
+        model = engine._models[(args.block, args.sigma)]
+        args.tag = engine.manifest.tag
+        manifest_metadata = {
+            "path": str(Path(args.manifest).expanduser().resolve()),
+            "source": engine.manifest.source,
+            "fingerprint": engine.manifest.fingerprint,
+            "entry_provenance": engine.manifest.entries[key].provenance,
+        }
+    else:
+        if not args.work:
+            parser.error("one of --manifest or --work is required")
+        directory = Path(args.work) / "runs" / f"{args.tag}_{sigma_tag}_block{args.block}"
+        checkpoint = directory / "best_onres.pt"
+        model = load_model(str(checkpoint), args.device, molecule=molecule)
     summary = {"tag": args.tag, "block": args.block, "sigma": args.sigma,
                "molecule_fingerprint": molecule.fingerprint(), "n_nu": molecule.trap.n_nu,
                "checkpoint": str(checkpoint), "checkpoint_sha256": hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+               "manifest": manifest_metadata,
                "n_test_freq_per_stratum": args.n_freq, "n_initial_states": args.n_init,
                "frequency_seed": 20260918, "population_seed": 20260919,
                "device": args.device, "hardware": (torch.cuda.get_device_name(args.device)

@@ -38,6 +38,7 @@ class PPOConfig:
     hidden: int = 256
     n_hidden_layers: int = 2
     obs: str = "sqrt"               # OBS_TRANSFORMS
+    include_budget: bool = False     # append b_t = (H - t) / H
     value_target: str = "gae"       # VALUE_TARGETS
     # rewards are multiplied by this before learning; None -> 1 / max_pulses
     reward_scale: float | None = None
@@ -75,12 +76,21 @@ def _torch():
     return torch
 
 
-def transform_obs(belief, kind: str):
-    """(B, n) belief tensor -> network input (same shape, float32)."""
+def transform_obs(belief, kind: str, remaining_budget=None):
+    """Transform beliefs and optionally append the normalized time-to-go."""
     x = belief.to(_torch().float32)
     if kind == "sqrt":
-        return x.clamp_min(0.0).sqrt()
-    return x
+        x = x.clamp_min(0.0).sqrt()
+    if remaining_budget is None:
+        return x
+    torch = _torch()
+    budget = torch.as_tensor(remaining_budget, dtype=torch.float32, device=x.device)
+    target_shape = x.shape[:-1]
+    if budget.ndim == 0:
+        budget = budget.expand(target_shape)
+    else:
+        budget = torch.broadcast_to(budget, target_shape)
+    return torch.cat((x, budget.unsqueeze(-1)), dim=-1)
 
 
 def _build_actor_critic():
@@ -121,16 +131,33 @@ class ActorPolicy:
 
     stateful = False
 
-    def __init__(self, net, obs: str = "sqrt", device: str = "cpu", greedy: bool = True):
+    def __init__(
+        self,
+        net,
+        obs: str = "sqrt",
+        device: str = "cpu",
+        greedy: bool = True,
+        include_budget: bool = False,
+        max_pulses: int = 80,
+    ):
         torch = _torch()
         self.net = net.to(device).eval()
         self.obs, self.device, self.greedy = obs, torch.device(device), bool(greedy)
+        self.include_budget = bool(include_budget)
+        self.max_pulses = int(max_pulses)
         self.n_actions = int(net.n_actions)
 
-    def logits(self, beliefs) -> np.ndarray:
+    def logits(self, beliefs, t: int = 0) -> np.ndarray:
         torch = _torch()
         with torch.no_grad():
-            x = transform_obs(torch.as_tensor(np.asarray(beliefs, dtype=np.float64), device=self.device), self.obs)
+            budget = None
+            if self.include_budget:
+                budget = max(0.0, (self.max_pulses - int(t)) / self.max_pulses)
+            x = transform_obs(
+                torch.as_tensor(np.asarray(beliefs, dtype=np.float64), device=self.device),
+                self.obs,
+                budget,
+            )
             lg, _ = self.net(x)
         return lg.detach().cpu().numpy()
 
@@ -139,7 +166,7 @@ class ActorPolicy:
         squeeze = beliefs.ndim == 1
         if squeeze:
             beliefs = beliefs[None]
-        lg = self.logits(beliefs)
+        lg = self.logits(beliefs, t)
         if self.greedy:
             a = np.argmax(lg, axis=1)
         else:
@@ -164,6 +191,7 @@ def save_policy(net, cfg: PPOConfig, path: str, meta: dict | None = None) -> str
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     torch.save({"state_dict": {k: v.detach().cpu() for k, v in net.state_dict().items()},
                 "n_in": net.n_in, "n_actions": net.n_actions, "ppo_config": cfg.as_dict(),
+                "max_pulses": int(getattr(net, "max_pulses", 80)),
                 "meta": meta or {}}, path)
     return path
 
@@ -177,7 +205,14 @@ def load_policy(path: str, device: str = "cpu", greedy: bool = True) -> ActorPol
     cfg = PPOConfig(**ck["ppo_config"])
     net = ActorCritic(ck["n_in"], ck["n_actions"], cfg.hidden, cfg.n_hidden_layers)
     net.load_state_dict(ck["state_dict"])
-    pol = ActorPolicy(net, cfg.obs, device, greedy)
+    pol = ActorPolicy(
+        net,
+        cfg.obs,
+        device,
+        greedy,
+        include_budget=cfg.include_budget,
+        max_pulses=int(ck.get("max_pulses", 80)),
+    )
     pol.meta = ck.get("meta", {})
     pol.config = cfg
     return pol
@@ -209,7 +244,14 @@ class TrainResult:
 def _evaluate(net, cfg: PPOConfig, env_eval: PurificationEnv, device) -> RolloutResult:
     # a private view: the rollout resizes and reseeds the env it is given, and
     # env_eval may be the training env itself
-    pol = ActorPolicy(net, cfg.obs, device, greedy=cfg.eval_greedy)
+    pol = ActorPolicy(
+        net,
+        cfg.obs,
+        device,
+        greedy=cfg.eval_greedy,
+        include_budget=cfg.include_budget,
+        max_pulses=env_eval.cfg.max_pulses,
+    )
     res = rollout(env_eval.clone(cfg.eval_rollouts), pol, n_rollouts=cfg.eval_rollouts, seed=SNAPSHOT_SEED)
     net.train()
     return res
@@ -262,13 +304,15 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
         raise ValueError("env_eval must share the molecule and the action library with env")
     torch.manual_seed(cfg.seed)
     gen = torch.Generator(device=device); gen.manual_seed(cfg.seed + 1)
-    net = ActorCritic(env.n_states, env.n_actions, cfg.hidden, cfg.n_hidden_layers).to(device)
+    n_in = env.n_states + int(cfg.include_budget)
+    net = ActorCritic(n_in, env.n_actions, cfg.hidden, cfg.n_hidden_layers).to(device)
+    net.max_pulses = int(env.cfg.max_pulses)
     opt = torch.optim.Adam(net.parameters(), lr=cfg.lr, eps=1e-5)
     r_scale = (1.0 / env.cfg.max_pulses) if cfg.reward_scale is None else float(cfg.reward_scale)
 
     B, T = cfg.n_envs, cfg.n_steps
     state = env.reset(seed=cfg.seed, batch=B)
-    obs_buf = torch.zeros((T, B, env.n_states), dtype=torch.float32, device=device)
+    obs_buf = torch.zeros((T, B, n_in), dtype=torch.float32, device=device)
     act_buf = torch.zeros((T, B), dtype=torch.long, device=device)
     logp_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
     val_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
@@ -285,7 +329,14 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
         net.eval()
         with torch.no_grad():
             for t in range(T):
-                x = transform_obs(state, cfg.obs)
+                remaining_budget = (
+                    env.cfg.max_pulses - env.steps
+                ).to(torch.float32) / env.cfg.max_pulses
+                x = transform_obs(
+                    state,
+                    cfg.obs,
+                    remaining_budget if cfg.include_budget else None,
+                )
                 logits, value = net(x)
                 probs = torch.softmax(logits, -1)
                 a = torch.multinomial(probs, 1, generator=gen).squeeze(-1)
@@ -296,8 +347,12 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
                 rew_buf[t] = tr.reward.to(torch.float32) * r_scale
                 term_buf[t] = ended.to(torch.float32)
                 if cfg.value_target in ("qmdp", "qmdp_gae"):
-                    _, v0 = net(transform_obs(tr.s0, cfg.obs))
-                    _, v1 = net(transform_obs(tr.s1, cfg.obs))
+                    next_budget = (
+                        env.cfg.max_pulses - env.steps
+                    ).clamp_min(0).to(torch.float32) / env.cfg.max_pulses
+                    branch_budget = next_budget if cfg.include_budget else None
+                    _, v0 = net(transform_obs(tr.s0, cfg.obs, branch_budget))
+                    _, v1 = net(transform_obs(tr.s1, cfg.obs, branch_budget))
                     trunc_next = (env.steps >= env.cfg.max_pulses).to(torch.float32)
                     c0 = (1.0 - tr.done0.to(torch.float32)) * (1.0 - trunc_next)
                     c1 = (1.0 - tr.done1.to(torch.float32)) * (1.0 - trunc_next)
@@ -309,7 +364,12 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
                     ep_len_sum += float(env.steps[ended].sum()); ep_n += n_end; ep_succ += int(tr.done.sum())
                     env.reset_rows(ended)
                 state = env.state
-            _, last_value = net(transform_obs(state, cfg.obs))
+            last_budget = (
+                env.cfg.max_pulses - env.steps
+            ).clamp_min(0).to(torch.float32) / env.cfg.max_pulses
+            _, last_value = net(
+                transform_obs(state, cfg.obs, last_budget if cfg.include_budget else None)
+            )
         env_steps += B * T
         net.train()
 
@@ -376,11 +436,18 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
                 on_snapshot(snap, net)
     final_sd = {k: v.detach().cpu().clone() for k, v in net.state_dict().items()}
     return TrainResult(cfg.as_dict(), cfg.n_updates, env_steps, time.time() - t0, history, snapshots,
-                       best, best_sd, final_sd, env.n_states, env.n_actions)
+                       best, best_sd, final_sd, n_in, env.n_actions)
 
 
 def policy_from_state_dict(sd: dict, n_in: int, n_actions: int, cfg: PPOConfig, device="cpu",
-                           greedy: bool = True) -> ActorPolicy:
+                           greedy: bool = True, max_pulses: int = 80) -> ActorPolicy:
     net = ActorCritic(n_in, n_actions, cfg.hidden, cfg.n_hidden_layers)
     net.load_state_dict(sd)
-    return ActorPolicy(net, cfg.obs, device, greedy)
+    return ActorPolicy(
+        net,
+        cfg.obs,
+        device,
+        greedy,
+        include_budget=cfg.include_budget,
+        max_pulses=max_pulses,
+    )

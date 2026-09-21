@@ -46,6 +46,34 @@ def test_config_validation():
     assert PPOConfig(n_envs=4, n_steps=4, total_steps=30).n_updates == 2
 
 
+def test_train_with_remaining_budget_feature(setup):
+    env = _env(setup)
+    cfg = PPOConfig(
+        n_envs=4,
+        n_steps=4,
+        total_steps=32,
+        minibatches=1,
+        epochs=1,
+        eval_every=1,
+        eval_rollouts=4,
+        hidden=16,
+        include_budget=True,
+        seed=9,
+    )
+    result = train_ppo(env, cfg)
+    assert result.n_in == env.n_states + 1
+    policy = policy_from_state_dict(
+        result.final_state_dict,
+        result.n_in,
+        result.n_actions,
+        cfg,
+        max_pulses=env.cfg.max_pulses,
+    )
+    beliefs = np.repeat(env.p_init[None], 3, axis=0)
+    assert policy.logits(beliefs, t=0).shape == (3, env.n_actions)
+    assert policy.logits(beliefs, t=env.cfg.max_pulses).shape == (3, env.n_actions)
+
+
 def test_actor_policy_protocol_and_reproducibility(setup):
     mol, lib, tables = setup
     env = _env(setup)

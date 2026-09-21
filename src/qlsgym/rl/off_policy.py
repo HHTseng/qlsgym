@@ -22,14 +22,30 @@ import torch
 import torch.nn as nn
 
 
-def transform_belief(belief: torch.Tensor, mode: str = "sqrt") -> torch.Tensor:
-    """Map simplex beliefs to raw or variance-stabilised network inputs."""
+def transform_belief(
+    belief: torch.Tensor,
+    mode: str = "sqrt",
+    remaining_budget: torch.Tensor | float | None = None,
+) -> torch.Tensor:
+    """Map beliefs to network inputs and optionally append remaining budget."""
     probability = belief.to(torch.float32).clamp_min(0.0)
     if mode == "p":
-        return probability
-    if mode == "sqrt":
-        return probability.sqrt()
-    raise ValueError("belief transform must be 'p' or 'sqrt'")
+        transformed = probability
+    elif mode == "sqrt":
+        transformed = probability.sqrt()
+    else:
+        raise ValueError("belief transform must be 'p' or 'sqrt'")
+    if remaining_budget is None:
+        return transformed
+    budget = torch.as_tensor(
+        remaining_budget, dtype=torch.float32, device=transformed.device
+    )
+    target_shape = transformed.shape[:-1]
+    if budget.ndim == 0:
+        budget = budget.expand(target_shape)
+    else:
+        budget = torch.broadcast_to(budget, target_shape)
+    return torch.cat((transformed, budget.unsqueeze(-1)), dim=-1)
 
 
 def build_mlp(n_in: int, n_out: int, hidden: int, depth: int,
@@ -99,10 +115,20 @@ class BranchReplayBuffer:
         self.probability = np.empty((capacity, 2), dtype=np.float32)
         self.reward = np.empty((capacity, 2), dtype=np.float32)
         self.continue_mask = np.empty((capacity, 2), dtype=np.float32)
+        self.remaining_budget = np.empty(capacity, dtype=np.float32)
+        self.next_remaining_budget = np.empty(capacity, dtype=np.float32)
         self.size = 0
         self.position = 0
 
-    def add(self, state, action, transition, at_horizon) -> None:
+    def add(
+        self,
+        state,
+        action,
+        transition,
+        at_horizon,
+        remaining_budget=None,
+        next_remaining_budget=None,
+    ) -> None:
         state_np = state.detach().cpu().numpy().astype(np.float32, copy=False)
         action_np = action.detach().cpu().numpy().astype(np.int64, copy=False)
         next_np = torch.stack((transition.s0, transition.s1), dim=1).detach().cpu().numpy()
@@ -111,8 +137,16 @@ class BranchReplayBuffer:
         done = torch.stack((transition.done0, transition.done1), dim=1)
         at_horizon = torch.as_tensor(at_horizon, device=done.device, dtype=torch.bool)
         cont_np = ((~done) & (~at_horizon[:, None])).detach().cpu().numpy()
-
         n = len(state_np)
+        budget_np = np.broadcast_to(
+            1.0 if remaining_budget is None else np.asarray(remaining_budget, dtype=np.float32),
+            (n,),
+        )
+        next_budget_np = np.broadcast_to(
+            1.0 if next_remaining_budget is None else np.asarray(next_remaining_budget, dtype=np.float32),
+            (n,),
+        )
+
         indices = (self.position + np.arange(n)) % self.capacity
         self.state[indices] = state_np
         self.action[indices] = action_np
@@ -120,6 +154,8 @@ class BranchReplayBuffer:
         self.probability[indices] = prob_np
         self.reward[indices] = reward_np
         self.continue_mask[indices] = cont_np
+        self.remaining_budget[indices] = budget_np
+        self.next_remaining_budget[indices] = next_budget_np
         self.position = int((self.position + n) % self.capacity)
         self.size = min(self.size + n, self.capacity)
 
@@ -133,6 +169,10 @@ class BranchReplayBuffer:
             "probability": torch.as_tensor(self.probability[indices], device=device),
             "reward": torch.as_tensor(self.reward[indices], device=device),
             "continue_mask": torch.as_tensor(self.continue_mask[indices], device=device),
+            "remaining_budget": torch.as_tensor(self.remaining_budget[indices], device=device),
+            "next_remaining_budget": torch.as_tensor(
+                self.next_remaining_budget[indices], device=device
+            ),
         }
 
 
@@ -187,6 +227,7 @@ class SACConfig:
     autotune_alpha: bool = True
     return_scale: float | None = None
     obs: str = "sqrt"
+    include_budget: bool = False
     hidden: int = 256
     depth: int = 2
     seed: int = 0
@@ -203,9 +244,18 @@ class _OffPolicyAgent:
         self.generator = torch.Generator(device=self.device).manual_seed(seed + 1)
         self.stats = AgentStats()
 
-    def _record_transition(self, state, action, transition) -> None:
+    def _record_transition(
+        self, state, action, transition, remaining_budget=None, next_remaining_budget=None
+    ) -> None:
         at_horizon = self.env.steps >= self.env.cfg.max_pulses
-        self.buffer.add(state, action, transition, at_horizon)
+        self.buffer.add(
+            state,
+            action,
+            transition,
+            at_horizon,
+            remaining_budget,
+            next_remaining_budget,
+        )
         ended = transition.done | transition.truncated
         n_ended = int(ended.sum())
         if n_ended:
@@ -349,7 +399,11 @@ class DiscreteSACAgent(_OffPolicyAgent):
         torch.manual_seed(cfg.seed)
         super().__init__(env, cfg.n_envs, cfg.buffer_size, cfg.seed)
         self.network = DiscreteSACNetwork(
-            self.n_states, self.n_actions, cfg.hidden, cfg.depth, cfg.alpha
+            self.n_states + int(cfg.include_budget),
+            self.n_actions,
+            cfg.hidden,
+            cfg.depth,
+            cfg.alpha,
         ).to(self.device)
         self.target_q1 = copy.deepcopy(self.network.q1).eval()
         self.target_q2 = copy.deepcopy(self.network.q2).eval()
@@ -359,22 +413,39 @@ class DiscreteSACAgent(_OffPolicyAgent):
         self.alpha_optimizer = torch.optim.Adam([self.network.log_alpha], lr=cfg.lr)
         self.target_entropy = cfg.target_entropy_ratio * math.log(self.n_actions)
 
-    def _act(self, state: torch.Tensor) -> torch.Tensor:
+    def _act(self, state: torch.Tensor, remaining_budget=None) -> torch.Tensor:
         with torch.no_grad():
             probability = torch.softmax(
-                self.network.actor(transform_belief(state, self.config.obs)), dim=-1
+                self.network.actor(
+                    transform_belief(
+                        state,
+                        self.config.obs,
+                        remaining_budget if self.config.include_budget else None,
+                    )
+                ),
+                dim=-1,
             )
             return torch.multinomial(probability, 1, generator=self.generator).squeeze(-1)
 
     def _update(self) -> dict:
         cfg = self.config
         batch = self.buffer.sample(cfg.batch_size, self.rng, self.device)
-        state = transform_belief(batch["state"], cfg.obs)
+        state = transform_belief(
+            batch["state"],
+            cfg.obs,
+            batch["remaining_budget"] if cfg.include_budget else None,
+        )
         action = batch["action"]
         with torch.no_grad():
             shape = batch["next_state"].shape
             next_state = transform_belief(
-                batch["next_state"].reshape(-1, self.n_states), cfg.obs
+                batch["next_state"].reshape(-1, self.n_states),
+                cfg.obs,
+                (
+                    batch["next_remaining_budget"][:, None].expand(-1, 2).reshape(-1)
+                    if cfg.include_budget
+                    else None
+                ),
             )
             next_logits = self.network.actor(next_state).reshape(
                 shape[0], 2, self.n_actions
@@ -446,9 +517,21 @@ class DiscreteSACAgent(_OffPolicyAgent):
         start = time.perf_counter()
         for iteration in range(iterations):
             before = state.clone()
-            action = self._act(before)
+            remaining_budget = (
+                self.env.cfg.max_pulses - self.env.steps
+            ).to(torch.float32) / self.env.cfg.max_pulses
+            action = self._act(before, remaining_budget)
             transition = self.env.step(action)
-            self._record_transition(before, action, transition)
+            next_remaining_budget = (
+                self.env.cfg.max_pulses - self.env.steps
+            ).clamp_min(0).to(torch.float32) / self.env.cfg.max_pulses
+            self._record_transition(
+                before,
+                action,
+                transition,
+                remaining_budget.detach().cpu().numpy(),
+                next_remaining_budget.detach().cpu().numpy(),
+            )
             state = self.env.state
             self.stats.env_steps += cfg.n_envs
             if (self.stats.env_steps >= cfg.learning_starts
@@ -470,18 +553,25 @@ class TorchPolicy:
     stateful = False
 
     def __init__(self, network: nn.Module, device: torch.device | str,
-                 stochastic: bool, seed: int = 0, obs: str = "sqrt"):
+                 stochastic: bool, seed: int = 0, obs: str = "sqrt",
+                 include_budget: bool = False, max_pulses: int = 80):
         self.network = network.eval()
         self.device = torch.device(device)
         self.stochastic = bool(stochastic)
         self.seed = int(seed)
         self.obs = obs
+        self.include_budget = bool(include_budget)
+        self.max_pulses = int(max_pulses)
 
     def act_batch(self, beliefs, t, rng):
-        del t
         belief = torch.as_tensor(np.asarray(beliefs), device=self.device)
+        budget = None
+        if self.include_budget:
+            budget = max(0.0, (self.max_pulses - int(t)) / self.max_pulses)
         with torch.no_grad():
-            logits = self.network(transform_belief(belief, self.obs)).detach().cpu().numpy()
+            logits = self.network(
+                transform_belief(belief, self.obs, budget)
+            ).detach().cpu().numpy()
         if not self.stochastic:
             return logits.argmax(axis=-1).astype(np.int64)
         logits -= logits.max(axis=-1, keepdims=True)
@@ -502,5 +592,8 @@ def ddqn_policy(agent: DDQNAgent) -> TorchPolicy:
 def sac_policy(agent: DiscreteSACAgent, stochastic: bool = True) -> TorchPolicy:
     return TorchPolicy(
         agent.network.actor, agent.device, stochastic=stochastic,
-        seed=agent.config.seed, obs=agent.config.obs,
+        seed=agent.config.seed,
+        obs=agent.config.obs,
+        include_budget=agent.config.include_budget,
+        max_pulses=agent.env.cfg.max_pulses,
     )

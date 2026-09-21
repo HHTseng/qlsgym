@@ -1,8 +1,9 @@
 """Numerical contracts for the qlsgym off-policy S18 targets."""
 
+import numpy as np
 import torch
 
-from qlsgym.rl.off_policy import ddqn_s18_target, sac_s18_target
+from qlsgym.rl.off_policy import BranchReplayBuffer, ddqn_s18_target, sac_s18_target, transform_belief
 
 
 def test_ddqn_uses_online_selection_and_target_evaluation():
@@ -53,3 +54,38 @@ def test_sac_reward_normalization_requires_temperature_normalization():
         alpha / 80, 0.99,
     )
     assert torch.allclose(scaled, raw / 80)
+
+
+def test_remaining_budget_is_appended_and_replayed():
+    belief = torch.tensor([[0.25, 0.75], [0.5, 0.5]])
+    got = transform_belief(belief, "sqrt", torch.tensor([1.0, 0.25]))
+    assert got.shape == (2, 3)
+    assert torch.allclose(got[:, -1], torch.tensor([1.0, 0.25]))
+
+    transition = type(
+        "Transition",
+        (),
+        {
+            "s0": belief,
+            "s1": belief.flip(-1),
+            "pi0": torch.tensor([0.4, 0.6]),
+            "pi1": torch.tensor([0.6, 0.4]),
+            "r0": torch.tensor([-1.0, -1.0]),
+            "r1": torch.tensor([-1.0, -1.0]),
+            "done0": torch.tensor([False, False]),
+            "done1": torch.tensor([False, True]),
+        },
+    )()
+    replay = BranchReplayBuffer(8, 2)
+    replay.add(
+        belief,
+        torch.tensor([0, 1]),
+        transition,
+        torch.tensor([False, False]),
+        remaining_budget=np.array([1.0, 0.5], dtype=np.float32),
+        next_remaining_budget=np.array([0.9, 0.4], dtype=np.float32),
+    )
+    sample = replay.sample(4, np.random.default_rng(0), torch.device("cpu"))
+    assert set(sample["remaining_budget"].tolist()) <= {0.5, 1.0}
+    next_budget = sample["next_remaining_budget"].numpy()
+    assert (np.isclose(next_budget, 0.4) | np.isclose(next_budget, 0.9)).all()
