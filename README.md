@@ -488,6 +488,54 @@ the sole dynamics engine for final RL claims.
 
 ![Hybrid SAC comparison](results/thf_mix_sac_exact_finetune/hybrid_sac_comparison.png)
 
+## Safe hybrid optimization against non-ML controls
+
+The follow-up study implements the first executable stages of
+[`docs/FNO_RL_SUPERIORITY_PLAN.md`](docs/FNO_RL_SUPERIORITY_PLAN.md). It keeps
+the downloaded `mix` FNO fixed for pretraining, then optimizes the metric that
+is used for final selection: cached-exact failure first and failure-penalized
+actions second. Each learned row is the mean of five independently trained
+policies and 5,000 exact plus 5,000 FNO episodes per policy.
+
+| Controller | Exact failure ↓ (95% seed CI) | Exact actions ↓ | FNO failure | FNO actions |
+|---|---:|---:|---:|---:|
+| Physics elimination | 29.36% | 51.49 | 63.14% | 64.52 |
+| Hybrid PPO | 33.16% [27.85, 38.47] | 48.09 | 35.58% | 50.41 |
+| Hybrid PPO + frozen physics fallback | 22.70% [19.98, 25.41] | 47.15 | 37.59% | 50.69 |
+| **Failure-sensitive PPO** | **24.92% [23.69, 26.15]** | **45.20** | 28.98% | 48.40 |
+| **Failure-sensitive PPO + physics fallback** | **20.72% [20.17, 21.27]** | **45.25** | 36.01% | 49.54 |
+
+Failure-sensitive PPO is a learned actor with no model-based inference. It
+therefore establishes the requested learned-policy improvement over physics
+elimination: **4.44 percentage points fewer failures and 6.29 fewer actions**.
+Its upper seed-level failure interval is also below the 29.36% physics point
+estimate. Adding the conservative physics fallback gives the strongest overall
+controller, improving failure by **8.64 points** and actions by **6.24**.
+
+The exact validation screen selected a timeout cost of
+$\lambda_f=20$ and rejected the remaining-budget observation. On 25,000 paired
+exact episodes relative to the source actor, failure-sensitive PPO rescued
+3,521 and lost 1,461 episodes (net 8.24%); its fallback form rescued 4,367 and
+lost 1,257 (net 12.44%). A frozen fallback alone also crossed the physics
+baseline, showing that much of the original gap was concentrated in the
+recoverable failure tail rather than the policy's successful trajectories.
+
+The current FNO is still not suitable for final policy ranking. The pure
+failure-sensitive actor is 4.06 failure points and 3.20 actions worse under FNO
+than under exact dynamics; the fallback controller's gaps are 15.29 points and
+4.30 actions. Final claims therefore use cached-exact evaluation.
+
+The coverage-balanced sweep visits 80 evenly spaced controls across all 312
+actions. It reaches 87.60% exact failure and 79.11 actions. This improves the
+99.92% failure of fixed-order sweeping, but remains far behind both physics
+elimination and learned control.
+
+- [Safe-hybrid report](results/thf_safe_hybrid/summary.md)
+- [Machine-readable safe-hybrid results](results/thf_safe_hybrid/summary.json)
+- [Coverage-balanced sweeping](results/thf_nonml_controls/summary.md)
+
+![Safe-hybrid exact and FNO comparison](results/thf_safe_hybrid/safe_hybrid_comparison.png)
+
 ## Metric interpretation
 
 Let $T_j$ be first successful pulse count ($\infty$ if unfinished), $L_j=\min(T_j,H)$, and $N$ rollout count. Early stopping without success still scores failure and $H$.

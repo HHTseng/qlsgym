@@ -1,0 +1,229 @@
+{
+  "evaluation_episodes_per_seed": 5000,
+  "fallback_selection": {
+    "min_purity_gain": 0.001,
+    "name": "remaining_30_stagnation_00",
+    "rule": "maximize exact validation success, then minimize exact actions",
+    "stagnation_steps": 0,
+    "switch_remaining": 30,
+    "validation_exact": {
+      "average_actions": 47.847,
+      "success_fraction": 0.764,
+      "unfinished_fraction": 0.236
+    }
+  },
+  "method": "FNO-pretrained PPO, cached-exact failure-sensitive fine-tuning, and physics fallback",
+  "physics_reference": {
+    "exact": {
+      "actions_ci95": [
+        50.77536,
+        52.22004
+      ],
+      "average_actions": 51.4892,
+      "cvar10_actions": 80.0,
+      "failure_ci95": [
+        0.2811391924518893,
+        0.3063777149110302
+      ],
+      "p85_actions": 80.0,
+      "uncertainty_scope": "rollout bootstrap for mean; Wilson binomial for failure",
+      "unfinished_fraction": 0.29359999999999997
+    },
+    "exact_rank": 1,
+    "fno": {
+      "actions_ci95": [
+        63.88354,
+        65.11961500000001
+      ],
+      "average_actions": 64.5204,
+      "cvar10_actions": 80.0,
+      "failure_ci95": [
+        0.6179319794988446,
+        0.6446662684299943
+      ],
+      "p85_actions": 80.0,
+      "uncertainty_scope": "rollout bootstrap for mean; Wilson binomial for failure",
+      "unfinished_fraction": 0.6314
+    },
+    "method": "exact model-based baseline",
+    "name": "Physics elimination",
+    "training_seeds": 0,
+    "transfer_action_gap": -13.031199999999998,
+    "transfer_failure_gap_pp": -33.78
+  },
+  "risk_selection": {
+    "failure_penalty": 20.0,
+    "include_budget": false,
+    "name": "penalty_020_budget_0",
+    "rule": "maximize exact validation success, then minimize exact actions",
+    "validation_exact": {
+      "average_actions": 46.576,
+      "success_fraction": 0.691,
+      "unfinished_fraction": 0.30900000000000005
+    }
+  },
+  "rows": {
+    "risk_actor": {
+      "dominates_physics_point_estimate": true,
+      "exact": {
+        "average_actions": 45.201119999999996,
+        "average_actions_sd": 0.9912100645171038,
+        "mean_pulses_successful": 33.649534526631655,
+        "mean_pulses_successful_sd": 1.2414242630650716,
+        "success_fraction": 0.7508,
+        "success_fraction_sd": 0.009911609354691117,
+        "unfinished_fraction": 0.2492,
+        "unfinished_fraction_sd": 0.009911609354691117,
+        "unfinished_fraction_seed_ci95": [
+          0.23689508447619406,
+          0.26150491552380595
+        ]
+      },
+      "failure_seed_ci_below_physics_point_estimate": true,
+      "fno": {
+        "average_actions": 48.40315999999999,
+        "average_actions_sd": 1.723024227339825,
+        "mean_pulses_successful": 35.49942310605987,
+        "mean_pulses_successful_sd": 1.4083525239358223,
+        "success_fraction": 0.71024,
+        "success_fraction_sd": 0.036608578229699096,
+        "unfinished_fraction": 0.28975999999999996,
+        "unfinished_fraction_sd": 0.036608578229699096,
+        "unfinished_fraction_seed_ci95": [
+          0.24431173358402325,
+          0.3352082664159767
+        ]
+      },
+      "label": "Failure-sensitive PPO",
+      "paired_vs_source_actor": {
+        "episodes": 25000,
+        "lost": 1461,
+        "net_rescue_fraction": 0.0824,
+        "rescued": 3521,
+        "retained_failure": 4769,
+        "retained_success": 15249
+      }
+    },
+    "risk_fallback": {
+      "dominates_physics_point_estimate": true,
+      "exact": {
+        "average_actions": 45.246719999999996,
+        "average_actions_sd": 0.9808980232419663,
+        "mean_pulses_successful": 36.16707144503438,
+        "mean_pulses_successful_sd": 1.0604060825804376,
+        "success_fraction": 0.7928000000000001,
+        "success_fraction_sd": 0.004467661580737718,
+        "unfinished_fraction": 0.2072,
+        "unfinished_fraction_sd": 0.004467661580737718,
+        "unfinished_fraction_seed_ci95": [
+          0.2016535547787795,
+          0.2127464452212205
+        ]
+      },
+      "failure_seed_ci_below_physics_point_estimate": true,
+      "fno": {
+        "average_actions": 49.54284,
+        "average_actions_sd": 1.298482786947906,
+        "mean_pulses_successful": 32.389877286580976,
+        "mean_pulses_successful_sd": 1.6044175436907195,
+        "success_fraction": 0.63988,
+        "success_fraction_sd": 0.023095713888078892,
+        "unfinished_fraction": 0.36012,
+        "unfinished_fraction_sd": 0.023095713888078892,
+        "unfinished_fraction_seed_ci95": [
+          0.3314474809180916,
+          0.38879251908190837
+        ]
+      },
+      "label": "Failure-sensitive PPO + physics fallback",
+      "paired_vs_source_actor": {
+        "episodes": 25000,
+        "lost": 1257,
+        "net_rescue_fraction": 0.1244,
+        "rescued": 4367,
+        "retained_failure": 3923,
+        "retained_success": 15453
+      }
+    },
+    "source_actor": {
+      "dominates_physics_point_estimate": false,
+      "exact": {
+        "average_actions": 48.09356,
+        "average_actions_sd": 2.920897264198111,
+        "mean_pulses_successful": 32.29378238288044,
+        "mean_pulses_successful_sd": 2.6023072815981267,
+        "success_fraction": 0.6684,
+        "success_fraction_sd": 0.042798364454731196,
+        "unfinished_fraction": 0.3316,
+        "unfinished_fraction_sd": 0.042798364454731196,
+        "unfinished_fraction_seed_ci95": [
+          0.27846733099269344,
+          0.38473266900730657
+        ]
+      },
+      "failure_seed_ci_below_physics_point_estimate": false,
+      "fno": {
+        "average_actions": 50.411719999999995,
+        "average_actions_sd": 1.6692714135214815,
+        "mean_pulses_successful": 34.05340908717575,
+        "mean_pulses_successful_sd": 2.08177358374575,
+        "success_fraction": 0.6442,
+        "success_fraction_sd": 0.029138290958805366,
+        "unfinished_fraction": 0.3558,
+        "unfinished_fraction_sd": 0.029138290958805366,
+        "unfinished_fraction_seed_ci95": [
+          0.3196258333308423,
+          0.3919741666691577
+        ]
+      },
+      "label": "Hybrid PPO"
+    },
+    "source_fallback": {
+      "dominates_physics_point_estimate": true,
+      "exact": {
+        "average_actions": 47.15272,
+        "average_actions_sd": 2.5771236819369006,
+        "mean_pulses_successful": 37.54461587958468,
+        "mean_pulses_successful_sd": 2.497115197469938,
+        "success_fraction": 0.7730400000000002,
+        "success_fraction_sd": 0.021886708295218823,
+        "unfinished_fraction": 0.22695999999999997,
+        "unfinished_fraction_sd": 0.021886708295218823,
+        "unfinished_fraction_seed_ci95": [
+          0.19978841897523072,
+          0.25413158102476924
+        ]
+      },
+      "failure_seed_ci_below_physics_point_estimate": true,
+      "fno": {
+        "average_actions": 50.689319999999995,
+        "average_actions_sd": 0.8546269899786706,
+        "mean_pulses_successful": 32.90861243472915,
+        "mean_pulses_successful_sd": 3.324704737796017,
+        "success_fraction": 0.6240800000000001,
+        "success_fraction_sd": 0.02996384488012176,
+        "unfinished_fraction": 0.37592,
+        "unfinished_fraction_sd": 0.029963844880121764,
+        "unfinished_fraction_seed_ci95": [
+          0.33872093708053386,
+          0.4131190629194661
+        ]
+      },
+      "label": "Hybrid PPO + physics fallback",
+      "paired_vs_source_actor": {
+        "episodes": 25000,
+        "lost": 789,
+        "net_rescue_fraction": 0.10464,
+        "rescued": 3405,
+        "retained_failure": 4885,
+        "retained_success": 15921
+      }
+    }
+  },
+  "status": "complete",
+  "target": {
+    "average_actions": 48.0,
+    "unfinished_fraction": 0.25
+  },
+  "training_seeds": 5
+}

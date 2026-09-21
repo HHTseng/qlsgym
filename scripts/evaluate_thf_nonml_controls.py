@@ -7,7 +7,7 @@ import argparse
 import os
 from pathlib import Path
 
-from qlsgym.policies import CoverageSweepingPolicy
+from qlsgym.policies import CoverageSweepingPolicy, DescendingPopulationPolicy
 from thf_rl_agents import build_environments, rollout_metrics, write_json
 
 
@@ -31,27 +31,62 @@ def main():
         min_manifest_coverage=1.0,
     )
     molecule, library, fno, exact, _, contract = build_environments(env_args, 128)
-    policy = CoverageSweepingPolicy(library.n_actions, molecule.task.max_pulses)
-    result = {
-        "status": "complete",
-        "policy": "coverage sweeping",
-        "description": "80 evenly spaced controls spanning the complete 312-action library",
-        "contract": contract,
-        "exact": rollout_metrics(exact, policy, args.episodes, args.seed, args.eval_batch),
-        "fno": rollout_metrics(fno, policy, args.episodes, args.seed, args.eval_batch),
-    }
     output = Path(args.output)
-    write_json(output / "coverage_sweeping.json", result)
+    policies = {
+        "coverage_sweeping": (
+            CoverageSweepingPolicy(library.n_actions, molecule.task.max_pulses),
+            "80 evenly spaced controls spanning the complete 312-action library",
+        ),
+        "descending_population": (
+            DescendingPopulationPolicy(library, exact.tables),
+            "address the most populated state with its maximum-yield exact-table action",
+        ),
+    }
+    results = {}
+    for name, (policy, description) in policies.items():
+        record = {
+            "status": "complete",
+            "policy": name.replace("_", " "),
+            "description": description,
+            "contract": contract,
+            "exact": rollout_metrics(exact, policy, args.episodes, args.seed, args.eval_batch),
+            "fno": rollout_metrics(fno, policy, args.episodes, args.seed, args.eval_batch),
+        }
+        write_json(output / f"{name}.json", record)
+        results[name] = record
+
+    compact = {
+        "status": "complete",
+        "evaluation_episodes": args.episodes,
+        "evaluation_seed": args.seed,
+        "rows": {
+            name: {
+                dynamics: {
+                    key: record[dynamics][key]
+                    for key in ("unfinished_fraction", "average_actions")
+                }
+                for dynamics in ("exact", "fno")
+            }
+            for name, record in results.items()
+        },
+    }
+    write_json(output / "summary.json", compact)
     lines = [
-        "# Coverage-balanced sweeping",
+        "# Stronger non-ML controls",
         "",
-        "This finite-budget reference visits 80 evenly spaced controls across the full 312-action library.",
+        "Coverage sweeping spans the full action library. Descending population is an adaptive exact-table heuristic.",
         "",
-        "| Dynamics | Failure | Penalized actions |",
-        "|---|---:|---:|",
-        f"| Exact | {100*result['exact']['unfinished_fraction']:.2f}% | {result['exact']['average_actions']:.2f} |",
-        f"| Downloaded FNO | {100*result['fno']['unfinished_fraction']:.2f}% | {result['fno']['average_actions']:.2f} |",
+        "| Controller | Exact failure | Exact actions | FNO failure | FNO actions |",
+        "|---|---:|---:|---:|---:|",
     ]
+    for name, record in results.items():
+        label = name.replace("_", " ").title()
+        lines.append(
+            f"| {label} | {100*record['exact']['unfinished_fraction']:.2f}% | "
+            f"{record['exact']['average_actions']:.2f} | "
+            f"{100*record['fno']['unfinished_fraction']:.2f}% | "
+            f"{record['fno']['average_actions']:.2f} |"
+        )
     output.mkdir(parents=True, exist_ok=True)
     (output / "summary.md").write_text("\n".join(lines) + "\n")
 

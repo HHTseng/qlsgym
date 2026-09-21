@@ -1,0 +1,12 @@
+{
+  "min_purity_gain": 0.001,
+  "name": "remaining_30_stagnation_00",
+  "rule": "maximize exact validation success, then minimize exact actions",
+  "stagnation_steps": 0,
+  "switch_remaining": 30,
+  "validation_exact": {
+    "average_actions": 47.847,
+    "success_fraction": 0.764,
+    "unfinished_fraction": 0.236
+  }
+}

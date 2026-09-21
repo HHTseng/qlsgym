@@ -1,0 +1,11 @@
+{
+  "failure_penalty": 20.0,
+  "include_budget": false,
+  "name": "penalty_020_budget_0",
+  "rule": "maximize exact validation success, then minimize exact actions",
+  "validation_exact": {
+    "average_actions": 46.576,
+    "success_fraction": 0.691,
+    "unfinished_fraction": 0.30900000000000005
+  }
+}
