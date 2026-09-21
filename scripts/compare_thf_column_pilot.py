@@ -89,7 +89,7 @@ def compare(current: dict, candidate: dict) -> dict:
         ratio <= 0.75 for ratio in median_ratios.values()
     )
     criteria = {
-        "structural_gates_pass_all_four_pairs": structural,
+        "identity_and_linearity_gates_pass_all_four_pairs": structural,
         "median_accuracy_error_reduction_ge_30pct": overall_ratio <= 0.70,
         "both_conditional_tv_medians_reduce_ge_25pct": conditional,
         "at_least_three_of_five_accuracy_metrics_reduce_ge_25pct": metrics_improved >= 3,

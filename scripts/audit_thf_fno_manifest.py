@@ -284,7 +284,7 @@ def summarize_command(args):
     }
     (output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     lines = [
-        "# Downloaded `mix` FNO structural audit",
+        "# FNO manifest structural audit",
         "",
         f"Pairs passing every engineering gate: **{summary['pairs_passing_all']}/24**.",
         "",
