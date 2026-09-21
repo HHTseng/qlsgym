@@ -70,7 +70,6 @@ class BatchedFallbackPolicy:
         elif beliefs.shape[0] != self._best_purity.size:
             raise ValueError("batch size changed without reset")
 
-        actor_actions = np.asarray(self.actor.act_batch(beliefs, t, rng), dtype=np.int64).copy()
         purity = beliefs.max(axis=1)
         improved = purity > self._best_purity + self.min_purity_gain
         self._best_purity = np.maximum(self._best_purity, purity)
@@ -82,6 +81,13 @@ class BatchedFallbackPolicy:
         if self.stagnation_steps:
             trigger |= self._stagnation >= self.stagnation_steps
         self._using_fallback |= trigger
+
+        actor_actions = np.zeros(beliefs.shape[0], dtype=np.int64)
+        actor_rows = np.flatnonzero(~self._using_fallback)
+        if actor_rows.size:
+            actor_actions[actor_rows] = np.asarray(
+                self.actor.act_batch(beliefs[actor_rows], t, rng), dtype=np.int64,
+            ).reshape(-1)
 
         for row in np.flatnonzero(self._using_fallback):
             pick = self._row_fallbacks[row].act(beliefs[row], int(t), rng)
