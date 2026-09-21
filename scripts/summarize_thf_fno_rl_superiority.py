@@ -130,19 +130,35 @@ def main():
     (output / "summary.json").write_text(json.dumps(result, indent=2) + "\n")
 
     colors = {"non-ML": "#4c78a8", "standalone RL": "#f58518", "hybrid": "#54a24b"}
-    fig, axis = plt.subplots(figsize=(10.5, 6.2), constrained_layout=True)
-    for row in rows:
-        x = row["exact"]["average_actions"]
-        y = 100 * row["exact"]["unfinished_fraction"]
-        axis.scatter(x, y, s=75, color=colors[row["class"]], zorder=3)
-        axis.annotate(row["name"], (x, y), xytext=(5, 4), textcoords="offset points", fontsize=8)
+    offsets = {
+        "Exact candidate arbiter": (6, 8),
+        "15-pulse PPO + descending fallback": (6, -13),
+        "Descending population": (6, 10),
+        "Failure-sensitive PPO + fallback": (7, -13),
+        "Failure-sensitive PPO": (7, 7),
+    }
+    fig, axes = plt.subplots(1, 2, figsize=(14.5, 5.8), constrained_layout=True)
+    for axis, zoom in zip(axes, (True, False)):
+        for row in rows:
+            x = row["exact"]["average_actions"]
+            y = 100 * row["exact"]["unfinished_fraction"]
+            if zoom and (x > 54 or y > 45):
+                continue
+            axis.scatter(x, y, s=70, color=colors[row["class"]], zorder=3)
+            offset = offsets.get(row["name"], (5, 4))
+            axis.annotate(row["name"], (x, y), xytext=offset,
+                          textcoords="offset points", fontsize=7.6)
+        axis.set_xlabel("Exact failure-penalized actions (lower is better)")
+        axis.grid(alpha=0.25)
+    axes[0].set_ylabel("Exact unfinished episodes (%) (lower is better)")
+    axes[0].set_title("Policy frontier")
+    axes[0].set_xlim(37.5, 53.5)
+    axes[0].set_ylim(14, 44)
+    axes[1].set_title("All evaluated controls")
     for label, color in colors.items():
-        axis.scatter([], [], s=75, color=color, label=label)
-    axis.set_xlabel("Exact failure-penalized actions (lower is better)")
-    axis.set_ylabel("Exact unfinished episodes (%) (lower is better)")
-    axis.set_title("Final exact-dynamics comparison")
-    axis.grid(alpha=0.25)
-    axis.legend()
+        axes[1].scatter([], [], s=70, color=color, label=label)
+    axes[1].legend()
+    fig.suptitle("Final exact-dynamics comparison")
     fig.savefig(output / "final_exact_comparison.png", dpi=180)
     plt.close(fig)
 
