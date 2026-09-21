@@ -1,0 +1,125 @@
+{
+  "agent": "ppo",
+  "continuation_gate": {
+    "passed": true,
+    "random_exact_success": 0.14380000000000004,
+    "required_gain": 0.02,
+    "selected_exact_success": 0.489
+  },
+  "diagnosis_exact": {
+    "average_actions": 54.898,
+    "cvar10_actions": 80.0,
+    "evaluation_batch": 256,
+    "max_pulses": 80,
+    "mean_pulses": 54.898,
+    "mean_pulses_successful": 28.666666666666668,
+    "median_actions": 80.0,
+    "n_rollouts": 1000,
+    "outcomes": {
+      "max_pulses": 0.511,
+      "no_action": 0.0,
+      "success": 0.489
+    },
+    "p85_actions": 80.0,
+    "p_target": 0.98,
+    "seconds": 2.73818141000811,
+    "seed": 62001,
+    "success_err": 0.015807561481771943,
+    "success_fraction": 0.489,
+    "target_states": [
+      [
+        58,
+        26
+      ],
+      [
+        4,
+        24
+      ],
+      [
+        7,
+        22
+      ],
+      [
+        55,
+        21
+      ],
+      [
+        3,
+        20
+      ],
+      [
+        41,
+        20
+      ],
+      [
+        17,
+        19
+      ],
+      [
+        44,
+        19
+      ]
+    ],
+    "unfinished_fraction": 0.511
+  },
+  "diagnosis_fno": {
+    "average_actions": 58.77,
+    "cvar10_actions": 80.0,
+    "evaluation_batch": 256,
+    "max_pulses": 80,
+    "mean_pulses": 58.77,
+    "mean_pulses_successful": 35.67849686847599,
+    "median_actions": 80.0,
+    "n_rollouts": 1000,
+    "outcomes": {
+      "max_pulses": 0.521,
+      "no_action": 0.0,
+      "success": 0.479
+    },
+    "p85_actions": 80.0,
+    "p_target": 0.98,
+    "seconds": 67.94256278697867,
+    "seed": 62001,
+    "success_err": 0.015797436500901024,
+    "success_fraction": 0.479,
+    "target_states": [
+      [
+        17,
+        32
+      ],
+      [
+        58,
+        25
+      ],
+      [
+        31,
+        25
+      ],
+      [
+        3,
+        23
+      ],
+      [
+        4,
+        21
+      ],
+      [
+        55,
+        21
+      ],
+      [
+        30,
+        20
+      ],
+      [
+        27,
+        20
+      ]
+    ],
+    "unfinished_fraction": 0.521
+  },
+  "diagnosis_score_exact": 0.4952755,
+  "include_budget": false,
+  "profile": "ppo_belief",
+  "selection_rule": "exact success plus 0.02 normalized pulse efficiency"
+}

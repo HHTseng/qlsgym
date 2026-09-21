@@ -1,0 +1,10 @@
+{
+  "diagnosis_exact": {
+    "average_actions": 49.171,
+    "mean_pulses_successful": 32.35085007727975,
+    "success_fraction": 0.647
+  },
+  "learning_rate": 0.0006,
+  "rule": "exact success plus 0.02 normalized action efficiency",
+  "selection_score_exact": 0.6547072500000001
+}

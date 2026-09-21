@@ -1,0 +1,98 @@
+{
+  "fine_tune_steps": 250000,
+  "fno_trained_reference": {
+    "agent": "sac_discrete",
+    "config": {
+      "alpha": 0.013268918812005082,
+      "autotune_alpha": true,
+      "batch_size": 512,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.995,
+      "gradient_steps": 1,
+      "hidden": 128,
+      "learning_starts": 1000,
+      "lr": 0.00015047792717528454,
+      "n_envs": 16,
+      "obs": "sqrt",
+      "return_scale": 20.0,
+      "seed": null,
+      "target_entropy_ratio": 0.49969706052497553,
+      "tau": 0.003048864797383012,
+      "total_steps": 300000,
+      "train_freq": 1
+    },
+    "config_id": "sac_t24",
+    "exact": {
+      "average_actions": 59.85468000000001,
+      "average_actions_sd": 9.111971511807969,
+      "cvar10_actions": 80.0,
+      "cvar10_actions_sd": 0.0,
+      "mean_pulses_successful": 32.99366594152049,
+      "mean_pulses_successful_sd": 2.68433088217332,
+      "p85_actions": 80.0,
+      "p85_actions_sd": 0.0,
+      "success_fraction": 0.42928,
+      "success_fraction_sd": 0.18960425100719655,
+      "unfinished_fraction": 0.57072,
+      "unfinished_fraction_sd": 0.18960425100719655
+    },
+    "fno": {
+      "average_actions": 59.494719999999994,
+      "average_actions_sd": 8.526063627020385,
+      "cvar10_actions": 80.0,
+      "cvar10_actions_sd": 0.0,
+      "mean_pulses_successful": 33.462074712691596,
+      "mean_pulses_successful_sd": 2.757402060113082,
+      "p85_actions": 80.0,
+      "p85_actions_sd": 0.0,
+      "success_fraction": 0.43411999999999995,
+      "success_fraction_sd": 0.16683876048448693,
+      "unfinished_fraction": 0.56588,
+      "unfinished_fraction_sd": 0.16683876048448693
+    },
+    "improvement_vs_locked_baseline": {
+      "exact_average_actions": 6.218759999999996,
+      "exact_failure_percentage_points": 12.336000000000002,
+      "fno_average_actions": 8.532440000000001,
+      "fno_failure_percentage_points": 15.639999999999986
+    },
+    "training_seeds": 5,
+    "trial_number": 24
+  },
+  "hybrid": {
+    "exact": {
+      "average_actions": 50.69708,
+      "average_actions_sd": 2.427432394939148,
+      "mean_pulses_successful": 29.905106237194268,
+      "mean_pulses_successful_sd": 2.23420171378506,
+      "success_fraction": 0.5848000000000001,
+      "success_fraction_sd": 0.03768925576341351,
+      "unfinished_fraction": 0.4151999999999999,
+      "unfinished_fraction_sd": 0.03768925576341351
+    },
+    "fno": {
+      "average_actions": 52.226720000000014,
+      "average_actions_sd": 2.5101162546782576,
+      "mean_pulses_successful": 30.905287269047157,
+      "mean_pulses_successful_sd": 1.4959255019921174,
+      "success_fraction": 0.56524,
+      "success_fraction_sd": 0.04090119802646373,
+      "unfinished_fraction": 0.43476,
+      "unfinished_fraction_sd": 0.04090119802646373
+    }
+  },
+  "method": "downloaded-mix FNO pretraining followed by cached-exact SAC fine-tuning",
+  "selection": {
+    "diagnosis_exact": {
+      "average_actions": 53.784,
+      "mean_pulses_successful": 33.763668430335095,
+      "success_fraction": 0.567
+    },
+    "learning_rate": 0.0001,
+    "rule": "exact success plus 0.02 normalized action efficiency",
+    "selection_score_exact": 0.5735539999999999
+  },
+  "status": "complete",
+  "training_seeds": 5
+}

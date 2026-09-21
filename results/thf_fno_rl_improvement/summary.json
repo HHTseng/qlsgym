@@ -1,0 +1,226 @@
+{
+  "exact": {
+    "average_actions": 48.88268000000001,
+    "average_actions_sd": 2.015489139638316,
+    "cvar10_actions": 80.0,
+    "cvar10_actions_sd": 0.0,
+    "mean_pulses_successful": 32.55745279324084,
+    "mean_pulses_successful_sd": 1.9124591033002347,
+    "p85_actions": 80.0,
+    "p85_actions_sd": 0.0,
+    "success_fraction": 0.65768,
+    "success_fraction_sd": 0.06322999288312468,
+    "unfinished_fraction": 0.34232,
+    "unfinished_fraction_sd": 0.06322999288312468
+  },
+  "fno": {
+    "average_actions": 54.10868000000001,
+    "average_actions_sd": 1.839115083946624,
+    "cvar10_actions": 80.0,
+    "cvar10_actions_sd": 0.0,
+    "mean_pulses_successful": 36.52333260324027,
+    "mean_pulses_successful_sd": 2.8815343039806107,
+    "p85_actions": 80.0,
+    "p85_actions_sd": 0.0,
+    "success_fraction": 0.5984,
+    "success_fraction_sd": 0.06741765347444244,
+    "unfinished_fraction": 0.4016,
+    "unfinished_fraction_sd": 0.06741765347444244
+  },
+  "improvement_vs_same_agent_fno_training": {
+    "exact_average_actions": 2.4877599999999873,
+    "exact_failure_percentage_points": 7.5440000000000005
+  },
+  "interpretation": "Exact training isolates RL and finite-horizon representation from surrogate bias. FNO evaluation of the exact-trained policy is a transfer diagnostic only.",
+  "reference": {
+    "config": {
+      "clip": 0.1,
+      "ent_coef": 0.0005417800781171913,
+      "epochs": 8,
+      "eval_every": 15,
+      "eval_greedy": false,
+      "eval_rollouts": 256,
+      "gae_lambda": 0.98,
+      "gamma": 1.0,
+      "hidden": 512,
+      "lr": 0.001346363908197788,
+      "max_grad_norm": 1.0,
+      "minibatches": 16,
+      "n_envs": 128,
+      "n_hidden_layers": 1,
+      "n_steps": 32,
+      "obs": "sqrt",
+      "reward_scale": 0.025,
+      "seed": 10071,
+      "total_steps": 250000,
+      "value_target": "qmdp",
+      "vf_coef": 0.5
+    },
+    "config_id": "ppo_t71",
+    "exact": {
+      "average_actions": 51.370439999999995,
+      "average_actions_sd": 3.5288854144049497,
+      "cvar10_actions": 80.0,
+      "cvar10_actions_sd": 0.0,
+      "mean_pulses_successful": 30.907695039923976,
+      "mean_pulses_successful_sd": 1.9000373789898917,
+      "p85_actions": 80.0,
+      "p85_actions_sd": 0.0,
+      "success_fraction": 0.58224,
+      "success_fraction_sd": 0.057161245612740115,
+      "unfinished_fraction": 0.41776,
+      "unfinished_fraction_sd": 0.057161245612740115
+    },
+    "fno": {
+      "average_actions": 50.855999999999995,
+      "average_actions_sd": 2.8224416132136376,
+      "cvar10_actions": 80.0,
+      "cvar10_actions_sd": 0.0,
+      "mean_pulses_successful": 32.27855766348517,
+      "mean_pulses_successful_sd": 2.1275467933606085,
+      "p85_actions": 80.0,
+      "p85_actions_sd": 0.0,
+      "success_fraction": 0.611,
+      "success_fraction_sd": 0.05519583317606503,
+      "unfinished_fraction": 0.38899999999999996,
+      "unfinished_fraction_sd": 0.05519583317606503
+    },
+    "improvement_vs_locked_baseline": {
+      "exact_average_actions": 16.774639999999998,
+      "exact_failure_percentage_points": 32.111999999999995,
+      "fno_average_actions": 18.283320000000003,
+      "fno_failure_percentage_points": 34.94000000000001
+    },
+    "name": "FNO-trained optimized PPO",
+    "training_seeds": 5,
+    "trial_number": 71
+  },
+  "selected_profile": {
+    "agent": "ppo",
+    "continuation_gate": {
+      "passed": true,
+      "random_exact_success": 0.14380000000000004,
+      "required_gain": 0.02,
+      "selected_exact_success": 0.489
+    },
+    "diagnosis_exact": {
+      "average_actions": 54.898,
+      "cvar10_actions": 80.0,
+      "evaluation_batch": 256,
+      "max_pulses": 80,
+      "mean_pulses": 54.898,
+      "mean_pulses_successful": 28.666666666666668,
+      "median_actions": 80.0,
+      "n_rollouts": 1000,
+      "outcomes": {
+        "max_pulses": 0.511,
+        "no_action": 0.0,
+        "success": 0.489
+      },
+      "p85_actions": 80.0,
+      "p_target": 0.98,
+      "seconds": 2.73818141000811,
+      "seed": 62001,
+      "success_err": 0.015807561481771943,
+      "success_fraction": 0.489,
+      "target_states": [
+        [
+          58,
+          26
+        ],
+        [
+          4,
+          24
+        ],
+        [
+          7,
+          22
+        ],
+        [
+          55,
+          21
+        ],
+        [
+          3,
+          20
+        ],
+        [
+          41,
+          20
+        ],
+        [
+          17,
+          19
+        ],
+        [
+          44,
+          19
+        ]
+      ],
+      "unfinished_fraction": 0.511
+    },
+    "diagnosis_fno": {
+      "average_actions": 58.77,
+      "cvar10_actions": 80.0,
+      "evaluation_batch": 256,
+      "max_pulses": 80,
+      "mean_pulses": 58.77,
+      "mean_pulses_successful": 35.67849686847599,
+      "median_actions": 80.0,
+      "n_rollouts": 1000,
+      "outcomes": {
+        "max_pulses": 0.521,
+        "no_action": 0.0,
+        "success": 0.479
+      },
+      "p85_actions": 80.0,
+      "p_target": 0.98,
+      "seconds": 67.94256278697867,
+      "seed": 62001,
+      "success_err": 0.015797436500901024,
+      "success_fraction": 0.479,
+      "target_states": [
+        [
+          17,
+          32
+        ],
+        [
+          58,
+          25
+        ],
+        [
+          31,
+          25
+        ],
+        [
+          3,
+          23
+        ],
+        [
+          4,
+          21
+        ],
+        [
+          55,
+          21
+        ],
+        [
+          30,
+          20
+        ],
+        [
+          27,
+          20
+        ]
+      ],
+      "unfinished_fraction": 0.521
+    },
+    "diagnosis_score_exact": 0.4952755,
+    "include_budget": false,
+    "profile": "ppo_belief",
+    "selection_rule": "exact success plus 0.02 normalized pulse efficiency"
+  },
+  "status": "complete",
+  "train_engine": "exact cached action tables",
+  "training_seeds": 5
+}

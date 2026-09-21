@@ -420,6 +420,74 @@ Transfer failure gap is exact failure minus FNO failure. Negative values mean th
 
 ![Original production FNO versus downloaded mix](results/thf_rl_mix_tara/thf_mix_vs_rlprod120v2.png)
 
+## `refiningFNO+RL`: structural audit, gated FNO pilot, and exact fine-tuning
+
+This study executes [`docs/FNO_RL_IMPROVEMENT_PLAN.md`](docs/FNO_RL_IMPROVEMENT_PLAN.md)
+against downloaded manifest fingerprint `d7deb43457d3`. All learned rows below
+use five training seeds and 5,000 final exact plus 5,000 FNO rollouts per seed.
+Policies are ranked only by exact failure and then exact failure-penalized actions.
+
+| Rank | Controller | Training | Exact failure ↓ | Exact actions ↓ | FNO failure | FNO actions |
+|---:|---|---|---:|---:|---:|---:|
+| 1 | Physics elimination | exact model-based baseline | 29.36% | 51.49 | 63.14% | 64.52 |
+| 2 | Hybrid PPO | downloaded-`mix` pretraining + 250k cached-exact | 33.44% ± 3.97 | 48.21 ± 3.01 | 36.35% | 50.71 |
+| 3 | Exact-trained PPO | 1M cached-exact | 34.23% ± 6.32 | 48.88 ± 2.02 | 40.16% | 54.11 |
+| 4 | Hybrid SAC | downloaded-`mix` pretraining + 250k cached-exact | 41.52% ± 3.77 | 50.70 ± 2.43 | 43.48% | 52.23 |
+| 5 | FNO-trained PPO | 1M downloaded `mix` | 41.78% ± 5.72 | 51.37 ± 3.53 | 38.90% | 50.86 |
+| 6 | FNO-trained refined SAC | 1M downloaded `mix` | 57.07% ± 18.96 | 59.85 ± 9.11 | 56.59% | 59.49 |
+
+![Final exact-dynamics ranking](results/thf_fno_rl_refinement/final_exact_ranking.png)
+
+Exact training improved PPO by **7.54 failure percentage points** and **2.49
+actions** over FNO-only training. FNO-pretrained PPO followed by exact
+fine-tuning improved it by **8.34 points** and **3.16 actions**. The hybrid PPO
+mean is 0.80 failure points below exact-only PPO, but five seeds and overlapping
+seed variation do not establish that pretraining is better than exact training.
+For SAC, exact fine-tuning improved failure by **15.55 points**, actions by
+**9.16**, and reduced the across-seed failure SD from 18.96 to 3.77 points.
+
+The initial 100k exact screen selected belief-only PPO at 48.9% success. Adding
+remaining pulse budget $b_t=(H-t)/H$ reduced PPO success to 35.8%, so the budget
+feature was not promoted. The learning-rate screens selected $6\times10^{-4}$
+for PPO fine-tuning and $10^{-4}$ for SAC fine-tuning.
+
+The complete downloaded-`mix` structural audit found **0/24** block/polarization
+pairs passing every declared gate:
+
+| Worst-pair metric | Downloaded `mix` | Gate |
+|---|---:|---:|
+| $\tau=0$ identity TV, maximum | 0.11097 | ≤ 0.001 |
+| Input-linearity TV, P95 | 0.07656 | ≤ 0.001 |
+| Off-resonance joint TV, P95 | 0.06716 | ≤ 0.005 |
+| Branch-mass absolute error, P95 | 0.01659 | ≤ 0.005 |
+| Conditional TV for branch mass ≥$10^{-2}$, P95 | 0.12558 | ≤ 0.05 |
+| Conditional TV for branch mass ≥$10^{-3}$, P95 | 0.21491 | ≤ 0.10 |
+| Local termination classification error | 0.04838 | ≤ 0.005 |
+
+A physics-constrained transfer-column FNO was piloted on blocks 0± and 1±. It
+made identity and input linearity exact and reduced median off-resonance P95 TV
+to 0.0081 times the downloaded model. It simultaneously increased branch-mass
+error **15.21×**, conditional TV above $10^{-2}$ **4.07×**, and conditional TV
+above $10^{-3}$ **2.62×**. The preregistered promotion gate therefore stopped
+the 24-pair retrain. No improved-FNO RL result is reported from a model that
+failed this gate; compute moved to exact fine-tuning as specified in the plan.
+
+Strong-policy transfer still exceeds the desired tolerance. Hybrid PPO's FNO
+evaluation is 2.91 failure points and 2.50 actions more pessimistic than exact;
+hybrid SAC differs by 1.96 points and 1.53 actions. The downloaded model remains
+useful for initialization and candidate generation, but it is not certified as
+the sole dynamics engine for final RL claims.
+
+- [Final machine-readable comparison](results/thf_fno_rl_refinement/summary.json)
+- [Exact-training diagnosis](results/thf_fno_rl_improvement/summary.md)
+- [Hybrid PPO comparison](results/thf_mix_ppo_exact_finetune/summary.md)
+- [Downloaded-FNO structural audit](results/thf_mix_structural_audit/summary.md)
+- [Transfer-column pilot decision](results/thf_column_fno_pilot_comparison.json)
+
+![Hybrid PPO comparison](results/thf_mix_ppo_exact_finetune/hybrid_ppo_comparison.png)
+
+![Hybrid SAC comparison](results/thf_mix_sac_exact_finetune/hybrid_sac_comparison.png)
+
 ## Metric interpretation
 
 Let $T_j$ be first successful pulse count ($\infty$ if unfinished), $L_j=\min(T_j,H)$, and $N$ rollout count. Early stopping without success still scores failure and $H$.

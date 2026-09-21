@@ -1,0 +1,130 @@
+{
+  "exact_trained_reference": {
+    "exact": {
+      "average_actions": 48.88268000000001,
+      "average_actions_sd": 2.015489139638316,
+      "cvar10_actions": 80.0,
+      "cvar10_actions_sd": 0.0,
+      "mean_pulses_successful": 32.55745279324084,
+      "mean_pulses_successful_sd": 1.9124591033002347,
+      "p85_actions": 80.0,
+      "p85_actions_sd": 0.0,
+      "success_fraction": 0.65768,
+      "success_fraction_sd": 0.06322999288312468,
+      "unfinished_fraction": 0.34232,
+      "unfinished_fraction_sd": 0.06322999288312468
+    },
+    "fno": {
+      "average_actions": 54.10868000000001,
+      "average_actions_sd": 1.839115083946624,
+      "cvar10_actions": 80.0,
+      "cvar10_actions_sd": 0.0,
+      "mean_pulses_successful": 36.52333260324027,
+      "mean_pulses_successful_sd": 2.8815343039806107,
+      "p85_actions": 80.0,
+      "p85_actions_sd": 0.0,
+      "success_fraction": 0.5984,
+      "success_fraction_sd": 0.06741765347444244,
+      "unfinished_fraction": 0.4016,
+      "unfinished_fraction_sd": 0.06741765347444244
+    }
+  },
+  "fine_tune_steps": 250000,
+  "fno_trained_reference": {
+    "config": {
+      "clip": 0.1,
+      "ent_coef": 0.0005417800781171913,
+      "epochs": 8,
+      "eval_every": 15,
+      "eval_greedy": false,
+      "eval_rollouts": 256,
+      "gae_lambda": 0.98,
+      "gamma": 1.0,
+      "hidden": 512,
+      "lr": 0.001346363908197788,
+      "max_grad_norm": 1.0,
+      "minibatches": 16,
+      "n_envs": 128,
+      "n_hidden_layers": 1,
+      "n_steps": 32,
+      "obs": "sqrt",
+      "reward_scale": 0.025,
+      "seed": 10071,
+      "total_steps": 250000,
+      "value_target": "qmdp",
+      "vf_coef": 0.5
+    },
+    "config_id": "ppo_t71",
+    "exact": {
+      "average_actions": 51.370439999999995,
+      "average_actions_sd": 3.5288854144049497,
+      "cvar10_actions": 80.0,
+      "cvar10_actions_sd": 0.0,
+      "mean_pulses_successful": 30.907695039923976,
+      "mean_pulses_successful_sd": 1.9000373789898917,
+      "p85_actions": 80.0,
+      "p85_actions_sd": 0.0,
+      "success_fraction": 0.58224,
+      "success_fraction_sd": 0.057161245612740115,
+      "unfinished_fraction": 0.41776,
+      "unfinished_fraction_sd": 0.057161245612740115
+    },
+    "fno": {
+      "average_actions": 50.855999999999995,
+      "average_actions_sd": 2.8224416132136376,
+      "cvar10_actions": 80.0,
+      "cvar10_actions_sd": 0.0,
+      "mean_pulses_successful": 32.27855766348517,
+      "mean_pulses_successful_sd": 2.1275467933606085,
+      "p85_actions": 80.0,
+      "p85_actions_sd": 0.0,
+      "success_fraction": 0.611,
+      "success_fraction_sd": 0.05519583317606503,
+      "unfinished_fraction": 0.38899999999999996,
+      "unfinished_fraction_sd": 0.05519583317606503
+    },
+    "improvement_vs_locked_baseline": {
+      "exact_average_actions": 16.774639999999998,
+      "exact_failure_percentage_points": 32.111999999999995,
+      "fno_average_actions": 18.283320000000003,
+      "fno_failure_percentage_points": 34.94000000000001
+    },
+    "training_seeds": 5,
+    "trial_number": 71
+  },
+  "hybrid": {
+    "exact": {
+      "average_actions": 48.208000000000006,
+      "average_actions_sd": 3.005708389049078,
+      "mean_pulses_successful": 32.28203199942236,
+      "mean_pulses_successful_sd": 2.7693690608931822,
+      "success_fraction": 0.66564,
+      "success_fraction_sd": 0.03969921913589737,
+      "unfinished_fraction": 0.33436000000000005,
+      "unfinished_fraction_sd": 0.03969921913589737
+    },
+    "fno": {
+      "average_actions": 50.70964,
+      "average_actions_sd": 1.5972509721393187,
+      "mean_pulses_successful": 33.96540861790584,
+      "mean_pulses_successful_sd": 2.188122159288385,
+      "success_fraction": 0.63652,
+      "success_fraction_sd": 0.025908145437294437,
+      "unfinished_fraction": 0.36348,
+      "unfinished_fraction_sd": 0.025908145437294437
+    }
+  },
+  "method": "downloaded-mix FNO pretraining followed by cached-exact PPO fine-tuning",
+  "selection": {
+    "diagnosis_exact": {
+      "average_actions": 49.171,
+      "mean_pulses_successful": 32.35085007727975,
+      "success_fraction": 0.647
+    },
+    "learning_rate": 0.0006,
+    "rule": "exact success plus 0.02 normalized action efficiency",
+    "selection_score_exact": 0.6547072500000001
+  },
+  "status": "complete",
+  "training_seeds": 5
+}

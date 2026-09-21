@@ -1,0 +1,293 @@
+{
+  "status": "complete",
+  "ranking_rule": "exact failure rate, then exact failure-penalized average actions",
+  "rows": [
+    {
+      "name": "Physics elimination",
+      "method": "exact model-based baseline",
+      "training_seeds": 0,
+      "exact": {
+        "average_actions": 51.4892,
+        "actions_ci95": [
+          50.77536,
+          52.22004
+        ],
+        "unfinished_fraction": 0.29359999999999997,
+        "failure_ci95": [
+          0.2811391924518893,
+          0.3063777149110302
+        ],
+        "uncertainty_scope": "rollout bootstrap for mean; Wilson binomial for failure",
+        "p85_actions": 80.0,
+        "cvar10_actions": 80.0
+      },
+      "fno": {
+        "average_actions": 64.5204,
+        "actions_ci95": [
+          63.88354,
+          65.11961500000001
+        ],
+        "unfinished_fraction": 0.6314,
+        "failure_ci95": [
+          0.6179319794988446,
+          0.6446662684299943
+        ],
+        "uncertainty_scope": "rollout bootstrap for mean; Wilson binomial for failure",
+        "p85_actions": 80.0,
+        "cvar10_actions": 80.0
+      },
+      "exact_rank": 1,
+      "transfer_failure_gap_pp": -33.78,
+      "transfer_action_gap": -13.031199999999998
+    },
+    {
+      "name": "Hybrid PPO",
+      "method": "mix FNO pretraining + 250k exact",
+      "training_seeds": 5,
+      "exact": {
+        "average_actions": 48.208000000000006,
+        "average_actions_sd": 3.005708389049078,
+        "mean_pulses_successful": 32.28203199942236,
+        "mean_pulses_successful_sd": 2.7693690608931822,
+        "success_fraction": 0.66564,
+        "success_fraction_sd": 0.03969921913589737,
+        "unfinished_fraction": 0.33436000000000005,
+        "unfinished_fraction_sd": 0.03969921913589737
+      },
+      "fno": {
+        "average_actions": 50.70964,
+        "average_actions_sd": 1.5972509721393187,
+        "mean_pulses_successful": 33.96540861790584,
+        "mean_pulses_successful_sd": 2.188122159288385,
+        "success_fraction": 0.63652,
+        "success_fraction_sd": 0.025908145437294437,
+        "unfinished_fraction": 0.36348,
+        "unfinished_fraction_sd": 0.025908145437294437
+      },
+      "exact_rank": 2,
+      "transfer_failure_gap_pp": -2.911999999999998,
+      "transfer_action_gap": -2.5016399999999948
+    },
+    {
+      "name": "Exact-trained PPO",
+      "method": "1M cached-exact",
+      "training_seeds": 5,
+      "exact": {
+        "average_actions": 48.88268000000001,
+        "average_actions_sd": 2.015489139638316,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 32.55745279324084,
+        "mean_pulses_successful_sd": 1.9124591033002347,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.65768,
+        "success_fraction_sd": 0.06322999288312468,
+        "unfinished_fraction": 0.34232,
+        "unfinished_fraction_sd": 0.06322999288312468
+      },
+      "fno": {
+        "average_actions": 54.10868000000001,
+        "average_actions_sd": 1.839115083946624,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 36.52333260324027,
+        "mean_pulses_successful_sd": 2.8815343039806107,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.5984,
+        "success_fraction_sd": 0.06741765347444244,
+        "unfinished_fraction": 0.4016,
+        "unfinished_fraction_sd": 0.06741765347444244
+      },
+      "exact_rank": 3,
+      "transfer_failure_gap_pp": -5.928,
+      "transfer_action_gap": -5.225999999999999
+    },
+    {
+      "name": "Hybrid SAC",
+      "method": "mix FNO pretraining + 250k exact",
+      "training_seeds": 5,
+      "exact": {
+        "average_actions": 50.69708,
+        "average_actions_sd": 2.427432394939148,
+        "mean_pulses_successful": 29.905106237194268,
+        "mean_pulses_successful_sd": 2.23420171378506,
+        "success_fraction": 0.5848000000000001,
+        "success_fraction_sd": 0.03768925576341351,
+        "unfinished_fraction": 0.4151999999999999,
+        "unfinished_fraction_sd": 0.03768925576341351
+      },
+      "fno": {
+        "average_actions": 52.226720000000014,
+        "average_actions_sd": 2.5101162546782576,
+        "mean_pulses_successful": 30.905287269047157,
+        "mean_pulses_successful_sd": 1.4959255019921174,
+        "success_fraction": 0.56524,
+        "success_fraction_sd": 0.04090119802646373,
+        "unfinished_fraction": 0.43476,
+        "unfinished_fraction_sd": 0.04090119802646373
+      },
+      "exact_rank": 4,
+      "transfer_failure_gap_pp": -1.9560000000000077,
+      "transfer_action_gap": -1.5296400000000148
+    },
+    {
+      "name": "FNO-trained PPO",
+      "method": "1M downloaded mix",
+      "training_seeds": 5,
+      "exact": {
+        "average_actions": 51.370439999999995,
+        "average_actions_sd": 3.5288854144049497,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 30.907695039923976,
+        "mean_pulses_successful_sd": 1.9000373789898917,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.58224,
+        "success_fraction_sd": 0.057161245612740115,
+        "unfinished_fraction": 0.41776,
+        "unfinished_fraction_sd": 0.057161245612740115
+      },
+      "fno": {
+        "average_actions": 50.855999999999995,
+        "average_actions_sd": 2.8224416132136376,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 32.27855766348517,
+        "mean_pulses_successful_sd": 2.1275467933606085,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.611,
+        "success_fraction_sd": 0.05519583317606503,
+        "unfinished_fraction": 0.38899999999999996,
+        "unfinished_fraction_sd": 0.05519583317606503
+      },
+      "exact_rank": 5,
+      "transfer_failure_gap_pp": 2.8760000000000066,
+      "transfer_action_gap": 0.5144400000000005
+    },
+    {
+      "name": "FNO-trained SAC",
+      "method": "1M downloaded mix",
+      "training_seeds": 5,
+      "exact": {
+        "average_actions": 59.85468000000001,
+        "average_actions_sd": 9.111971511807969,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 32.99366594152049,
+        "mean_pulses_successful_sd": 2.68433088217332,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.42928,
+        "success_fraction_sd": 0.18960425100719655,
+        "unfinished_fraction": 0.57072,
+        "unfinished_fraction_sd": 0.18960425100719655
+      },
+      "fno": {
+        "average_actions": 59.494719999999994,
+        "average_actions_sd": 8.526063627020385,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 33.462074712691596,
+        "mean_pulses_successful_sd": 2.757402060113082,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.43411999999999995,
+        "success_fraction_sd": 0.16683876048448693,
+        "unfinished_fraction": 0.56588,
+        "unfinished_fraction_sd": 0.16683876048448693
+      },
+      "exact_rank": 6,
+      "transfer_failure_gap_pp": 0.48399999999999554,
+      "transfer_action_gap": 0.35996000000001516
+    }
+  ],
+  "downloaded_mix_structural_audit": {
+    "status": "complete",
+    "pairs": 24,
+    "pairs_passing_all": 0,
+    "gates": {
+      "tau0_identity_tv_max": 0.001,
+      "input_linearity_tv_p95": 0.001,
+      "off_joint_tv_p95": 0.005,
+      "branch_mass_abs_error_p95": 0.005,
+      "conditional_tv_mass_ge_1e-2_p95": 0.05,
+      "conditional_tv_mass_ge_1e-3_p95": 0.1,
+      "block_local_termination_error": 0.005
+    },
+    "worst_pair_by_gate": {
+      "tau0_identity_tv_max": {
+        "value": 0.11096527327353309,
+        "threshold": 0.001,
+        "block": 0,
+        "sigma": "-",
+        "passes": false
+      },
+      "input_linearity_tv_p95": {
+        "value": 0.07655998844922184,
+        "threshold": 0.001,
+        "block": 1,
+        "sigma": "-",
+        "passes": false
+      },
+      "off_joint_tv_p95": {
+        "value": 0.06716082718555312,
+        "threshold": 0.005,
+        "block": 0,
+        "sigma": "-",
+        "passes": false
+      },
+      "branch_mass_abs_error_p95": {
+        "value": 0.016593138202121428,
+        "threshold": 0.005,
+        "block": 1,
+        "sigma": "-",
+        "passes": false
+      },
+      "conditional_tv_mass_ge_1e-2_p95": {
+        "value": 0.12558418293471046,
+        "threshold": 0.05,
+        "block": 1,
+        "sigma": "+",
+        "passes": false
+      },
+      "conditional_tv_mass_ge_1e-3_p95": {
+        "value": 0.21490523206757925,
+        "threshold": 0.1,
+        "block": 1,
+        "sigma": "-",
+        "passes": false
+      },
+      "block_local_termination_error": {
+        "value": 0.048384505844720885,
+        "threshold": 0.005,
+        "block": 9,
+        "sigma": "+",
+        "passes": false
+      }
+    },
+    "manifest": "/home/htseng/qlsgym_work/checkpoints/thf/mix.json",
+    "manifest_fingerprint": "d7deb43457d3"
+  },
+  "transfer_column_pilot": {
+    "decision": "stop",
+    "criteria": {
+      "structural_gates_pass_all_four_pairs": true,
+      "median_accuracy_error_reduction_ge_30pct": false,
+      "both_conditional_tv_medians_reduce_ge_25pct": false,
+      "at_least_three_of_five_accuracy_metrics_reduce_ge_25pct": false,
+      "no_material_pair_metric_regression": false
+    },
+    "median_candidate_over_current": {
+      "off_joint_tv_p95": 0.008138984078116125,
+      "branch_mass_abs_error_p95": 15.210546187313343,
+      "conditional_tv_mass_ge_1e-2_p95": 4.065251524810953,
+      "conditional_tv_mass_ge_1e-3_p95": 2.623672196698261,
+      "block_local_termination_error": 1.1169390251652747
+    },
+    "interpretation": "The pilot fixed identity, input linearity, and off-resonance behavior, but worsened branch mass and conditional state accuracy; full training stopped."
+  }
+}
