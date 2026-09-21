@@ -143,22 +143,26 @@ def select(args):
     print(json.dumps(result, indent=2))
 
 
-def confirm(args):
+def confirm_seed(args, source_seed):
     output = Path(args.output)
     selection = json.loads((output / "selection.json").read_text())
     destination = output / "confirmation"
     destination.mkdir(parents=True, exist_ok=True)
+    path = destination / f"source_s{source_seed}.json"
+    if path.exists():
+        return
     exact, fno, _ = environments(args)
+    write_json(path, run_one(
+        args, exact, fno, source_seed, 74_000 + source_seed,
+        float(selection["learning_rate"]), args.confirm_steps,
+        args.final_eval, 74_101, "confirmation",
+    ))
+    torch.cuda.empty_cache()
+
+
+def confirm(args):
     for source_seed in FINAL_SEEDS:
-        path = destination / f"source_s{source_seed}.json"
-        if path.exists():
-            continue
-        write_json(path, run_one(
-            args, exact, fno, source_seed, 74_000 + source_seed,
-            float(selection["learning_rate"]), args.confirm_steps,
-            args.final_eval, 74_101, "confirmation",
-        ))
-        torch.cuda.empty_cache()
+        confirm_seed(args, source_seed)
 
 
 def aggregate(records, engine):
@@ -215,7 +219,10 @@ def status(args):
 
 def parser():
     main = argparse.ArgumentParser(description=__doc__)
-    main.add_argument("command", choices=("diagnose", "select", "confirm", "summarize", "run", "status"))
+    main.add_argument(
+        "command",
+        choices=("diagnose", "select", "confirm", "confirm-seed", "summarize", "run", "status"),
+    )
     main.add_argument("--output", default="results/thf_mix_sac_exact_finetune")
     main.add_argument("--source-models", default="results/thf_rl_optuna_mix_sac_refine/models")
     main.add_argument("--manifest", default=os.path.expanduser("~/qlsgym_work/checkpoints/thf/mix.json"))
@@ -225,11 +232,17 @@ def parser():
     main.add_argument("--confirm-steps", type=int, default=250_000)
     main.add_argument("--final-eval", type=int, default=5_000)
     main.add_argument("--eval-batch", type=int, default=256)
+    main.add_argument("--source-seed", type=int, choices=FINAL_SEEDS)
     return main
 
 
 def main():
     args = parser().parse_args()
+    if args.command == "confirm-seed":
+        if args.source_seed is None:
+            raise ValueError("confirm-seed requires --source-seed")
+        confirm_seed(args, args.source_seed)
+        return
     commands = ("diagnose", "select", "confirm", "summarize") if args.command == "run" else (args.command,)
     for command in commands:
         globals()[command](args)
