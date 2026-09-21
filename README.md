@@ -509,8 +509,11 @@ Failure-sensitive PPO is a learned actor with no model-based inference. It
 therefore establishes the requested learned-policy improvement over physics
 elimination: **4.44 percentage points fewer failures and 6.29 fewer actions**.
 Its upper seed-level failure interval is also below the 29.36% physics point
-estimate. Adding the conservative physics fallback gives the strongest overall
-controller, improving failure by **8.64 points** and actions by **6.24**.
+estimate. Adding the conservative physics fallback improves failure by **8.64
+points** and actions by **6.24** relative to physics elimination. The stronger
+descending-population control evaluated below supersedes both as the non-ML
+reference, so these rows do not establish general superiority over non-ML
+control.
 
 The exact validation screen selected a timeout cost of
 $\lambda_f=20$ and rejected the remaining-budget observation. On 25,000 paired
@@ -528,13 +531,89 @@ than under exact dynamics; the fallback controller's gaps are 15.29 points and
 The coverage-balanced sweep visits 80 evenly spaced controls across all 312
 actions. It reaches 87.60% exact failure and 79.11 actions. This improves the
 99.92% failure of fixed-order sweeping, but remains far behind both physics
-elimination and learned control.
+elimination and learned control. A stronger adaptive descending-population
+controller reaches **19.98% failure and 40.00 actions**, making it the final
+non-ML reference.
 
 - [Safe-hybrid report](results/thf_safe_hybrid/summary.md)
 - [Machine-readable safe-hybrid results](results/thf_safe_hybrid/summary.json)
 - [Coverage-balanced sweeping](results/thf_nonml_controls/summary.md)
 
 ![Safe-hybrid exact and FNO comparison](results/thf_safe_hybrid/safe_hybrid_comparison.png)
+
+## Final gated FNO + RL superiority study — completed 21 September 2026
+
+The completed study follows
+[`docs/FNO_RL_SUPERIORITY_PLAN.md`](docs/FNO_RL_SUPERIORITY_PLAN.md). All final
+learned and hybrid rows use five policy seeds and 5,000 exact holdout episodes
+per seed. The ranking is lexicographic: exact unfinished fraction first, then
+exact failure-penalized actions.
+
+| Rank | Controller | Type | Exact failure ↓ | Exact actions ↓ | Inference requirement |
+|---:|---|---|---:|---:|---|
+| 1 | **Exact candidate arbiter** | exact-table hybrid | **16.37%** | **38.70** | score actor and baseline proposals with cached-exact one-step outcomes |
+| 2 | 15-pulse PPO + descending fallback | hybrid | 18.40% | 41.31 | actor prefix, then descending rule |
+| 3 | Descending population | non-ML | 19.98% | 40.00 | cached-exact table rule |
+| 4 | Failure-sensitive PPO + physics fallback | hybrid | 20.72% | 45.25 | actor with terminal-tail fallback |
+| 5 | Failure-sensitive PPO | standalone RL | 24.92% | 45.20 | actor only |
+| 6 | Physics elimination | non-ML | 29.36% | 51.49 | physics rule |
+| 7 | FNO_RL_optuna PPO | standalone RL | 41.78% | 51.37 | actor only |
+| 8 | Coverage-balanced sweep | non-ML | 87.60% | 79.11 | fixed schedule |
+
+The exact candidate arbiter selects purity margin \(10^{-4}\). Relative to the
+descending controller, it lowers failure by **3.61 percentage points** with a
+paired 95% seed interval of **[-4.75, -2.47] points** and lowers actions by
+**1.30**. Across 25,000 paired rollouts it rescues 1,478 episodes and loses 576.
+It passes the declared two-metric superiority rule. This result is a
+model-based hybrid: cached-exact tables are required at every decision. The
+standalone actor and the fixed-prefix hybrid do not beat descending population
+on both metrics.
+
+![Final exact comparison](results/thf_fno_rl_superiority/final_exact_comparison.png)
+
+### Branch-aware FNO decision
+
+The column-v2 pilot enforced exact identity and input linearity and reduced the
+five median branch-aware accuracy errors by at least 66%. Its promotion logic
+applied those two structural bounds pairwise and used median improvement plus
+regression limits for the other metrics. The former criterion label has been
+corrected so it no longer implies that every pilot pair passed all seven
+absolute bounds.
+
+The full 24-pair audit passed every absolute gate for only **10/24** pairs:
+
+| Worst-pair metric | Column-v2 | Gate | Decision |
+|---|---:|---:|:---:|
+| \(\tau=0\) identity TV, maximum | 0 | 0.001 | pass |
+| Input-linearity TV, P95 | \(8.44\times10^{-17}\) | 0.001 | pass |
+| Off-resonance joint TV, P95 | 0.000945 | 0.005 | pass |
+| Branch-mass absolute error, P95 | 0.07254 | 0.005 | fail |
+| Conditional TV, mass ≥\(10^{-2}\), P95 | 0.27775 | 0.05 | fail |
+| Conditional TV, mass ≥\(10^{-3}\), P95 | 0.68902 | 0.10 | fail |
+| Local termination error | 0.10705 | 0.005 | fail |
+
+Block \((11,+)\) is the worst pair for all four failed metrics. The all-pair
+gate therefore blocked the planned PPO continuation. A diagnostic closed-loop
+audit, which was not used for training, shows why:
+
+| Controller | Exact failure / actions | Downloaded `mix` | Column-v2 |
+|---|---:|---:|---:|
+| Failure-sensitive PPO | 24.92% / 45.20 | 28.98% / 48.40 | 89.51% / 73.62 |
+| Descending population | 19.98% / 40.00 | 23.68% / 41.44 | 91.10% / 73.40 |
+
+The structured surrogate fixes identity, linearity, and off-resonance behavior,
+but its remaining branch errors compound catastrophically along policy
+trajectories. No RL policy was trained under column-v2. Further surrogate work
+should repair the failing pairs—especially \((11,+)\)—and include
+policy-occupancy data before another full RL run.
+
+- [Final machine-readable decision](results/thf_fno_rl_superiority/summary.json)
+- [Exact-arbiter report](results/thf_exact_candidate_arbiter/summary.md)
+- [Learned-prefix report](results/thf_descending_hybrid/summary.md)
+- [Full 24-pair FNO audit](results/thf_column_fno_v2_full_audit/summary.md)
+- [Column-v2 closed-loop audit](results/thf_column_fno_v2_transfer/summary.md)
+
+![Column-v2 closed-loop transfer](results/thf_column_fno_v2_transfer/column_v2_transfer.png)
 
 ## Metric interpretation
 

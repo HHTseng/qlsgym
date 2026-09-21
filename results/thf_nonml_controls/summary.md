@@ -1,8 +1,8 @@
-# Coverage-balanced sweeping
+# Stronger non-ML controls
 
-This finite-budget reference visits 80 evenly spaced controls across the full 312-action library.
+Coverage sweeping spans the full action library. Descending population is an adaptive exact-table heuristic.
 
-| Dynamics | Failure | Penalized actions |
-|---|---:|---:|
-| Exact | 87.60% | 79.11 |
-| Downloaded FNO | 90.60% | 78.79 |
+| Controller | Exact failure | Exact actions | FNO failure | FNO actions |
+|---|---:|---:|---:|---:|
+| Coverage Sweeping | 87.60% | 79.11 | 90.60% | 78.79 |
+| Descending Population | 19.98% | 40.00 | 23.68% | 41.44 |

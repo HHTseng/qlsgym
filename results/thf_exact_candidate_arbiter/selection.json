@@ -1,0 +1,11 @@
+{
+  "index": 1,
+  "purity_margin": 0.0001,
+  "rule": "minimize exact validation failure, then failure-penalized actions",
+  "success_margin": 0.0,
+  "validation_exact": {
+    "average_actions": 39.382,
+    "success_fraction": 0.831,
+    "unfinished_fraction": 0.16900000000000004
+  }
+}

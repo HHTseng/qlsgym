@@ -1,0 +1,63 @@
+{
+  "descending_population": {
+    "column_v2": {
+      "average_actions": 73.3986,
+      "mean_pulses_successful": 5.8269662921348315,
+      "unfinished_fraction": 0.911
+    },
+    "downloaded_mix": {
+      "average_actions": 41.4448,
+      "unfinished_fraction": 0.2368
+    },
+    "exact": {
+      "average_actions": 39.9994,
+      "unfinished_fraction": 0.19979999999999998
+    }
+  },
+  "evaluation_episodes_per_seed": 5000,
+  "failure_sensitive_ppo": {
+    "column_v2": {
+      "average_actions": 73.61916,
+      "average_actions_sd": 2.3126455993082917,
+      "mean_pulses_successful": 15.492251393386747,
+      "mean_pulses_successful_sd": 10.796874549688212,
+      "unfinished_fraction": 0.8950800000000001,
+      "unfinished_fraction_sd": 0.0501893614225166,
+      "unfinished_fraction_seed_ci95": [
+        0.8327716673773533,
+        0.9573883326226469
+      ]
+    },
+    "downloaded_mix": {
+      "average_actions": 48.40315999999999,
+      "average_actions_sd": 1.723024227339825,
+      "mean_pulses_successful": 35.49942310605987,
+      "mean_pulses_successful_sd": 1.4083525239358223,
+      "success_fraction": 0.71024,
+      "success_fraction_sd": 0.036608578229699096,
+      "unfinished_fraction": 0.28975999999999996,
+      "unfinished_fraction_sd": 0.036608578229699096,
+      "unfinished_fraction_seed_ci95": [
+        0.24431173358402325,
+        0.3352082664159767
+      ]
+    },
+    "exact": {
+      "average_actions": 45.201119999999996,
+      "average_actions_sd": 0.9912100645171038,
+      "mean_pulses_successful": 33.649534526631655,
+      "mean_pulses_successful_sd": 1.2414242630650716,
+      "success_fraction": 0.7508,
+      "success_fraction_sd": 0.009911609354691117,
+      "unfinished_fraction": 0.2492,
+      "unfinished_fraction_sd": 0.009911609354691117,
+      "unfinished_fraction_seed_ci95": [
+        0.23689508447619406,
+        0.26150491552380595
+      ]
+    }
+  },
+  "purpose": "diagnostic only; column-v2 failed the 24-pair promotion gate",
+  "status": "complete",
+  "training_seeds": 5
+}

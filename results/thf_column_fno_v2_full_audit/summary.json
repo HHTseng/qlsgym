@@ -1,0 +1,67 @@
+{
+  "status": "complete",
+  "pairs": 24,
+  "pairs_passing_all": 10,
+  "gates": {
+    "tau0_identity_tv_max": 0.001,
+    "input_linearity_tv_p95": 0.001,
+    "off_joint_tv_p95": 0.005,
+    "branch_mass_abs_error_p95": 0.005,
+    "conditional_tv_mass_ge_1e-2_p95": 0.05,
+    "conditional_tv_mass_ge_1e-3_p95": 0.1,
+    "block_local_termination_error": 0.005
+  },
+  "worst_pair_by_gate": {
+    "tau0_identity_tv_max": {
+      "value": 0.0,
+      "threshold": 0.001,
+      "block": 0,
+      "sigma": "-",
+      "passes": true
+    },
+    "input_linearity_tv_p95": {
+      "value": 8.442193898565522e-17,
+      "threshold": 0.001,
+      "block": 1,
+      "sigma": "-",
+      "passes": true
+    },
+    "off_joint_tv_p95": {
+      "value": 0.0009448857899902835,
+      "threshold": 0.005,
+      "block": 0,
+      "sigma": "-",
+      "passes": true
+    },
+    "branch_mass_abs_error_p95": {
+      "value": 0.0725426282591216,
+      "threshold": 0.005,
+      "block": 11,
+      "sigma": "+",
+      "passes": false
+    },
+    "conditional_tv_mass_ge_1e-2_p95": {
+      "value": 0.27775450822883463,
+      "threshold": 0.05,
+      "block": 11,
+      "sigma": "+",
+      "passes": false
+    },
+    "conditional_tv_mass_ge_1e-3_p95": {
+      "value": 0.6890241217089825,
+      "threshold": 0.1,
+      "block": 11,
+      "sigma": "+",
+      "passes": false
+    },
+    "block_local_termination_error": {
+      "value": 0.10705425653406646,
+      "threshold": 0.005,
+      "block": 11,
+      "sigma": "+",
+      "passes": false
+    }
+  },
+  "manifest": "/home/htseng/qlsgym_work/checkpoints/thf/column_v2.json",
+  "manifest_fingerprint": "d7deb43457d3"
+}

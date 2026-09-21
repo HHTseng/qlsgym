@@ -1,0 +1,9 @@
+{
+  "prefix_pulses": 15,
+  "rule": "minimize exact validation failure, then failure-penalized actions",
+  "validation_exact": {
+    "average_actions": 40.235,
+    "success_fraction": 0.8205,
+    "unfinished_fraction": 0.1795
+  }
+}

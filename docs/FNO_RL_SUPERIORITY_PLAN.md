@@ -7,7 +7,7 @@ All promotion decisions use the cached-exact environment.  The primary order is
 1. unfinished fraction after the 80-pulse budget;
 2. failure-penalized average actions, where a failed episode scores 80.
 
-The current references are:
+The initial references were:
 
 | Controller | Exact unfinished | Exact actions |
 |---|---:|---:|
@@ -15,10 +15,11 @@ The current references are:
 | Hybrid PPO: downloaded `mix` pretraining + 250k exact | 33.44% | 48.21 |
 | Fixed-order sweeping | 99.92% | 79.97 |
 
-The learned policy already beats the implemented sweep.  To dominate physics
-elimination it must rescue at least 4.08% of all episodes, or 12.2% of its
-current failures, while retaining its 3.28-action advantage.  The working
-target is at most 25% unfinished and at most 48 average actions.
+During execution, a stronger `DescendingPopulationPolicy` control reached
+19.98% unfinished and 40.00 actions. This replaced physics elimination as the
+controller to beat. A method counts as superior only if its paired failure
+difference has an upper 95% seed-level confidence bound below zero and its mean
+action difference is also below zero.
 
 Every selected configuration is confirmed with five training seeds and 5,000
 exact rollouts per seed.  Selection and final evaluation use different random
@@ -186,3 +187,63 @@ The first executable study covers Stages A1 and A2 because they directly target
 the small remaining reliability gap without depending on another unvalidated
 FNO.  Its result determines whether Stage B or the new Stage C pilot is the next
 use of compute.
+
+## 8. Execution outcome — 21 September 2026
+
+The implementation used physical Tara GPUs 0 and 2, with at most one process
+per GPU. Every final learned or hybrid row uses five policy seeds and 5,000
+holdout episodes per seed. Exact dynamics determine all rankings.
+
+### Controller result
+
+| Controller | Type | Exact unfinished | Exact actions | Decision |
+|---|---|---:|---:|---|
+| FNO_RL_optuna PPO | actor only | 41.78% | 51.37 | historical reference |
+| Failure-sensitive PPO | actor only | 24.92% | 45.20 | beats physics elimination, not descending population |
+| Descending population | non-ML exact-table rule | 19.98% | 40.00 | strongest non-ML control |
+| 15-pulse PPO + descending fallback | hybrid | 18.40% | 41.31 | fewer failures, but 1.31 more actions; reject superiority |
+| **Exact candidate arbiter** | exact-table hybrid | **16.37%** | **38.70** | **passes the superiority rule** |
+
+The arbiter compares the failure-sensitive PPO and descending-population action
+at each state. Cached-exact one-step outcomes admit the learned proposal only
+when it improves immediate success probability or expected posterior purity by
+the selected margin, \(10^{-4}\). Relative to descending population, the paired
+failure difference is \(-3.61\) percentage points with a 95% seed interval of
+\([-4.75,-2.47]\), and the mean action difference is \(-1.30\). Across 25,000
+paired episodes it rescues 1,478 and loses 576. This establishes a model-based
+hybrid improvement. It does not establish that a standalone RL actor beats the
+strongest non-ML controller.
+
+### Structured FNO result
+
+The branch-aware column-v2 pilot improved all five median accuracy metrics by
+at least 66%, while enforcing exact identity and input linearity. The pilot
+code applied the two structural bounds pairwise and used median improvement and
+regression limits for the remaining metrics; its old label incorrectly implied
+that all seven absolute bounds passed pairwise. That label is corrected in the
+implementation.
+
+The promoted 24-pair training then passed every absolute gate for only **10/24**
+pairs. Identity, linearity, and off-resonance TV pass globally, but block
+\(11,+\) has branch-mass P95 error 0.07254, conditional-TV P95 errors 0.27775
+and 0.68902, and termination error 0.10705. The preregistered gate therefore
+blocked improved-FNO PPO training.
+
+The diagnostic closed-loop audit confirmed that this was the correct decision:
+
+| Controller | Exact failure/actions | Downloaded `mix` | Column-v2 |
+|---|---:|---:|---:|
+| Failure-sensitive PPO | 24.92% / 45.20 | 28.98% / 48.40 | 89.51% / 73.62 |
+| Descending population | 19.98% / 40.00 | 23.68% / 41.44 | 91.10% / 73.40 |
+
+Column-v2 fixes several local structural errors yet fails catastrophically on
+the visited closed-loop distribution. The next FNO work must target the failing
+block/polarization pairs and policy-occupancy data before any RL training. Wider
+generic architecture searches are not justified by these results.
+
+Final artifacts are in
+[`results/thf_fno_rl_superiority`](../results/thf_fno_rl_superiority), the full
+audit is in
+[`results/thf_column_fno_v2_full_audit`](../results/thf_column_fno_v2_full_audit),
+and the closed-loop audit is in
+[`results/thf_column_fno_v2_transfer`](../results/thf_column_fno_v2_transfer).

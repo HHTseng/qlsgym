@@ -1,0 +1,238 @@
+{
+  "status": "complete",
+  "ranking_rule": "exact unfinished fraction, then exact failure-penalized actions",
+  "rows": [
+    {
+      "name": "Exact candidate arbiter",
+      "class": "hybrid",
+      "inference": "actor and baseline proposals scored by cached-exact tables",
+      "exact": {
+        "unfinished_fraction": 0.16372,
+        "average_actions": 38.701840000000004
+      },
+      "rank": 1
+    },
+    {
+      "name": "15-pulse PPO + descending fallback",
+      "class": "hybrid",
+      "inference": "actor prefix then cached-exact table rule",
+      "exact": {
+        "unfinished_fraction": 0.184,
+        "average_actions": 41.30784
+      },
+      "rank": 2
+    },
+    {
+      "name": "Descending population",
+      "class": "non-ML",
+      "inference": "cached-exact table rule",
+      "exact": {
+        "unfinished_fraction": 0.19979999999999998,
+        "average_actions": 39.9994
+      },
+      "rank": 3
+    },
+    {
+      "name": "Failure-sensitive PPO + fallback",
+      "class": "hybrid",
+      "inference": "actor then physics fallback",
+      "exact": {
+        "unfinished_fraction": 0.2072,
+        "average_actions": 45.246719999999996
+      },
+      "rank": 4
+    },
+    {
+      "name": "Failure-sensitive PPO",
+      "class": "standalone RL",
+      "inference": "actor only",
+      "exact": {
+        "unfinished_fraction": 0.2492,
+        "average_actions": 45.201119999999996
+      },
+      "rank": 5
+    },
+    {
+      "name": "Physics elimination",
+      "class": "non-ML",
+      "inference": "physics rule",
+      "exact": {
+        "unfinished_fraction": 0.29359999999999997,
+        "average_actions": 51.4892
+      },
+      "rank": 6
+    },
+    {
+      "name": "FNO_RL_optuna PPO",
+      "class": "standalone RL",
+      "inference": "actor only",
+      "exact": {
+        "unfinished_fraction": 0.41776,
+        "average_actions": 51.370439999999995
+      },
+      "rank": 7
+    },
+    {
+      "name": "Coverage-balanced sweep",
+      "class": "non-ML",
+      "inference": "fixed schedule",
+      "exact": {
+        "unfinished_fraction": 0.876,
+        "average_actions": 79.108
+      },
+      "rank": 8
+    }
+  ],
+  "decisions": {
+    "column_v2_promoted": false,
+    "column_v2_pairs_passing_all": 10,
+    "column_v2_pairs": 24,
+    "improved_fno_ppo_run": false,
+    "reason_improved_fno_ppo_not_run": "column-v2 failed the preregistered all-pair structural gate",
+    "standalone_rl_beats_descending_on_both": false,
+    "learned_prefix_superiority_supported": false,
+    "exact_arbiter_superiority_supported": true
+  },
+  "exact_arbiter_paired_vs_descending": {
+    "action_difference": -1.29756,
+    "episodes": 25000,
+    "failure_difference": -0.03607999999999998,
+    "failure_difference_seed_ci95": [
+      -0.047480677474887156,
+      -0.024679322525112804
+    ],
+    "lost": 576,
+    "net_rescue_fraction": 0.03608,
+    "rescued": 1478
+  },
+  "column_v2_full_audit": {
+    "status": "complete",
+    "pairs": 24,
+    "pairs_passing_all": 10,
+    "gates": {
+      "tau0_identity_tv_max": 0.001,
+      "input_linearity_tv_p95": 0.001,
+      "off_joint_tv_p95": 0.005,
+      "branch_mass_abs_error_p95": 0.005,
+      "conditional_tv_mass_ge_1e-2_p95": 0.05,
+      "conditional_tv_mass_ge_1e-3_p95": 0.1,
+      "block_local_termination_error": 0.005
+    },
+    "worst_pair_by_gate": {
+      "tau0_identity_tv_max": {
+        "value": 0.0,
+        "threshold": 0.001,
+        "block": 0,
+        "sigma": "-",
+        "passes": true
+      },
+      "input_linearity_tv_p95": {
+        "value": 8.442193898565522e-17,
+        "threshold": 0.001,
+        "block": 1,
+        "sigma": "-",
+        "passes": true
+      },
+      "off_joint_tv_p95": {
+        "value": 0.0009448857899902835,
+        "threshold": 0.005,
+        "block": 0,
+        "sigma": "-",
+        "passes": true
+      },
+      "branch_mass_abs_error_p95": {
+        "value": 0.0725426282591216,
+        "threshold": 0.005,
+        "block": 11,
+        "sigma": "+",
+        "passes": false
+      },
+      "conditional_tv_mass_ge_1e-2_p95": {
+        "value": 0.27775450822883463,
+        "threshold": 0.05,
+        "block": 11,
+        "sigma": "+",
+        "passes": false
+      },
+      "conditional_tv_mass_ge_1e-3_p95": {
+        "value": 0.6890241217089825,
+        "threshold": 0.1,
+        "block": 11,
+        "sigma": "+",
+        "passes": false
+      },
+      "block_local_termination_error": {
+        "value": 0.10705425653406646,
+        "threshold": 0.005,
+        "block": 11,
+        "sigma": "+",
+        "passes": false
+      }
+    },
+    "manifest": "/home/htseng/qlsgym_work/checkpoints/thf/column_v2.json",
+    "manifest_fingerprint": "d7deb43457d3"
+  },
+  "column_v2_closed_loop_transfer": {
+    "descending_population": {
+      "column_v2": {
+        "average_actions": 73.3986,
+        "mean_pulses_successful": 5.8269662921348315,
+        "unfinished_fraction": 0.911
+      },
+      "downloaded_mix": {
+        "average_actions": 41.4448,
+        "unfinished_fraction": 0.2368
+      },
+      "exact": {
+        "average_actions": 39.9994,
+        "unfinished_fraction": 0.19979999999999998
+      }
+    },
+    "evaluation_episodes_per_seed": 5000,
+    "failure_sensitive_ppo": {
+      "column_v2": {
+        "average_actions": 73.61916,
+        "average_actions_sd": 2.3126455993082917,
+        "mean_pulses_successful": 15.492251393386747,
+        "mean_pulses_successful_sd": 10.796874549688212,
+        "unfinished_fraction": 0.8950800000000001,
+        "unfinished_fraction_sd": 0.0501893614225166,
+        "unfinished_fraction_seed_ci95": [
+          0.8327716673773533,
+          0.9573883326226469
+        ]
+      },
+      "downloaded_mix": {
+        "average_actions": 48.40315999999999,
+        "average_actions_sd": 1.723024227339825,
+        "mean_pulses_successful": 35.49942310605987,
+        "mean_pulses_successful_sd": 1.4083525239358223,
+        "success_fraction": 0.71024,
+        "success_fraction_sd": 0.036608578229699096,
+        "unfinished_fraction": 0.28975999999999996,
+        "unfinished_fraction_sd": 0.036608578229699096,
+        "unfinished_fraction_seed_ci95": [
+          0.24431173358402325,
+          0.3352082664159767
+        ]
+      },
+      "exact": {
+        "average_actions": 45.201119999999996,
+        "average_actions_sd": 0.9912100645171038,
+        "mean_pulses_successful": 33.649534526631655,
+        "mean_pulses_successful_sd": 1.2414242630650716,
+        "success_fraction": 0.7508,
+        "success_fraction_sd": 0.009911609354691117,
+        "unfinished_fraction": 0.2492,
+        "unfinished_fraction_sd": 0.009911609354691117,
+        "unfinished_fraction_seed_ci95": [
+          0.23689508447619406,
+          0.26150491552380595
+        ]
+      }
+    },
+    "purpose": "diagnostic only; column-v2 failed the 24-pair promotion gate",
+    "status": "complete",
+    "training_seeds": 5
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "evaluation_episodes": 5000,
+  "evaluation_seed": 82101,
+  "rows": {
+    "coverage_sweeping": {
+      "exact": {
+        "average_actions": 79.108,
+        "unfinished_fraction": 0.876
+      },
+      "fno": {
+        "average_actions": 78.7906,
+        "unfinished_fraction": 0.906
+      }
+    },
+    "descending_population": {
+      "exact": {
+        "average_actions": 39.9994,
+        "unfinished_fraction": 0.19979999999999998
+      },
+      "fno": {
+        "average_actions": 41.4448,
+        "unfinished_fraction": 0.2368
+      }
+    }
+  },
+  "status": "complete"
+}
