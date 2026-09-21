@@ -7,7 +7,7 @@ import pytest
 from qlsgym import load_molecule
 from qlsgym.env import ActionLibrary, ControlGrid
 from qlsgym.policies import (DescendingPopulationPolicy, PhysicsEliminationPolicy, RandomPolicy,
-                             ScorePlannerPolicy, SweepingPolicy)
+                             ScorePlannerPolicy, SweepingPolicy, BatchedFallbackPolicy)
 from qlsgym.policies.score import ScoreConfig
 
 from _fake_tables import FakeEngine, fake_tables
@@ -39,6 +39,36 @@ def test_random_policy_is_uniform_over_library(setup):
     draws = [pol.act(None, 0, rng) for _ in range(500)]
     assert min(draws) >= 0 and max(draws) < lib.n_actions
     assert len(set(draws)) > 1
+
+
+def test_batched_fallback_latches_rows_independently():
+    class Actor:
+        def act_batch(self, beliefs, t, rng):
+            return np.zeros(len(beliefs), dtype=np.int64)
+
+    class Fallback:
+        def reset(self):
+            self.calls = 0
+
+        def act(self, belief, t, rng):
+            self.calls += 1
+            return 2
+
+    policy = BatchedFallbackPolicy(
+        Actor(), Fallback(), max_pulses=10, switch_remaining=3,
+        stagnation_steps=2, min_purity_gain=0.01,
+    )
+    rng = np.random.default_rng(0)
+    beliefs = np.array([[0.6, 0.4], [0.6, 0.4]])
+    assert np.array_equal(policy.act_batch(beliefs, 0, rng), [0, 0])
+    beliefs[1] = [0.7, 0.3]
+    assert np.array_equal(policy.act_batch(beliefs, 1, rng), [0, 0])
+    # Row 0 has stagnated twice; row 1 improved and remains with the actor.
+    assert np.array_equal(policy.act_batch(beliefs, 2, rng), [2, 0])
+    # The fallback latch is permanent, and the time gate switches both rows.
+    assert np.array_equal(policy.act_batch(beliefs, 7, rng), [2, 2])
+    policy.reset()
+    assert np.array_equal(policy.act_batch(beliefs, 0, rng), [0, 0])
 
 
 def test_descending_population_addresses_most_populated_state(setup):

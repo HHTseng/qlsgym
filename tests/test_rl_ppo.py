@@ -43,7 +43,22 @@ def test_config_validation():
         PPOConfig(obs="log")
     with pytest.raises(ValueError):
         PPOConfig(value_target="td")
+    with pytest.raises(ValueError):
+        PPOConfig(failure_penalty=-1.0)
     assert PPOConfig(n_envs=4, n_steps=4, total_steps=30).n_updates == 2
+
+
+@pytest.mark.parametrize("target", ["gae", "qmdp", "qmdp_gae"])
+def test_train_with_failure_penalty(setup, target):
+    env = _env(setup)
+    cfg = PPOConfig(
+        n_envs=4, n_steps=4, total_steps=32, minibatches=1, epochs=1,
+        eval_every=1, eval_rollouts=4, hidden=16, value_target=target,
+        failure_penalty=20.0, seed=12,
+    )
+    result = train_ppo(env, cfg)
+    assert result.config["failure_penalty"] == 20.0
+    assert all(np.isfinite(row["loss_v"]) for row in result.history)
 
 
 def test_train_with_remaining_budget_feature(setup):

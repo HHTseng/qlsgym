@@ -42,6 +42,9 @@ class PPOConfig:
     value_target: str = "gae"       # VALUE_TARGETS
     # rewards are multiplied by this before learning; None -> 1 / max_pulses
     reward_scale: float | None = None
+    # Extra unscaled cost when an episode reaches the pulse budget without
+    # purification.  The default preserves the historical step-cost objective.
+    failure_penalty: float = 0.0
     eval_every: int = 25            # updates between snapshot evaluations
     eval_rollouts: int = 200
     # How the trained actor acts when evaluated.  A PPO actor IS a stochastic
@@ -59,6 +62,8 @@ class PPOConfig:
             raise ValueError(f"value_target must be one of {VALUE_TARGETS}, got {self.value_target!r}")
         if self.n_envs < 1 or self.n_steps < 1 or self.minibatches < 1 or self.epochs < 1:
             raise ValueError("n_envs, n_steps, minibatches and epochs must be >= 1")
+        if self.failure_penalty < 0:
+            raise ValueError("failure_penalty must be nonnegative")
 
     @property
     def n_updates(self) -> int:
@@ -352,7 +357,10 @@ def train_ppo(
                 tr: Transition = env.step(a)
                 ended = tr.done | tr.truncated
                 obs_buf[t], act_buf[t], logp_buf[t], val_buf[t] = x, a, logp, value
-                rew_buf[t] = tr.reward.to(torch.float32) * r_scale
+                sampled_reward = tr.reward.to(torch.float32)
+                if cfg.failure_penalty:
+                    sampled_reward = sampled_reward - cfg.failure_penalty * tr.truncated.to(torch.float32)
+                rew_buf[t] = sampled_reward * r_scale
                 term_buf[t] = ended.to(torch.float32)
                 if cfg.value_target in ("qmdp", "qmdp_gae"):
                     next_budget = (
@@ -364,8 +372,12 @@ def train_ppo(
                     trunc_next = (env.steps >= env.cfg.max_pulses).to(torch.float32)
                     c0 = (1.0 - tr.done0.to(torch.float32)) * (1.0 - trunc_next)
                     c1 = (1.0 - tr.done1.to(torch.float32)) * (1.0 - trunc_next)
-                    q_buf[t] = (tr.pi0.to(torch.float32) * (tr.r0.to(torch.float32) * r_scale + cfg.gamma * c0 * v0)
-                                + tr.pi1.to(torch.float32) * (tr.r1.to(torch.float32) * r_scale + cfg.gamma * c1 * v1))
+                    fail0 = trunc_next * (1.0 - tr.done0.to(torch.float32))
+                    fail1 = trunc_next * (1.0 - tr.done1.to(torch.float32))
+                    r0 = tr.r0.to(torch.float32) - cfg.failure_penalty * fail0
+                    r1 = tr.r1.to(torch.float32) - cfg.failure_penalty * fail1
+                    q_buf[t] = (tr.pi0.to(torch.float32) * (r0 * r_scale + cfg.gamma * c0 * v0)
+                                + tr.pi1.to(torch.float32) * (r1 * r_scale + cfg.gamma * c1 * v1))
                 # episode bookkeeping, then reset the finished rows
                 n_end = int(ended.sum())
                 if n_end:
