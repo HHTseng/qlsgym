@@ -38,6 +38,33 @@ class SweepingPolicy:
         return np.full(beliefs.shape[0], int(t) % self.n_actions, dtype=np.int64)
 
 
+class CoverageSweepingPolicy:
+    """Spread a finite pulse budget across the full ordered action library.
+
+    ``SweepingPolicy`` visits only the first ``H`` controls when ``H`` is less
+    than the library size.  This reference samples evenly spaced action indices
+    instead, including the end of the library where primitive controls live.
+    """
+
+    stateful = False
+
+    def __init__(self, n_actions: int, max_pulses: int):
+        self.n_actions = int(n_actions)
+        self.max_pulses = int(max_pulses)
+        if self.n_actions < 1 or self.max_pulses < 1:
+            raise ValueError("n_actions and max_pulses must be positive")
+        centers = (np.arange(self.max_pulses) + 0.5) / self.max_pulses
+        self.order = np.minimum(
+            (centers * self.n_actions).astype(np.int64), self.n_actions - 1
+        )
+
+    def act(self, belief, t, rng):
+        return int(self.order[int(t) % self.max_pulses])
+
+    def act_batch(self, beliefs, t, rng):
+        return np.full(beliefs.shape[0], self.act(None, t, rng), dtype=np.int64)
+
+
 class RandomPolicy:
     """Uniform over the library (draws from the rollout's generator)."""
 

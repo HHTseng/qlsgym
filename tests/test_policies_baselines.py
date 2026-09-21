@@ -6,8 +6,9 @@ import pytest
 
 from qlsgym import load_molecule
 from qlsgym.env import ActionLibrary, ControlGrid
-from qlsgym.policies import (DescendingPopulationPolicy, PhysicsEliminationPolicy, RandomPolicy,
-                             ScorePlannerPolicy, SweepingPolicy, BatchedFallbackPolicy)
+from qlsgym.policies import (BatchedFallbackPolicy, CoverageSweepingPolicy,
+                             DescendingPopulationPolicy, PhysicsEliminationPolicy, RandomPolicy,
+                             ScorePlannerPolicy, SweepingPolicy)
 from qlsgym.policies.score import ScoreConfig
 
 from _fake_tables import FakeEngine, fake_tables
@@ -30,6 +31,15 @@ def test_sweeping_cycles_actions(setup):
     picks = [pol.act(belief, t, rng) for t in range(2 * lib.n_actions)]
     assert picks == [t % lib.n_actions for t in range(2 * lib.n_actions)]
     assert np.array_equal(pol.act_batch(np.zeros((3, 4)), 1, rng), np.full(3, 1))
+
+
+def test_coverage_sweep_spans_full_library():
+    policy = CoverageSweepingPolicy(n_actions=312, max_pulses=80)
+    assert len(np.unique(policy.order)) == 80
+    assert policy.order[0] > 0
+    assert policy.order[-1] >= 310
+    gaps = np.diff(policy.order)
+    assert gaps.max() - gaps.min() <= 1
 
 
 def test_random_policy_is_uniform_over_library(setup):
