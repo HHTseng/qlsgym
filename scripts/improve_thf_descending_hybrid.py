@@ -21,7 +21,7 @@ from qlsgym.rl.ppo import PPOConfig, policy_from_state_dict
 from thf_rl_agents import build_environments, rollout_metrics, write_json
 
 
-PREFIX_PULSES = (0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 30, 40, 60, 80)
+PREFIX_PULSES = (0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 30, 40)
 DIAGNOSIS_SEED = 83_101
 FINAL_EVAL_SEED = 82_101
 FINAL_SEEDS = tuple(range(5))
@@ -116,10 +116,8 @@ def diagnose(args):
 
 def select(args):
     output = Path(args.output)
-    records = [
-        json.loads(path.read_text())
-        for path in sorted((output / "diagnosis").glob("prefix_*.json"))
-    ]
+    paths = [output / "diagnosis" / f"prefix_{prefix:02d}.json" for prefix in PREFIX_PULSES]
+    records = [json.loads(path.read_text()) for path in paths if path.exists()]
     if len(records) != len(PREFIX_PULSES):
         raise RuntimeError(f"expected {len(PREFIX_PULSES)} diagnosis records, found {len(records)}")
     winner = max(
