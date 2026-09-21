@@ -262,6 +262,18 @@ def select(args) -> None:
     if len(records) != 4:
         raise RuntimeError(f"expected four diagnosis records, found {len(records)}")
     winner = max(records, key=lambda item: item["selection_score_exact"])
+    locked = json.loads(
+        (output.parent / "thf_rl_mix_tara" / "summary.json").read_text()
+    )
+    random_row = next(row for row in locked["rows"] if row["agent"] == "random")
+    random_success = 1.0 - random_row["exact"]["unfinished_fraction"]
+    winner_success = winner["evaluation"]["exact"]["success_fraction"]
+    if winner_success < random_success + args.min_success_gain:
+        raise RuntimeError(
+            f"best 100k exact profile success {winner_success:.4f} does not exceed "
+            f"random {random_success:.4f} by required {args.min_success_gain:.4f}; "
+            "stop before five-seed confirmation"
+        )
     selection = {
         "profile": winner["profile"],
         "agent": winner["agent"],
@@ -270,6 +282,12 @@ def select(args) -> None:
         "diagnosis_exact": compact_metrics(winner["evaluation"]["exact"]),
         "diagnosis_fno": compact_metrics(winner["evaluation"]["fno"]),
         "selection_rule": "exact success plus 0.02 normalized pulse efficiency",
+        "continuation_gate": {
+            "random_exact_success": random_success,
+            "required_gain": args.min_success_gain,
+            "selected_exact_success": winner_success,
+            "passed": True,
+        },
     }
     write_json(output / "selected_exact_profile.json", selection)
     print(json.dumps(selection, indent=2))
@@ -458,6 +476,7 @@ def parser() -> argparse.ArgumentParser:
         item.add_argument("--diagnose-eval", type=int, default=1_000)
         item.add_argument("--confirm-steps", type=int, default=1_000_000)
         item.add_argument("--final-eval", type=int, default=5_000)
+        item.add_argument("--min-success-gain", type=float, default=0.02)
         item.set_defaults(func=globals()[name])
     return main
 
