@@ -1,0 +1,4774 @@
+[
+  {
+    "number": 0,
+    "params": {
+      "alpha_reward_ratio": 0.05,
+      "batch_size": 256,
+      "buffer_size": 200000,
+      "depth": 2,
+      "gamma": 0.99,
+      "hidden": 256,
+      "learning_starts": 10240,
+      "lr": 0.0003,
+      "n_envs": 128,
+      "obs": "sqrt",
+      "return_scale": 80.0,
+      "target_entropy_ratio": 0.5,
+      "tau": 0.005,
+      "update_ratio": 0.03125
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.000625,
+        "autotune_alpha": true,
+        "batch_size": 256,
+        "buffer_size": 200000,
+        "depth": 2,
+        "gamma": 0.99,
+        "gradient_steps": 4,
+        "hidden": 256,
+        "learning_starts": 10240,
+        "lr": 0.0003,
+        "n_envs": 128,
+        "obs": "sqrt",
+        "return_scale": 80.0,
+        "seed": null,
+        "target_entropy_ratio": 0.5,
+        "tau": 0.005,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.0990799560546875,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.1111140251159668,
+            "alpha": 0.0029074803460389376,
+            "critic_loss": 0.0001941921655088663,
+            "entropy": 3.9186458587646484,
+            "env_steps": 300032,
+            "episodes": 3788,
+            "gradient_steps": 9060,
+            "train_mean_pulses": 76.415,
+            "train_success": 0.0501583949313622
+          },
+          "gradient_steps": 9060,
+          "metrics": {
+            "average_actions": 75.396484375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 75.396484375,
+            "mean_pulses_successful": 41.983870967741936,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.87890625,
+              "no_action": 0.0,
+              "success": 0.12109375
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 73.9549340470694,
+            "seed": 51001,
+            "success_err": 0.010194881035455362,
+            "success_fraction": 0.12109375,
+            "target_states": [
+              [
+                44,
+                26
+              ],
+              [
+                41,
+                16
+              ],
+              [
+                3,
+                15
+              ],
+              [
+                5,
+                11
+              ],
+              [
+                138,
+                10
+              ],
+              [
+                17,
+                6
+              ],
+              [
+                178,
+                5
+              ],
+              [
+                6,
+                5
+              ]
+            ],
+            "unfinished_fraction": 0.87890625
+          },
+          "score": 0.12224462890625,
+          "train_seed": 41001,
+          "wall_clock_s": 312.68718988099135
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.05935722589492798,
+            "alpha": 0.003447785973548889,
+            "critic_loss": 0.0002620781597215682,
+            "entropy": 3.9501731395721436,
+            "env_steps": 300032,
+            "episodes": 3750,
+            "gradient_steps": 9060,
+            "train_mean_pulses": 79.375,
+            "train_success": 0.03333333333333333
+          },
+          "gradient_steps": 9060,
+          "metrics": {
+            "average_actions": 77.1201171875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 77.1201171875,
+            "mean_pulses_successful": 41.701298701298704,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.9248046875,
+              "no_action": 0.0,
+              "success": 0.0751953125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 74.28099171002395,
+            "seed": 51002,
+            "success_err": 0.008240819790432629,
+            "success_fraction": 0.0751953125,
+            "target_states": [
+              [
+                44,
+                15
+              ],
+              [
+                39,
+                12
+              ],
+              [
+                5,
+                8
+              ],
+              [
+                138,
+                4
+              ],
+              [
+                1,
+                4
+              ],
+              [
+                3,
+                4
+              ],
+              [
+                69,
+                3
+              ],
+              [
+                76,
+                3
+              ]
+            ],
+            "unfinished_fraction": 0.9248046875
+          },
+          "score": 0.075915283203125,
+          "train_seed": 41002,
+          "wall_clock_s": 276.1957654830767
+        }
+      ],
+      "score_sd": 0.0231646728515625,
+      "seed_profile": "locked_baseline_control",
+      "wall_clock_s": 745.4819064009935
+    },
+    "value": 0.09328878784179688
+  },
+  {
+    "number": 1,
+    "params": {
+      "alpha_reward_ratio": 0.1349937128307491,
+      "batch_size": 256,
+      "buffer_size": 200000,
+      "depth": 3,
+      "gamma": 0.99,
+      "hidden": 128,
+      "learning_starts": 5000,
+      "lr": 0.0002823134500820829,
+      "n_envs": 16,
+      "obs": "p",
+      "return_scale": 5.0,
+      "target_entropy_ratio": 0.2145690742875123,
+      "tau": 0.0029696656967673853,
+      "update_ratio": 0.125
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.02699874256614982,
+        "autotune_alpha": true,
+        "batch_size": 256,
+        "buffer_size": 200000,
+        "depth": 3,
+        "gamma": 0.99,
+        "gradient_steps": 2,
+        "hidden": 128,
+        "learning_starts": 5000,
+        "lr": 0.0002823134500820829,
+        "n_envs": 16,
+        "obs": "p",
+        "return_scale": 5.0,
+        "seed": null,
+        "target_entropy_ratio": 0.2145690742875123,
+        "tau": 0.0029696656967673853,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.034196289062499996,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 3.3484933376312256,
+            "alpha": 0.0321216806769371,
+            "critic_loss": 0.03636197745800018,
+            "entropy": 0.1499205380678177,
+            "env_steps": 300000,
+            "episodes": 3861,
+            "gradient_steps": 36876,
+            "train_mean_pulses": 79.18,
+            "train_success": 0.058793058793058794
+          },
+          "gradient_steps": 36876,
+          "metrics": {
+            "average_actions": 79.853515625,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 79.853515625,
+            "mean_pulses_successful": 5.0,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.998046875,
+              "no_action": 0.0,
+              "success": 0.001953125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 51.496072013978846,
+            "seed": 51001,
+            "success_err": 0.001379718573664223,
+            "success_fraction": 0.001953125,
+            "target_states": [
+              [
+                95,
+                2
+              ]
+            ],
+            "unfinished_fraction": 0.998046875
+          },
+          "score": 0.00198974609375,
+          "train_seed": 41001,
+          "wall_clock_s": 1863.9252048269846
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 3.5586659908294678,
+            "alpha": 0.017227107658982277,
+            "critic_loss": 0.14408302307128906,
+            "entropy": 1.3385077714920044,
+            "env_steps": 300000,
+            "episodes": 3913,
+            "gradient_steps": 36876,
+            "train_mean_pulses": 77.51,
+            "train_success": 0.07743419371326347
+          },
+          "gradient_steps": 36876,
+          "metrics": {
+            "average_actions": 76.107421875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 76.107421875,
+            "mean_pulses_successful": 20.507462686567163,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.9345703125,
+              "no_action": 0.0,
+              "success": 0.0654296875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 67.0700194319943,
+            "seed": 51002,
+            "success_err": 0.007727578673929491,
+            "success_fraction": 0.0654296875,
+            "target_states": [
+              [
+                41,
+                27
+              ],
+              [
+                0,
+                17
+              ],
+              [
+                94,
+                12
+              ],
+              [
+                53,
+                3
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                27,
+                1
+              ],
+              [
+                58,
+                1
+              ],
+              [
+                35,
+                1
+              ]
+            ],
+            "unfinished_fraction": 0.9345703125
+          },
+          "score": 0.06640283203125,
+          "train_seed": 41002,
+          "wall_clock_s": 2223.96403721394
+        }
+      ],
+      "score_sd": 0.032206542968749995,
+      "seed_profile": "h3o_direct_scale_transfer",
+      "wall_clock_s": 4215.972386728041
+    },
+    "value": 0.026144653320312496
+  },
+  {
+    "number": 2,
+    "params": {
+      "alpha_reward_ratio": 0.1349937128307491,
+      "batch_size": 256,
+      "buffer_size": 200000,
+      "depth": 3,
+      "gamma": 0.99,
+      "hidden": 128,
+      "learning_starts": 5000,
+      "lr": 0.0002823134500820829,
+      "n_envs": 16,
+      "obs": "p",
+      "return_scale": 80.0,
+      "target_entropy_ratio": 0.2145690742875123,
+      "tau": 0.0029696656967673853,
+      "update_ratio": 0.125
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.0016874214103843638,
+        "autotune_alpha": true,
+        "batch_size": 256,
+        "buffer_size": 200000,
+        "depth": 3,
+        "gamma": 0.99,
+        "gradient_steps": 2,
+        "hidden": 128,
+        "learning_starts": 5000,
+        "lr": 0.0002823134500820829,
+        "n_envs": 16,
+        "obs": "p",
+        "return_scale": 80.0,
+        "seed": null,
+        "target_entropy_ratio": 0.2145690742875123,
+        "tau": 0.0029696656967673853,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.15827404785156252,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.19816702604293823,
+            "alpha": 0.0006690403679385781,
+            "critic_loss": 0.0005268605891615152,
+            "entropy": 1.4643068313598633,
+            "env_steps": 300000,
+            "episodes": 3944,
+            "gradient_steps": 36876,
+            "train_mean_pulses": 73.94,
+            "train_success": 0.09279918864097363
+          },
+          "gradient_steps": 36876,
+          "metrics": {
+            "average_actions": 73.927734375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 73.927734375,
+            "mean_pulses_successful": 26.396551724137932,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.88671875,
+              "no_action": 0.0,
+              "success": 0.11328125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 72.65365505497903,
+            "seed": 51001,
+            "success_err": 0.009904258888937582,
+            "success_fraction": 0.11328125,
+            "target_states": [
+              [
+                55,
+                22
+              ],
+              [
+                44,
+                17
+              ],
+              [
+                27,
+                16
+              ],
+              [
+                58,
+                16
+              ],
+              [
+                94,
+                13
+              ],
+              [
+                68,
+                9
+              ],
+              [
+                3,
+                6
+              ],
+              [
+                0,
+                5
+              ]
+            ],
+            "unfinished_fraction": 0.88671875
+          },
+          "score": 0.11479931640625,
+          "train_seed": 41001,
+          "wall_clock_s": 2178.8459371710196
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.1925218254327774,
+            "alpha": 0.0010089166462421417,
+            "critic_loss": 0.000741288997232914,
+            "entropy": 1.9351190328598022,
+            "env_steps": 300000,
+            "episodes": 4042,
+            "gradient_steps": 36876,
+            "train_mean_pulses": 71.205,
+            "train_success": 0.11355764473033152
+          },
+          "gradient_steps": 36876,
+          "metrics": {
+            "average_actions": 69.8798828125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 69.8798828125,
+            "mean_pulses_successful": 29.20098039215686,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.80078125,
+              "no_action": 0.0,
+              "success": 0.19921875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 69.97518847405445,
+            "seed": 51002,
+            "success_err": 0.012481652145516524,
+            "success_fraction": 0.19921875,
+            "target_states": [
+              [
+                17,
+                40
+              ],
+              [
+                58,
+                30
+              ],
+              [
+                41,
+                28
+              ],
+              [
+                27,
+                22
+              ],
+              [
+                55,
+                21
+              ],
+              [
+                68,
+                18
+              ],
+              [
+                76,
+                10
+              ],
+              [
+                2,
+                9
+              ]
+            ],
+            "unfinished_fraction": 0.80078125
+          },
+          "score": 0.201748779296875,
+          "train_seed": 41002,
+          "wall_clock_s": 2384.7742990199476
+        }
+      ],
+      "score_sd": 0.043474731445312505,
+      "seed_profile": "h3o_dimensionless_transfer",
+      "wall_clock_s": 4707.753516396973
+    },
+    "value": 0.14740536499023438
+  },
+  {
+    "number": 3,
+    "params": {
+      "alpha_reward_ratio": 0.1,
+      "batch_size": 256,
+      "buffer_size": 200000,
+      "depth": 3,
+      "gamma": 0.99,
+      "hidden": 128,
+      "learning_starts": 5000,
+      "lr": 0.00028,
+      "n_envs": 32,
+      "obs": "p",
+      "return_scale": 20.0,
+      "target_entropy_ratio": 0.22,
+      "tau": 0.003,
+      "update_ratio": 0.0625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.005,
+        "autotune_alpha": true,
+        "batch_size": 256,
+        "buffer_size": 200000,
+        "depth": 3,
+        "gamma": 0.99,
+        "gradient_steps": 2,
+        "hidden": 128,
+        "learning_starts": 5000,
+        "lr": 0.00028,
+        "n_envs": 32,
+        "obs": "p",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.22,
+        "tau": 0.003,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.0034467773437500005,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.964350700378418,
+            "alpha": 0.005396079737693071,
+            "critic_loss": 0.0017989452462643385,
+            "entropy": 0.5020374059677124,
+            "env_steps": 300000,
+            "episodes": 4044,
+            "gradient_steps": 18438,
+            "train_mean_pulses": 80.0,
+            "train_success": 0.12413452027695351
+          },
+          "gradient_steps": 18438,
+          "metrics": {
+            "average_actions": 79.7724609375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 79.7724609375,
+            "mean_pulses_successful": 33.4,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.9951171875,
+              "no_action": 0.0,
+              "success": 0.0048828125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 70.46241209795699,
+            "seed": 51001,
+            "success_err": 0.0021783224090262355,
+            "success_fraction": 0.0048828125,
+            "target_states": [
+              [
+                16,
+                3
+              ],
+              [
+                77,
+                2
+              ]
+            ],
+            "unfinished_fraction": 0.9951171875
+          },
+          "score": 0.004939697265625,
+          "train_seed": 41001,
+          "wall_clock_s": 993.984282876947
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 1.0328521728515625,
+            "alpha": 0.00335473520681262,
+            "critic_loss": 0.03841250389814377,
+            "entropy": 0.048313822597265244,
+            "env_steps": 300000,
+            "episodes": 3953,
+            "gradient_steps": 18438,
+            "train_mean_pulses": 77.56,
+            "train_success": 0.0928408803440425
+          },
+          "gradient_steps": 18438,
+          "metrics": {
+            "average_actions": 79.9970703125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 79.9970703125,
+            "mean_pulses_successful": 78.5,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.998046875,
+              "no_action": 0.0,
+              "success": 0.001953125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 76.0907751499908,
+            "seed": 51002,
+            "success_err": 0.001379718573664223,
+            "success_fraction": 0.001953125,
+            "target_states": [
+              [
+                17,
+                2
+              ]
+            ],
+            "unfinished_fraction": 0.998046875
+          },
+          "score": 0.0019538574218750005,
+          "train_seed": 41002,
+          "wall_clock_s": 963.5681426330702
+        }
+      ],
+      "score_sd": 0.0014929199218749998,
+      "seed_profile": "h3o_s18_moderate_updates",
+      "wall_clock_s": 2107.502124941908
+    },
+    "value": 0.0030735473632812504
+  },
+  {
+    "number": 4,
+    "params": {
+      "alpha_reward_ratio": 0.026897763261127788,
+      "batch_size": 512,
+      "buffer_size": 400000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 0.0001711307814262544,
+      "n_envs": 32,
+      "obs": "sqrt",
+      "return_scale": 5.0,
+      "target_entropy_ratio": 0.34789933748791024,
+      "tau": 0.0015549903115807914,
+      "update_ratio": 0.0625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.0053795526522255575,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 400000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 2,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 0.0001711307814262544,
+        "n_envs": 32,
+        "obs": "sqrt",
+        "return_scale": 5.0,
+        "seed": null,
+        "target_entropy_ratio": 0.34789933748791024,
+        "tau": 0.0015549903115807914,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.2184788818359375,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 3.2736847400665283,
+            "alpha": 0.0019457952585071325,
+            "critic_loss": 0.14101329445838928,
+            "entropy": 2.0044291019439697,
+            "env_steps": 300000,
+            "episodes": 4164,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 70.81,
+            "train_success": 0.17483189241114314
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 70.5283203125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 70.5283203125,
+            "mean_pulses_successful": 36.113122171945705,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.7841796875,
+              "no_action": 0.0,
+              "success": 0.2158203125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 108.07282904104795,
+            "seed": 51001,
+            "success_err": 0.012855944074978962,
+            "success_fraction": 0.2158203125,
+            "target_states": [
+              [
+                13,
+                21
+              ],
+              [
+                4,
+                21
+              ],
+              [
+                86,
+                17
+              ],
+              [
+                94,
+                16
+              ],
+              [
+                27,
+                15
+              ],
+              [
+                24,
+                15
+              ],
+              [
+                17,
+                14
+              ],
+              [
+                0,
+                12
+              ]
+            ],
+            "unfinished_fraction": 0.7841796875
+          },
+          "score": 0.218188232421875,
+          "train_seed": 41001,
+          "wall_clock_s": 1103.5624644979835
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 3.1464462280273438,
+            "alpha": 0.0022687565069645643,
+            "critic_loss": 0.08792369812726974,
+            "entropy": 1.9830857515335083,
+            "env_steps": 300000,
+            "episodes": 4249,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 67.325,
+            "train_success": 0.19322193457284068
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 68.203125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 68.203125,
+            "mean_pulses_successful": 25.339366515837103,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.7841796875,
+              "no_action": 0.0,
+              "success": 0.2158203125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 70.41858896799386,
+            "seed": 51002,
+            "success_err": 0.012855944074978962,
+            "success_fraction": 0.2158203125,
+            "target_states": [
+              [
+                41,
+                28
+              ],
+              [
+                44,
+                27
+              ],
+              [
+                13,
+                21
+              ],
+              [
+                60,
+                19
+              ],
+              [
+                55,
+                17
+              ],
+              [
+                0,
+                17
+              ],
+              [
+                152,
+                12
+              ],
+              [
+                36,
+                12
+              ]
+            ],
+            "unfinished_fraction": 0.7841796875
+          },
+          "score": 0.21876953125,
+          "train_seed": 41002,
+          "wall_clock_s": 991.2597034660866
+        }
+      ],
+      "score_sd": 0.00029064941406251044,
+      "wall_clock_s": 2275.8807568349876
+    },
+    "value": 0.21840621948242187
+  },
+  {
+    "number": 5,
+    "params": {
+      "alpha_reward_ratio": 0.04228510727784977,
+      "batch_size": 128,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.99,
+      "hidden": 128,
+      "learning_starts": 5000,
+      "lr": 0.0001195864029884399,
+      "n_envs": 128,
+      "obs": "p",
+      "return_scale": 20.0,
+      "target_entropy_ratio": 0.455939649674142,
+      "tau": 0.0025728586709448543,
+      "update_ratio": 0.015625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.002114255363892489,
+        "autotune_alpha": true,
+        "batch_size": 128,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.99,
+        "gradient_steps": 2,
+        "hidden": 128,
+        "learning_starts": 5000,
+        "lr": 0.0001195864029884399,
+        "n_envs": 128,
+        "obs": "p",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.455939649674142,
+        "tau": 0.0025728586709448543,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.209193115234375,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.43739068508148193,
+            "alpha": 0.001295994850806892,
+            "critic_loss": 0.0030488763004541397,
+            "entropy": 4.791313171386719,
+            "env_steps": 300032,
+            "episodes": 3970,
+            "gradient_steps": 4610,
+            "train_mean_pulses": 71.41,
+            "train_success": 0.15239294710327456
+          },
+          "gradient_steps": 4610,
+          "metrics": {
+            "average_actions": 73.3486328125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 73.3486328125,
+            "mean_pulses_successful": 40.401162790697676,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.83203125,
+              "no_action": 0.0,
+              "success": 0.16796875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 71.66723646805622,
+            "seed": 51001,
+            "success_err": 0.011682454167444898,
+            "success_fraction": 0.16796875,
+            "target_states": [
+              [
+                44,
+                21
+              ],
+              [
+                27,
+                17
+              ],
+              [
+                86,
+                15
+              ],
+              [
+                94,
+                11
+              ],
+              [
+                5,
+                11
+              ],
+              [
+                41,
+                11
+              ],
+              [
+                55,
+                9
+              ],
+              [
+                68,
+                8
+              ]
+            ],
+            "unfinished_fraction": 0.83203125
+          },
+          "score": 0.169631591796875,
+          "train_seed": 41001,
+          "wall_clock_s": 284.8339502940653
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.4422715902328491,
+            "alpha": 0.0012966637732461095,
+            "critic_loss": 0.011220710352063179,
+            "entropy": 4.854569911956787,
+            "env_steps": 300032,
+            "episodes": 4021,
+            "gradient_steps": 4610,
+            "train_mean_pulses": 70.155,
+            "train_success": 0.17980601840338226
+          },
+          "gradient_steps": 4610,
+          "metrics": {
+            "average_actions": 69.3564453125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 69.3564453125,
+            "mean_pulses_successful": 36.75,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.75390625,
+              "no_action": 0.0,
+              "success": 0.24609375
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 69.73899844905827,
+            "seed": 51002,
+            "success_err": 0.013460431603629716,
+            "success_fraction": 0.24609375,
+            "target_states": [
+              [
+                27,
+                28
+              ],
+              [
+                86,
+                23
+              ],
+              [
+                55,
+                19
+              ],
+              [
+                41,
+                19
+              ],
+              [
+                44,
+                17
+              ],
+              [
+                76,
+                17
+              ],
+              [
+                94,
+                16
+              ],
+              [
+                58,
+                16
+              ]
+            ],
+            "unfinished_fraction": 0.75390625
+          },
+          "score": 0.248754638671875,
+          "train_seed": 41002,
+          "wall_clock_s": 275.9693758318899
+        }
+      ],
+      "score_sd": 0.039561523437499996,
+      "wall_clock_s": 705.156652251957
+    },
+    "value": 0.199302734375
+  },
+  {
+    "number": 6,
+    "params": {
+      "alpha_reward_ratio": 0.04228510727784977,
+      "batch_size": 128,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.99,
+      "hidden": 128,
+      "learning_starts": 5000,
+      "lr": 0.0001195864029884399,
+      "n_envs": 128,
+      "obs": "p",
+      "return_scale": 20.0,
+      "target_entropy_ratio": 0.455939649674142,
+      "tau": 0.0025728586709448543,
+      "update_ratio": 0.015625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.002114255363892489,
+        "autotune_alpha": true,
+        "batch_size": 128,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.99,
+        "gradient_steps": 2,
+        "hidden": 128,
+        "learning_starts": 5000,
+        "lr": 0.0001195864029884399,
+        "n_envs": 128,
+        "obs": "p",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.455939649674142,
+        "tau": 0.0025728586709448543,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.209193115234375,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.43739068508148193,
+            "alpha": 0.001295994850806892,
+            "critic_loss": 0.0030488763004541397,
+            "entropy": 4.791313171386719,
+            "env_steps": 300032,
+            "episodes": 3970,
+            "gradient_steps": 4610,
+            "train_mean_pulses": 71.41,
+            "train_success": 0.15239294710327456
+          },
+          "gradient_steps": 4610,
+          "metrics": {
+            "average_actions": 73.3486328125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 73.3486328125,
+            "mean_pulses_successful": 40.401162790697676,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.83203125,
+              "no_action": 0.0,
+              "success": 0.16796875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 60.83146339096129,
+            "seed": 51001,
+            "success_err": 0.011682454167444898,
+            "success_fraction": 0.16796875,
+            "target_states": [
+              [
+                44,
+                21
+              ],
+              [
+                27,
+                17
+              ],
+              [
+                86,
+                15
+              ],
+              [
+                94,
+                11
+              ],
+              [
+                5,
+                11
+              ],
+              [
+                41,
+                11
+              ],
+              [
+                55,
+                9
+              ],
+              [
+                68,
+                8
+              ]
+            ],
+            "unfinished_fraction": 0.83203125
+          },
+          "score": 0.169631591796875,
+          "train_seed": 41001,
+          "wall_clock_s": 249.43231267493684
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.4422715902328491,
+            "alpha": 0.0012966637732461095,
+            "critic_loss": 0.011220710352063179,
+            "entropy": 4.854569911956787,
+            "env_steps": 300032,
+            "episodes": 4021,
+            "gradient_steps": 4610,
+            "train_mean_pulses": 70.155,
+            "train_success": 0.17980601840338226
+          },
+          "gradient_steps": 4610,
+          "metrics": {
+            "average_actions": 69.3564453125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 69.3564453125,
+            "mean_pulses_successful": 36.75,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.75390625,
+              "no_action": 0.0,
+              "success": 0.24609375
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 69.75598116405308,
+            "seed": 51002,
+            "success_err": 0.013460431603629716,
+            "success_fraction": 0.24609375,
+            "target_states": [
+              [
+                27,
+                28
+              ],
+              [
+                86,
+                23
+              ],
+              [
+                55,
+                19
+              ],
+              [
+                41,
+                19
+              ],
+              [
+                44,
+                17
+              ],
+              [
+                76,
+                17
+              ],
+              [
+                94,
+                16
+              ],
+              [
+                58,
+                16
+              ]
+            ],
+            "unfinished_fraction": 0.75390625
+          },
+          "score": 0.248754638671875,
+          "train_seed": 41002,
+          "wall_clock_s": 267.1850434540538
+        }
+      ],
+      "score_sd": 0.039561523437499996,
+      "wall_clock_s": 648.8698154329322
+    },
+    "value": 0.199302734375
+  },
+  {
+    "number": 7,
+    "params": {
+      "alpha_reward_ratio": 0.04228510727784977,
+      "batch_size": 128,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.99,
+      "hidden": 128,
+      "learning_starts": 5000,
+      "lr": 0.0001195864029884399,
+      "n_envs": 128,
+      "obs": "p",
+      "return_scale": 20.0,
+      "target_entropy_ratio": 0.455939649674142,
+      "tau": 0.0025728586709448543,
+      "update_ratio": 0.015625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.002114255363892489,
+        "autotune_alpha": true,
+        "batch_size": 128,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.99,
+        "gradient_steps": 2,
+        "hidden": 128,
+        "learning_starts": 5000,
+        "lr": 0.0001195864029884399,
+        "n_envs": 128,
+        "obs": "p",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.455939649674142,
+        "tau": 0.0025728586709448543,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.209193115234375,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.43739068508148193,
+            "alpha": 0.001295994850806892,
+            "critic_loss": 0.0030488763004541397,
+            "entropy": 4.791313171386719,
+            "env_steps": 300032,
+            "episodes": 3970,
+            "gradient_steps": 4610,
+            "train_mean_pulses": 71.41,
+            "train_success": 0.15239294710327456
+          },
+          "gradient_steps": 4610,
+          "metrics": {
+            "average_actions": 73.3486328125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 73.3486328125,
+            "mean_pulses_successful": 40.401162790697676,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.83203125,
+              "no_action": 0.0,
+              "success": 0.16796875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 70.17369792296086,
+            "seed": 51001,
+            "success_err": 0.011682454167444898,
+            "success_fraction": 0.16796875,
+            "target_states": [
+              [
+                44,
+                21
+              ],
+              [
+                27,
+                17
+              ],
+              [
+                86,
+                15
+              ],
+              [
+                94,
+                11
+              ],
+              [
+                5,
+                11
+              ],
+              [
+                41,
+                11
+              ],
+              [
+                55,
+                9
+              ],
+              [
+                68,
+                8
+              ]
+            ],
+            "unfinished_fraction": 0.83203125
+          },
+          "score": 0.169631591796875,
+          "train_seed": 41001,
+          "wall_clock_s": 276.08605814294424
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.4422715902328491,
+            "alpha": 0.0012966637732461095,
+            "critic_loss": 0.011220710352063179,
+            "entropy": 4.854569911956787,
+            "env_steps": 300032,
+            "episodes": 4021,
+            "gradient_steps": 4610,
+            "train_mean_pulses": 70.155,
+            "train_success": 0.17980601840338226
+          },
+          "gradient_steps": 4610,
+          "metrics": {
+            "average_actions": 69.3564453125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 69.3564453125,
+            "mean_pulses_successful": 36.75,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.75390625,
+              "no_action": 0.0,
+              "success": 0.24609375
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 70.09026320104022,
+            "seed": 51002,
+            "success_err": 0.013460431603629716,
+            "success_fraction": 0.24609375,
+            "target_states": [
+              [
+                27,
+                28
+              ],
+              [
+                86,
+                23
+              ],
+              [
+                55,
+                19
+              ],
+              [
+                41,
+                19
+              ],
+              [
+                44,
+                17
+              ],
+              [
+                76,
+                17
+              ],
+              [
+                94,
+                16
+              ],
+              [
+                58,
+                16
+              ]
+            ],
+            "unfinished_fraction": 0.75390625
+          },
+          "score": 0.248754638671875,
+          "train_seed": 41002,
+          "wall_clock_s": 277.2706753920065
+        }
+      ],
+      "score_sd": 0.039561523437499996,
+      "wall_clock_s": 697.071378880064
+    },
+    "value": 0.199302734375
+  },
+  {
+    "number": 8,
+    "params": {
+      "alpha_reward_ratio": 0.026897763261127788,
+      "batch_size": 512,
+      "buffer_size": 400000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 0.0001711307814262544,
+      "n_envs": 32,
+      "obs": "sqrt",
+      "return_scale": 5.0,
+      "target_entropy_ratio": 0.34789933748791024,
+      "tau": 0.0015549903115807914,
+      "update_ratio": 0.0625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.0053795526522255575,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 400000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 2,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 0.0001711307814262544,
+        "n_envs": 32,
+        "obs": "sqrt",
+        "return_scale": 5.0,
+        "seed": null,
+        "target_entropy_ratio": 0.34789933748791024,
+        "tau": 0.0015549903115807914,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.2184788818359375,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 3.2736847400665283,
+            "alpha": 0.0019457952585071325,
+            "critic_loss": 0.14101329445838928,
+            "entropy": 2.0044291019439697,
+            "env_steps": 300000,
+            "episodes": 4164,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 70.81,
+            "train_success": 0.17483189241114314
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 70.5283203125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 70.5283203125,
+            "mean_pulses_successful": 36.113122171945705,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.7841796875,
+              "no_action": 0.0,
+              "success": 0.2158203125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 61.87933646608144,
+            "seed": 51001,
+            "success_err": 0.012855944074978962,
+            "success_fraction": 0.2158203125,
+            "target_states": [
+              [
+                13,
+                21
+              ],
+              [
+                4,
+                21
+              ],
+              [
+                86,
+                17
+              ],
+              [
+                94,
+                16
+              ],
+              [
+                27,
+                15
+              ],
+              [
+                24,
+                15
+              ],
+              [
+                17,
+                14
+              ],
+              [
+                0,
+                12
+              ]
+            ],
+            "unfinished_fraction": 0.7841796875
+          },
+          "score": 0.218188232421875,
+          "train_seed": 41001,
+          "wall_clock_s": 998.8942847469589
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 3.1464462280273438,
+            "alpha": 0.0022687565069645643,
+            "critic_loss": 0.08792369812726974,
+            "entropy": 1.9830857515335083,
+            "env_steps": 300000,
+            "episodes": 4249,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 67.325,
+            "train_success": 0.19322193457284068
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 68.203125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 68.203125,
+            "mean_pulses_successful": 25.339366515837103,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.7841796875,
+              "no_action": 0.0,
+              "success": 0.2158203125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 68.09948570793495,
+            "seed": 51002,
+            "success_err": 0.012855944074978962,
+            "success_fraction": 0.2158203125,
+            "target_states": [
+              [
+                41,
+                28
+              ],
+              [
+                44,
+                27
+              ],
+              [
+                13,
+                21
+              ],
+              [
+                60,
+                19
+              ],
+              [
+                55,
+                17
+              ],
+              [
+                0,
+                17
+              ],
+              [
+                152,
+                12
+              ],
+              [
+                36,
+                12
+              ]
+            ],
+            "unfinished_fraction": 0.7841796875
+          },
+          "score": 0.21876953125,
+          "train_seed": 41002,
+          "wall_clock_s": 1295.9700314640068
+        }
+      ],
+      "score_sd": 0.00029064941406251044,
+      "wall_clock_s": 2425.7419963040156
+    },
+    "value": 0.21840621948242187
+  },
+  {
+    "number": 9,
+    "params": {
+      "alpha_reward_ratio": 0.03174913089867278,
+      "batch_size": 512,
+      "buffer_size": 400000,
+      "depth": 2,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 0.0001915560497347889,
+      "n_envs": 16,
+      "obs": "sqrt",
+      "return_scale": 5.0,
+      "target_entropy_ratio": 0.10429953814786438,
+      "tau": 0.001288214631766068,
+      "update_ratio": 0.015625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.0063498261797345565,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 400000,
+        "depth": 2,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 0.0001915560497347889,
+        "n_envs": 16,
+        "obs": "sqrt",
+        "return_scale": 5.0,
+        "seed": null,
+        "target_entropy_ratio": 0.10429953814786438,
+        "tau": 0.001288214631766068,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.1430928955078125,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 2.674881935119629,
+            "alpha": 0.0007455500308424234,
+            "critic_loss": 0.04355974495410919,
+            "entropy": 0.757483720779419,
+            "env_steps": 300000,
+            "episodes": 4183,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 74.415,
+            "train_success": 0.15586899354530243
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 73.052734375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 73.052734375,
+            "mean_pulses_successful": 24.421875,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.875,
+              "no_action": 0.0,
+              "success": 0.125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 62.41444818198215,
+            "seed": 51001,
+            "success_err": 0.010334966058846057,
+            "success_fraction": 0.125,
+            "target_states": [
+              [
+                27,
+                19
+              ],
+              [
+                3,
+                18
+              ],
+              [
+                54,
+                18
+              ],
+              [
+                55,
+                13
+              ],
+              [
+                1,
+                13
+              ],
+              [
+                4,
+                9
+              ],
+              [
+                83,
+                9
+              ],
+              [
+                86,
+                8
+              ]
+            ],
+            "unfinished_fraction": 0.875
+          },
+          "score": 0.12673681640625,
+          "train_seed": 41001,
+          "wall_clock_s": 1942.871347250999
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 2.5083186626434326,
+            "alpha": 0.0007908394909463823,
+            "critic_loss": 0.012164583429694176,
+            "entropy": 0.5361971259117126,
+            "env_steps": 300000,
+            "episodes": 4168,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 74.13,
+            "train_success": 0.15187140115163147
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 71.1103515625,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 71.1103515625,
+            "mean_pulses_successful": 23.459627329192546,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.8427734375,
+              "no_action": 0.0,
+              "success": 0.1572265625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 68.9100514560705,
+            "seed": 51002,
+            "success_err": 0.011375445155456486,
+            "success_fraction": 0.1572265625,
+            "target_states": [
+              [
+                17,
+                31
+              ],
+              [
+                44,
+                27
+              ],
+              [
+                4,
+                22
+              ],
+              [
+                27,
+                20
+              ],
+              [
+                94,
+                14
+              ],
+              [
+                5,
+                11
+              ],
+              [
+                55,
+                9
+              ],
+              [
+                58,
+                9
+              ]
+            ],
+            "unfinished_fraction": 0.8427734375
+          },
+          "score": 0.159448974609375,
+          "train_seed": 41002,
+          "wall_clock_s": 2131.7399499950698
+        }
+      ],
+      "score_sd": 0.01635607910156249,
+      "wall_clock_s": 4210.747094503022
+    },
+    "value": 0.1390038757324219
+  },
+  {
+    "number": 10,
+    "params": {
+      "alpha_reward_ratio": 0.04378321907818237,
+      "batch_size": 512,
+      "buffer_size": 400000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 0.00047980957796967937,
+      "n_envs": 32,
+      "obs": "p",
+      "return_scale": 20.0,
+      "target_entropy_ratio": 0.25510641568380266,
+      "tau": 0.013287610951986351,
+      "update_ratio": 0.0625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.0021891609539091183,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 400000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 2,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 0.00047980957796967937,
+        "n_envs": 32,
+        "obs": "p",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.25510641568380266,
+        "tau": 0.013287610951986351,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.162907470703125,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.6730061769485474,
+            "alpha": 0.0012619580375030637,
+            "critic_loss": 0.023121286183595657,
+            "entropy": 1.4008216857910156,
+            "env_steps": 300000,
+            "episodes": 4089,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 73.395,
+            "train_success": 0.12912692589875274
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 71.0693359375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 71.0693359375,
+            "mean_pulses_successful": 20.616883116883116,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.849609375,
+              "no_action": 0.0,
+              "success": 0.150390625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 110.69619867799338,
+            "seed": 51001,
+            "success_err": 0.01117043412526934,
+            "success_fraction": 0.150390625,
+            "target_states": [
+              [
+                58,
+                23
+              ],
+              [
+                86,
+                21
+              ],
+              [
+                55,
+                20
+              ],
+              [
+                44,
+                20
+              ],
+              [
+                41,
+                16
+              ],
+              [
+                17,
+                16
+              ],
+              [
+                94,
+                14
+              ],
+              [
+                68,
+                11
+              ]
+            ],
+            "unfinished_fraction": 0.849609375
+          },
+          "score": 0.152623291015625,
+          "train_seed": 41001,
+          "wall_clock_s": 1242.4578809560044
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.6425061225891113,
+            "alpha": 0.0018130416283383965,
+            "critic_loss": 0.007675510831177235,
+            "entropy": 1.4807095527648926,
+            "env_steps": 300000,
+            "episodes": 4049,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 73.195,
+            "train_success": 0.11854778957767349
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 70.8271484375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 70.8271484375,
+            "mean_pulses_successful": 26.325714285714287,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.8291015625,
+              "no_action": 0.0,
+              "success": 0.1708984375
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 74.29888802301139,
+            "seed": 51002,
+            "success_err": 0.0117631310255176,
+            "success_fraction": 0.1708984375,
+            "target_states": [
+              [
+                58,
+                28
+              ],
+              [
+                17,
+                23
+              ],
+              [
+                44,
+                23
+              ],
+              [
+                41,
+                18
+              ],
+              [
+                55,
+                18
+              ],
+              [
+                68,
+                17
+              ],
+              [
+                7,
+                13
+              ],
+              [
+                24,
+                9
+              ]
+            ],
+            "unfinished_fraction": 0.8291015625
+          },
+          "score": 0.173191650390625,
+          "train_seed": 41002,
+          "wall_clock_s": 1075.7075880720513
+        }
+      ],
+      "score_sd": 0.010284179687500006,
+      "wall_clock_s": 2506.215589975938
+    },
+    "value": 0.16033642578125
+  },
+  {
+    "number": 11,
+    "params": {
+      "alpha_reward_ratio": 0.02570109666991495,
+      "batch_size": 128,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 0.0001323188944004875,
+      "n_envs": 32,
+      "obs": "sqrt",
+      "return_scale": 80.0,
+      "target_entropy_ratio": 0.18019315764269933,
+      "tau": 0.004948849615312954,
+      "update_ratio": 0.03125
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.0003212637083739369,
+        "autotune_alpha": true,
+        "batch_size": 128,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 0.0001323188944004875,
+        "n_envs": 32,
+        "obs": "sqrt",
+        "return_scale": 80.0,
+        "seed": null,
+        "target_entropy_ratio": 0.18019315764269933,
+        "tau": 0.004948849615312954,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.02562646484375,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.1904325783252716,
+            "alpha": 0.0005040174000896513,
+            "critic_loss": 0.0004053864977322519,
+            "entropy": 1.1767261028289795,
+            "env_steps": 300000,
+            "episodes": 3760,
+            "gradient_steps": 9344,
+            "train_mean_pulses": 80.0,
+            "train_success": 0.011968085106382979
+          },
+          "gradient_steps": 9344,
+          "metrics": {
+            "average_actions": 79.5771484375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 79.5771484375,
+            "mean_pulses_successful": 43.916666666666664,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.98828125,
+              "no_action": 0.0,
+              "success": 0.01171875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 57.17988099204376,
+            "seed": 51001,
+            "success_err": 0.003363031570790017,
+            "success_fraction": 0.01171875,
+            "target_states": [
+              [
+                77,
+                7
+              ],
+              [
+                4,
+                3
+              ],
+              [
+                108,
+                1
+              ],
+              [
+                24,
+                1
+              ]
+            ],
+            "unfinished_fraction": 0.98828125
+          },
+          "score": 0.011824462890625,
+          "train_seed": 41001,
+          "wall_clock_s": 664.701237410889
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.239207923412323,
+            "alpha": 0.00043678723159246147,
+            "critic_loss": 0.0015631209826096892,
+            "entropy": 1.1648262739181519,
+            "env_steps": 300000,
+            "episodes": 3820,
+            "gradient_steps": 9344,
+            "train_mean_pulses": 77.85,
+            "train_success": 0.040837696335078534
+          },
+          "gradient_steps": 9344,
+          "metrics": {
+            "average_actions": 78.5361328125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 78.5361328125,
+            "mean_pulses_successful": 42.525,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.9609375,
+              "no_action": 0.0,
+              "success": 0.0390625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 74.14065035700332,
+            "seed": 51002,
+            "success_err": 0.006054490609197874,
+            "success_fraction": 0.0390625,
+            "target_states": [
+              [
+                49,
+                23
+              ],
+              [
+                116,
+                7
+              ],
+              [
+                13,
+                7
+              ],
+              [
+                12,
+                1
+              ],
+              [
+                186,
+                1
+              ],
+              [
+                102,
+                1
+              ]
+            ],
+            "unfinished_fraction": 0.9609375
+          },
+          "score": 0.039428466796875,
+          "train_seed": 41002,
+          "wall_clock_s": 806.7971746979747
+        }
+      ],
+      "score_sd": 0.013802001953124999,
+      "wall_clock_s": 1605.938956864993
+    },
+    "value": 0.022175964355468748
+  },
+  {
+    "number": 12,
+    "params": {
+      "alpha_reward_ratio": 0.04588949853673676,
+      "batch_size": 128,
+      "buffer_size": 400000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 0.00012142701015003801,
+      "n_envs": 32,
+      "obs": "sqrt",
+      "return_scale": 40.0,
+      "target_entropy_ratio": 0.40257521098300486,
+      "tau": 0.001835015785963637,
+      "update_ratio": 0.0625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.001147237463418419,
+        "autotune_alpha": true,
+        "batch_size": 128,
+        "buffer_size": 400000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 2,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 0.00012142701015003801,
+        "n_envs": 32,
+        "obs": "sqrt",
+        "return_scale": 40.0,
+        "seed": null,
+        "target_entropy_ratio": 0.40257521098300486,
+        "tau": 0.001835015785963637,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.136612548828125,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.47784629464149475,
+            "alpha": 0.0007488117553293705,
+            "critic_loss": 0.0006638675695285201,
+            "entropy": 2.4768786430358887,
+            "env_steps": 300000,
+            "episodes": 3845,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 74.88,
+            "train_success": 0.05565669700910273
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 75.392578125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 75.392578125,
+            "mean_pulses_successful": 31.36082474226804,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.9052734375,
+              "no_action": 0.0,
+              "success": 0.0947265625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 74.43585655395873,
+            "seed": 51001,
+            "success_err": 0.009151152637064317,
+            "success_fraction": 0.0947265625,
+            "target_states": [
+              [
+                25,
+                19
+              ],
+              [
+                94,
+                18
+              ],
+              [
+                4,
+                17
+              ],
+              [
+                42,
+                8
+              ],
+              [
+                16,
+                7
+              ],
+              [
+                7,
+                5
+              ],
+              [
+                76,
+                3
+              ],
+              [
+                138,
+                3
+              ]
+            ],
+            "unfinished_fraction": 0.9052734375
+          },
+          "score": 0.09587841796875,
+          "train_seed": 41001,
+          "wall_clock_s": 1024.0277222599834
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.5034417510032654,
+            "alpha": 0.0007396701257675886,
+            "critic_loss": 0.00039458111859858036,
+            "entropy": 2.70711088180542,
+            "env_steps": 300000,
+            "episodes": 4040,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 68.82,
+            "train_success": 0.11113861386138614
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 69.83203125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 69.83203125,
+            "mean_pulses_successful": 21.83240223463687,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.8251953125,
+              "no_action": 0.0,
+              "success": 0.1748046875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 64.05162917205598,
+            "seed": 51002,
+            "success_err": 0.01186874871346867,
+            "success_fraction": 0.1748046875,
+            "target_states": [
+              [
+                41,
+                34
+              ],
+              [
+                0,
+                24
+              ],
+              [
+                44,
+                23
+              ],
+              [
+                7,
+                18
+              ],
+              [
+                27,
+                17
+              ],
+              [
+                86,
+                14
+              ],
+              [
+                178,
+                12
+              ],
+              [
+                6,
+                12
+              ]
+            ],
+            "unfinished_fraction": 0.8251953125
+          },
+          "score": 0.1773466796875,
+          "train_seed": 41002,
+          "wall_clock_s": 1127.302147186012
+        }
+      ],
+      "score_sd": 0.040734130859375,
+      "wall_clock_s": 2294.313528390019
+    },
+    "value": 0.12642901611328125
+  },
+  {
+    "number": 13,
+    "params": {
+      "alpha_reward_ratio": 0.022293946731213952,
+      "batch_size": 512,
+      "buffer_size": 400000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 0.00018029148962253497,
+      "n_envs": 32,
+      "obs": "p",
+      "return_scale": 5.0,
+      "target_entropy_ratio": 0.39796093013962386,
+      "tau": 0.002361387734064683,
+      "update_ratio": 0.125
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.004458789346242791,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 400000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 4,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 0.00018029148962253497,
+        "n_envs": 32,
+        "obs": "p",
+        "return_scale": 5.0,
+        "seed": null,
+        "target_entropy_ratio": 0.39796093013962386,
+        "tau": 0.002361387734064683,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.202455810546875,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 4.9424872398376465,
+            "alpha": 0.008393042720854282,
+            "critic_loss": 0.6884511709213257,
+            "entropy": 2.4623193740844727,
+            "env_steps": 300000,
+            "episodes": 4075,
+            "gradient_steps": 37376,
+            "train_mean_pulses": 69.575,
+            "train_success": 0.12098159509202454
+          },
+          "gradient_steps": 37376,
+          "metrics": {
+            "average_actions": 70.3955078125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 70.3955078125,
+            "mean_pulses_successful": 23.15028901734104,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.8310546875,
+              "no_action": 0.0,
+              "success": 0.1689453125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 73.57670276996214,
+            "seed": 51001,
+            "success_err": 0.011709487751503675,
+            "success_fraction": 0.1689453125,
+            "target_states": [
+              [
+                94,
+                20
+              ],
+              [
+                3,
+                17
+              ],
+              [
+                76,
+                15
+              ],
+              [
+                55,
+                15
+              ],
+              [
+                44,
+                14
+              ],
+              [
+                86,
+                13
+              ],
+              [
+                41,
+                13
+              ],
+              [
+                58,
+                13
+              ]
+            ],
+            "unfinished_fraction": 0.8310546875
+          },
+          "score": 0.171346435546875,
+          "train_seed": 41001,
+          "wall_clock_s": 1095.6656029199949
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 4.981585502624512,
+            "alpha": 0.01238319929689169,
+            "critic_loss": 0.2917574644088745,
+            "entropy": 2.3301358222961426,
+            "env_steps": 300000,
+            "episodes": 4298,
+            "gradient_steps": 37376,
+            "train_mean_pulses": 69.035,
+            "train_success": 0.18776174965100045
+          },
+          "gradient_steps": 37376,
+          "metrics": {
+            "average_actions": 67.6142578125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 67.6142578125,
+            "mean_pulses_successful": 26.258474576271187,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.76953125,
+              "no_action": 0.0,
+              "success": 0.23046875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 73.24592366302386,
+            "seed": 51002,
+            "success_err": 0.013160402598556447,
+            "success_fraction": 0.23046875,
+            "target_states": [
+              [
+                94,
+                34
+              ],
+              [
+                44,
+                25
+              ],
+              [
+                27,
+                24
+              ],
+              [
+                32,
+                20
+              ],
+              [
+                68,
+                20
+              ],
+              [
+                41,
+                20
+              ],
+              [
+                58,
+                15
+              ],
+              [
+                5,
+                14
+              ]
+            ],
+            "unfinished_fraction": 0.76953125
+          },
+          "score": 0.233565185546875,
+          "train_seed": 41002,
+          "wall_clock_s": 1232.9951353269862
+        }
+      ],
+      "score_sd": 0.031109374999999995,
+      "wall_clock_s": 2480.4623838610714
+    },
+    "value": 0.194678466796875
+  },
+  {
+    "number": 14,
+    "params": {
+      "alpha_reward_ratio": 0.02078034498265078,
+      "batch_size": 128,
+      "buffer_size": 400000,
+      "depth": 1,
+      "gamma": 0.99,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 0.0005414371141740336,
+      "n_envs": 64,
+      "obs": "sqrt",
+      "return_scale": 5.0,
+      "target_entropy_ratio": 0.2298328073594259,
+      "tau": 0.003421880785308361,
+      "update_ratio": 0.0625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.004156068996530156,
+        "autotune_alpha": true,
+        "batch_size": 128,
+        "buffer_size": 400000,
+        "depth": 1,
+        "gamma": 0.99,
+        "gradient_steps": 4,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 0.0005414371141740336,
+        "n_envs": 64,
+        "obs": "sqrt",
+        "return_scale": 5.0,
+        "seed": null,
+        "target_entropy_ratio": 0.2298328073594259,
+        "tau": 0.003421880785308361,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.038920166015625,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 3.652609348297119,
+            "alpha": 0.011143445037305355,
+            "critic_loss": 0.16007497906684875,
+            "entropy": 1.4274319410324097,
+            "env_steps": 300032,
+            "episodes": 3827,
+            "gradient_steps": 18692,
+            "train_mean_pulses": 76.35,
+            "train_success": 0.05304415991638359
+          },
+          "gradient_steps": 18692,
+          "metrics": {
+            "average_actions": 77.373046875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 77.373046875,
+            "mean_pulses_successful": 44.13333333333333,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.9267578125,
+              "no_action": 0.0,
+              "success": 0.0732421875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 74.58273973595351,
+            "seed": 51001,
+            "success_err": 0.00814167576413214,
+            "success_fraction": 0.0732421875,
+            "target_states": [
+              [
+                17,
+                26
+              ],
+              [
+                0,
+                11
+              ],
+              [
+                27,
+                6
+              ],
+              [
+                2,
+                5
+              ],
+              [
+                30,
+                5
+              ],
+              [
+                116,
+                4
+              ],
+              [
+                24,
+                4
+              ],
+              [
+                65,
+                2
+              ]
+            ],
+            "unfinished_fraction": 0.9267578125
+          },
+          "score": 0.07389892578125,
+          "train_seed": 41001,
+          "wall_clock_s": 530.1175416720798
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 3.0591211318969727,
+            "alpha": 0.019168635830283165,
+            "critic_loss": 0.19920948147773743,
+            "entropy": 0.25559502840042114,
+            "env_steps": 300032,
+            "episodes": 3832,
+            "gradient_steps": 18692,
+            "train_mean_pulses": 78.185,
+            "train_success": 0.06576200417536535
+          },
+          "gradient_steps": 18692,
+          "metrics": {
+            "average_actions": 79.859375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 79.859375,
+            "mean_pulses_successful": 44.0,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.99609375,
+              "no_action": 0.0,
+              "success": 0.00390625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 66.5590603420278,
+            "seed": 51002,
+            "success_err": 0.0019493065701503066,
+            "success_fraction": 0.00390625,
+            "target_states": [
+              [
+                54,
+                2
+              ],
+              [
+                65,
+                1
+              ],
+              [
+                130,
+                1
+              ]
+            ],
+            "unfinished_fraction": 0.99609375
+          },
+          "score": 0.003941406249999999,
+          "train_seed": 41002,
+          "wall_clock_s": 525.8842085679062
+        }
+      ],
+      "score_sd": 0.034978759765625,
+      "wall_clock_s": 1201.517860581982
+    },
+    "value": 0.03017547607421875
+  },
+  {
+    "number": 15,
+    "params": {
+      "alpha_reward_ratio": 0.04080356875143522,
+      "batch_size": 512,
+      "buffer_size": 400000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 5000,
+      "lr": 6.700641404513528e-05,
+      "n_envs": 16,
+      "obs": "sqrt",
+      "return_scale": 10.0,
+      "target_entropy_ratio": 0.3464072355039579,
+      "tau": 0.0037815390601876587,
+      "update_ratio": 0.0625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.004080356875143522,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 400000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 256,
+        "learning_starts": 5000,
+        "lr": 6.700641404513528e-05,
+        "n_envs": 16,
+        "obs": "sqrt",
+        "return_scale": 10.0,
+        "seed": null,
+        "target_entropy_ratio": 0.3464072355039579,
+        "tau": 0.0037815390601876587,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.132953369140625,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 2.5362677574157715,
+            "alpha": 0.0014606504701077938,
+            "critic_loss": 0.08084265887737274,
+            "entropy": 2.5323455333709717,
+            "env_steps": 300000,
+            "episodes": 4065,
+            "gradient_steps": 18438,
+            "train_mean_pulses": 74.205,
+            "train_success": 0.14981549815498155
+          },
+          "gradient_steps": 18438,
+          "metrics": {
+            "average_actions": 73.5546875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 73.5546875,
+            "mean_pulses_successful": 31.470588235294116,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.8671875,
+              "no_action": 0.0,
+              "success": 0.1328125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 71.863911158056,
+            "seed": 51001,
+            "success_err": 0.010605374330553453,
+            "success_fraction": 0.1328125,
+            "target_states": [
+              [
+                27,
+                32
+              ],
+              [
+                58,
+                19
+              ],
+              [
+                12,
+                13
+              ],
+              [
+                24,
+                11
+              ],
+              [
+                15,
+                8
+              ],
+              [
+                152,
+                8
+              ],
+              [
+                83,
+                7
+              ],
+              [
+                1,
+                6
+              ]
+            ],
+            "unfinished_fraction": 0.8671875
+          },
+          "score": 0.134423828125,
+          "train_seed": 41001,
+          "wall_clock_s": 1914.109099306981
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 2.457834243774414,
+            "alpha": 0.0016054793959483504,
+            "critic_loss": 0.055383242666721344,
+            "entropy": 2.3216419219970703,
+            "env_steps": 300000,
+            "episodes": 4108,
+            "gradient_steps": 18438,
+            "train_mean_pulses": 72.665,
+            "train_success": 0.1655306718597858
+          },
+          "gradient_steps": 18438,
+          "metrics": {
+            "average_actions": 73.599609375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 73.599609375,
+            "mean_pulses_successful": 30.721804511278197,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.8701171875,
+              "no_action": 0.0,
+              "success": 0.1298828125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 74.57673016097397,
+            "seed": 51002,
+            "success_err": 0.010505451873177947,
+            "success_fraction": 0.1298828125,
+            "target_states": [
+              [
+                94,
+                27
+              ],
+              [
+                58,
+                21
+              ],
+              [
+                44,
+                19
+              ],
+              [
+                41,
+                15
+              ],
+              [
+                0,
+                10
+              ],
+              [
+                69,
+                8
+              ],
+              [
+                27,
+                7
+              ],
+              [
+                76,
+                4
+              ]
+            ],
+            "unfinished_fraction": 0.8701171875
+          },
+          "score": 0.13148291015625,
+          "train_seed": 41002,
+          "wall_clock_s": 2058.602081730962
+        }
+      ],
+      "score_sd": 0.001470458984375006,
+      "wall_clock_s": 4122.343410020927
+    },
+    "value": 0.13258575439453124
+  },
+  {
+    "number": 16,
+    "params": {
+      "alpha_reward_ratio": 0.03358506548196904,
+      "batch_size": 512,
+      "buffer_size": 200000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 128,
+      "learning_starts": 1000,
+      "lr": 0.0004252545859904774,
+      "n_envs": 128,
+      "obs": "sqrt",
+      "return_scale": 5.0,
+      "target_entropy_ratio": 0.2806872863527512,
+      "tau": 0.0017484232008299198,
+      "update_ratio": 0.0625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.006717013096393808,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 200000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 8,
+        "hidden": 128,
+        "learning_starts": 1000,
+        "lr": 0.0004252545859904774,
+        "n_envs": 128,
+        "obs": "sqrt",
+        "return_scale": 5.0,
+        "seed": null,
+        "target_entropy_ratio": 0.2806872863527512,
+        "tau": 0.0017484232008299198,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.1399866943359375,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 3.23085880279541,
+            "alpha": 0.011591223068535328,
+            "critic_loss": 0.02859405055642128,
+            "entropy": 0.10868294537067413,
+            "env_steps": 300032,
+            "episodes": 4146,
+            "gradient_steps": 18696,
+            "train_mean_pulses": 70.875,
+            "train_success": 0.1603955619874578
+          },
+          "gradient_steps": 18696,
+          "metrics": {
+            "average_actions": 79.763671875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 79.763671875,
+            "mean_pulses_successful": 55.8,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.990234375,
+              "no_action": 0.0,
+              "success": 0.009765625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 65.43079378898256,
+            "seed": 51001,
+            "success_err": 0.003073045867962428,
+            "success_fraction": 0.009765625,
+            "target_states": [
+              [
+                17,
+                4
+              ],
+              [
+                152,
+                2
+              ],
+              [
+                70,
+                1
+              ],
+              [
+                86,
+                1
+              ],
+              [
+                122,
+                1
+              ],
+              [
+                27,
+                1
+              ]
+            ],
+            "unfinished_fraction": 0.990234375
+          },
+          "score": 0.00982470703125,
+          "train_seed": 41001,
+          "wall_clock_s": 342.6712129190564
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 3.1766562461853027,
+            "alpha": 0.010307285003364086,
+            "critic_loss": 0.0726965144276619,
+            "entropy": 1.9318861961364746,
+            "env_steps": 300032,
+            "episodes": 4135,
+            "gradient_steps": 18696,
+            "train_mean_pulses": 67.805,
+            "train_success": 0.1777509068923821
+          },
+          "gradient_steps": 18696,
+          "metrics": {
+            "average_actions": 65.8115234375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 65.8115234375,
+            "mean_pulses_successful": 26.78021978021978,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.7333984375,
+              "no_action": 0.0,
+              "success": 0.2666015625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 73.74257667909842,
+            "seed": 51002,
+            "success_err": 0.013818196272140197,
+            "success_fraction": 0.2666015625,
+            "target_states": [
+              [
+                27,
+                43
+              ],
+              [
+                41,
+                25
+              ],
+              [
+                44,
+                24
+              ],
+              [
+                58,
+                18
+              ],
+              [
+                86,
+                17
+              ],
+              [
+                94,
+                15
+              ],
+              [
+                68,
+                14
+              ],
+              [
+                17,
+                14
+              ]
+            ],
+            "unfinished_fraction": 0.7333984375
+          },
+          "score": 0.270148681640625,
+          "train_seed": 41002,
+          "wall_clock_s": 342.15304445894435
+        }
+      ],
+      "score_sd": 0.1301619873046875,
+      "wall_clock_s": 827.2132594890427
+    },
+    "value": 0.10744619750976561
+  },
+  {
+    "number": 17,
+    "params": {
+      "alpha_reward_ratio": 0.08886165791752382,
+      "batch_size": 512,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 9.635421959320226e-05,
+      "n_envs": 16,
+      "obs": "sqrt",
+      "return_scale": 20.0,
+      "target_entropy_ratio": 0.45583030929104734,
+      "tau": 0.0014883464828667186,
+      "update_ratio": 0.03125
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.004443082895876191,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 9.635421959320226e-05,
+        "n_envs": 16,
+        "obs": "sqrt",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.45583030929104734,
+        "tau": 0.0014883464828667186,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.3180849609375,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.7522517442703247,
+            "alpha": 0.001496724085882306,
+            "critic_loss": 0.009380418807268143,
+            "entropy": 2.548569679260254,
+            "env_steps": 300000,
+            "episodes": 4404,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 59.65,
+            "train_success": 0.2522706630336058
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 61.9892578125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 61.9892578125,
+            "mean_pulses_successful": 24.112121212121213,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.677734375,
+              "no_action": 0.0,
+              "success": 0.322265625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 61.60313891095575,
+            "seed": 51001,
+            "success_err": 0.014604502594694448,
+            "success_fraction": 0.322265625,
+            "target_states": [
+              [
+                27,
+                39
+              ],
+              [
+                0,
+                27
+              ],
+              [
+                58,
+                19
+              ],
+              [
+                55,
+                18
+              ],
+              [
+                1,
+                17
+              ],
+              [
+                6,
+                17
+              ],
+              [
+                76,
+                16
+              ],
+              [
+                17,
+                15
+              ]
+            ],
+            "unfinished_fraction": 0.677734375
+          },
+          "score": 0.326768310546875,
+          "train_seed": 41001,
+          "wall_clock_s": 1898.6445186069468
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.7803427577018738,
+            "alpha": 0.0012517775176092982,
+            "critic_loss": 0.005360371433198452,
+            "entropy": 2.6596434116363525,
+            "env_steps": 300000,
+            "episodes": 4287,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 66.055,
+            "train_success": 0.22463261021693492
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 65.0498046875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 65.0498046875,
+            "mean_pulses_successful": 31.089456869009584,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.6943359375,
+              "no_action": 0.0,
+              "success": 0.3056640625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 71.40714583301451,
+            "seed": 51002,
+            "success_err": 0.014396503732596065,
+            "success_fraction": 0.3056640625,
+            "target_states": [
+              [
+                44,
+                32
+              ],
+              [
+                4,
+                29
+              ],
+              [
+                27,
+                26
+              ],
+              [
+                94,
+                21
+              ],
+              [
+                25,
+                20
+              ],
+              [
+                5,
+                20
+              ],
+              [
+                60,
+                17
+              ],
+              [
+                17,
+                17
+              ]
+            ],
+            "unfinished_fraction": 0.6943359375
+          },
+          "score": 0.309401611328125,
+          "train_seed": 41002,
+          "wall_clock_s": 2074.621649284032
+        }
+      ],
+      "score_sd": 0.008683349609375002,
+      "wall_clock_s": 4109.248500727001
+    },
+    "value": 0.31591412353515624
+  },
+  {
+    "number": 18,
+    "params": {
+      "alpha_reward_ratio": 0.03743991827962904,
+      "batch_size": 512,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.99,
+      "hidden": 256,
+      "learning_starts": 10240,
+      "lr": 4.3133864069507624e-05,
+      "n_envs": 64,
+      "obs": "sqrt",
+      "return_scale": 5.0,
+      "target_entropy_ratio": 0.2912581299575022,
+      "tau": 0.0022185303603441493,
+      "update_ratio": 0.0625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.007487983655925808,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.99,
+        "gradient_steps": 4,
+        "hidden": 256,
+        "learning_starts": 10240,
+        "lr": 4.3133864069507624e-05,
+        "n_envs": 64,
+        "obs": "sqrt",
+        "return_scale": 5.0,
+        "seed": null,
+        "target_entropy_ratio": 0.2912581299575022,
+        "tau": 0.0022185303603441493,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.1405938720703125,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 4.185121536254883,
+            "alpha": 0.0037406061310321093,
+            "critic_loss": 0.4033496081829071,
+            "entropy": 2.254884719848633,
+            "env_steps": 300032,
+            "episodes": 4017,
+            "gradient_steps": 18116,
+            "train_mean_pulses": 75.465,
+            "train_success": 0.1508588498879761
+          },
+          "gradient_steps": 18116,
+          "metrics": {
+            "average_actions": 76.8271484375,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 76.8271484375,
+            "mean_pulses_successful": 47.83168316831683,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.9013671875,
+              "no_action": 0.0,
+              "success": 0.0986328125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 61.65943228197284,
+            "seed": 51001,
+            "success_err": 0.009317761768438746,
+            "success_fraction": 0.0986328125,
+            "target_states": [
+              [
+                152,
+                18
+              ],
+              [
+                4,
+                13
+              ],
+              [
+                78,
+                9
+              ],
+              [
+                1,
+                9
+              ],
+              [
+                41,
+                8
+              ],
+              [
+                12,
+                5
+              ],
+              [
+                164,
+                5
+              ],
+              [
+                46,
+                4
+              ]
+            ],
+            "unfinished_fraction": 0.9013671875
+          },
+          "score": 0.099426025390625,
+          "train_seed": 41001,
+          "wall_clock_s": 562.4824507789453
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 4.239070892333984,
+            "alpha": 0.003826455445960164,
+            "critic_loss": 0.14711232483386993,
+            "entropy": 2.483644962310791,
+            "env_steps": 300032,
+            "episodes": 4083,
+            "gradient_steps": 18116,
+            "train_mean_pulses": 73.385,
+            "train_success": 0.17732059759980406
+          },
+          "gradient_steps": 18116,
+          "metrics": {
+            "average_actions": 71.703125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 71.703125,
+            "mean_pulses_successful": 33.82608695652174,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.8203125,
+              "no_action": 0.0,
+              "success": 0.1796875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 73.48764166305773,
+            "seed": 51002,
+            "success_err": 0.011997717163384389,
+            "success_fraction": 0.1796875,
+            "target_states": [
+              [
+                0,
+                24
+              ],
+              [
+                17,
+                22
+              ],
+              [
+                94,
+                22
+              ],
+              [
+                116,
+                19
+              ],
+              [
+                27,
+                19
+              ],
+              [
+                44,
+                16
+              ],
+              [
+                4,
+                15
+              ],
+              [
+                12,
+                9
+              ]
+            ],
+            "unfinished_fraction": 0.8203125
+          },
+          "score": 0.18176171875,
+          "train_seed": 41002,
+          "wall_clock_s": 540.7949104320724
+        }
+      ],
+      "score_sd": 0.041167846679687495,
+      "wall_clock_s": 1241.6351158570033
+    },
+    "value": 0.1303019104003906
+  },
+  {
+    "number": 19,
+    "params": {
+      "alpha_reward_ratio": 0.07993881724545686,
+      "batch_size": 512,
+      "buffer_size": 200000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 2000,
+      "lr": 0.0001263055526552651,
+      "n_envs": 64,
+      "obs": "sqrt",
+      "return_scale": 40.0,
+      "target_entropy_ratio": 0.31759961003045484,
+      "tau": 0.0021598764190661345,
+      "update_ratio": 0.0625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.0019984704311364213,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 200000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 4,
+        "hidden": 256,
+        "learning_starts": 2000,
+        "lr": 0.0001263055526552651,
+        "n_envs": 64,
+        "obs": "sqrt",
+        "return_scale": 40.0,
+        "seed": null,
+        "target_entropy_ratio": 0.31759961003045484,
+        "tau": 0.0021598764190661345,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.1427989501953125,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.46750468015670776,
+            "alpha": 0.0005896995426155627,
+            "critic_loss": 0.0012985884677618742,
+            "entropy": 1.6914221048355103,
+            "env_steps": 300032,
+            "episodes": 4065,
+            "gradient_steps": 18628,
+            "train_mean_pulses": 73.0,
+            "train_success": 0.14169741697416974
+          },
+          "gradient_steps": 18628,
+          "metrics": {
+            "average_actions": 72.150390625,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 72.150390625,
+            "mean_pulses_successful": 30.074534161490682,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.8427734375,
+              "no_action": 0.0,
+              "success": 0.1572265625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 74.22139354899991,
+            "seed": 51001,
+            "success_err": 0.011375445155456486,
+            "success_fraction": 0.1572265625,
+            "target_states": [
+              [
+                55,
+                26
+              ],
+              [
+                83,
+                19
+              ],
+              [
+                44,
+                17
+              ],
+              [
+                12,
+                15
+              ],
+              [
+                24,
+                11
+              ],
+              [
+                76,
+                10
+              ],
+              [
+                65,
+                9
+              ],
+              [
+                116,
+                8
+              ]
+            ],
+            "unfinished_fraction": 0.8427734375
+          },
+          "score": 0.15918896484375,
+          "train_seed": 41001,
+          "wall_clock_s": 587.0498396239709
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.45148372650146484,
+            "alpha": 0.00044063932728022337,
+            "critic_loss": 0.0022509475238621235,
+            "entropy": 1.6939544677734375,
+            "env_steps": 300032,
+            "episodes": 4035,
+            "gradient_steps": 18628,
+            "train_mean_pulses": 73.375,
+            "train_success": 0.1365551425030979
+          },
+          "gradient_steps": 18628,
+          "metrics": {
+            "average_actions": 74.3642578125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 74.3642578125,
+            "mean_pulses_successful": 34.9140625,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.875,
+              "no_action": 0.0,
+              "success": 0.125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 72.94183077593334,
+            "seed": 51002,
+            "success_err": 0.010334966058846057,
+            "success_fraction": 0.125,
+            "target_states": [
+              [
+                17,
+                24
+              ],
+              [
+                55,
+                22
+              ],
+              [
+                94,
+                16
+              ],
+              [
+                25,
+                11
+              ],
+              [
+                60,
+                11
+              ],
+              [
+                106,
+                9
+              ],
+              [
+                27,
+                8
+              ],
+              [
+                44,
+                8
+              ]
+            ],
+            "unfinished_fraction": 0.875
+          },
+          "score": 0.126408935546875,
+          "train_seed": 41002,
+          "wall_clock_s": 515.6240513949888
+        }
+      ],
+      "score_sd": 0.016390014648437506,
+      "wall_clock_s": 1255.7947198400507
+    },
+    "value": 0.13870144653320313
+  },
+  {
+    "number": 20,
+    "params": {
+      "alpha_reward_ratio": 0.23112254599981605,
+      "batch_size": 512,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 6.271110408487518e-05,
+      "n_envs": 16,
+      "obs": "sqrt",
+      "return_scale": 20.0,
+      "target_entropy_ratio": 0.4852625372027125,
+      "tau": 0.0014638080836897594,
+      "update_ratio": 0.03125
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.011556127299990802,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 6.271110408487518e-05,
+        "n_envs": 16,
+        "obs": "sqrt",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.4852625372027125,
+        "tau": 0.0014638080836897594,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.2613704833984375,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.3683881163597107,
+            "alpha": 0.003909147344529629,
+            "critic_loss": 0.0019017388112843037,
+            "entropy": 4.6775970458984375,
+            "env_steps": 300000,
+            "episodes": 3986,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 70.385,
+            "train_success": 0.14224786753637733
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 70.5439453125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 70.5439453125,
+            "mean_pulses_successful": 39.821576763485474,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.7646484375,
+              "no_action": 0.0,
+              "success": 0.2353515625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 62.01016276399605,
+            "seed": 51001,
+            "success_err": 0.013256823292088668,
+            "success_fraction": 0.2353515625,
+            "target_states": [
+              [
+                152,
+                19
+              ],
+              [
+                86,
+                16
+              ],
+              [
+                17,
+                15
+              ],
+              [
+                0,
+                14
+              ],
+              [
+                27,
+                12
+              ],
+              [
+                29,
+                11
+              ],
+              [
+                55,
+                11
+              ],
+              [
+                138,
+                10
+              ]
+            ],
+            "unfinished_fraction": 0.7646484375
+          },
+          "score": 0.237715576171875,
+          "train_seed": 41001,
+          "wall_clock_s": 2184.9058066440048
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.36813947558403015,
+            "alpha": 0.003907878417521715,
+            "critic_loss": 0.0015662778168916702,
+            "entropy": 4.7057061195373535,
+            "env_steps": 300000,
+            "episodes": 4047,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 69.175,
+            "train_success": 0.17024956758092413
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 68.8046875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 68.8046875,
+            "mean_pulses_successful": 40.332179930795846,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.7177734375,
+              "no_action": 0.0,
+              "success": 0.2822265625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 71.31468968302943,
+            "seed": 51002,
+            "success_err": 0.014065094549520343,
+            "success_fraction": 0.2822265625,
+            "target_states": [
+              [
+                4,
+                22
+              ],
+              [
+                27,
+                22
+              ],
+              [
+                152,
+                20
+              ],
+              [
+                44,
+                13
+              ],
+              [
+                29,
+                12
+              ],
+              [
+                94,
+                12
+              ],
+              [
+                116,
+                12
+              ],
+              [
+                0,
+                11
+              ]
+            ],
+            "unfinished_fraction": 0.7177734375
+          },
+          "score": 0.285025390625,
+          "train_seed": 41002,
+          "wall_clock_s": 1910.4780546199763
+        }
+      ],
+      "score_sd": 0.023654907226562494,
+      "wall_clock_s": 4231.821796400938
+    },
+    "value": 0.2554567565917969
+  },
+  {
+    "number": 21,
+    "params": {
+      "alpha_reward_ratio": 0.0766067785181107,
+      "batch_size": 256,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 2000,
+      "lr": 6.769155468921e-05,
+      "n_envs": 16,
+      "obs": "p",
+      "return_scale": 20.0,
+      "target_entropy_ratio": 0.4865050575630516,
+      "tau": 0.0017015677381927287,
+      "update_ratio": 0.03125
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.0038303389259055345,
+        "autotune_alpha": true,
+        "batch_size": 256,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 256,
+        "learning_starts": 2000,
+        "lr": 6.769155468921e-05,
+        "n_envs": 16,
+        "obs": "p",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.4865050575630516,
+        "tau": 0.0017015677381927287,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.2306484375,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.833784818649292,
+            "alpha": 0.0013895942829549313,
+            "critic_loss": 0.0012398316757753491,
+            "entropy": 3.0692739486694336,
+            "env_steps": 300000,
+            "episodes": 4198,
+            "gradient_steps": 18626,
+            "train_mean_pulses": 65.58,
+            "train_success": 0.18627918056217246
+          },
+          "gradient_steps": 18626,
+          "metrics": {
+            "average_actions": 66.716796875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 66.716796875,
+            "mean_pulses_successful": 25.373493975903614,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.7568359375,
+              "no_action": 0.0,
+              "success": 0.2431640625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 109.55103081301786,
+            "seed": 51001,
+            "success_err": 0.013406042437513838,
+            "success_fraction": 0.2431640625,
+            "target_states": [
+              [
+                17,
+                26
+              ],
+              [
+                55,
+                23
+              ],
+              [
+                58,
+                21
+              ],
+              [
+                68,
+                18
+              ],
+              [
+                27,
+                17
+              ],
+              [
+                76,
+                17
+              ],
+              [
+                41,
+                16
+              ],
+              [
+                44,
+                16
+              ]
+            ],
+            "unfinished_fraction": 0.7568359375
+          },
+          "score": 0.24648486328125,
+          "train_seed": 41001,
+          "wall_clock_s": 2179.5850283140317
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.8241680860519409,
+            "alpha": 0.0014050569152459502,
+            "critic_loss": 0.02233198471367359,
+            "entropy": 2.7701735496520996,
+            "env_steps": 300000,
+            "episodes": 4218,
+            "gradient_steps": 18626,
+            "train_mean_pulses": 67.39,
+            "train_success": 0.19653864390706496
+          },
+          "gradient_steps": 18626,
+          "metrics": {
+            "average_actions": 68.408203125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 68.408203125,
+            "mean_pulses_successful": 25.29953917050691,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.7880859375,
+              "no_action": 0.0,
+              "success": 0.2119140625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 60.22799299506005,
+            "seed": 51002,
+            "success_err": 0.01277075870667393,
+            "success_fraction": 0.2119140625,
+            "target_states": [
+              [
+                44,
+                25
+              ],
+              [
+                41,
+                23
+              ],
+              [
+                2,
+                22
+              ],
+              [
+                68,
+                19
+              ],
+              [
+                55,
+                19
+              ],
+              [
+                6,
+                18
+              ],
+              [
+                58,
+                14
+              ],
+              [
+                27,
+                12
+              ]
+            ],
+            "unfinished_fraction": 0.7880859375
+          },
+          "score": 0.21481201171875,
+          "train_seed": 41002,
+          "wall_clock_s": 1941.2143819809426
+        }
+      ],
+      "score_sd": 0.015836425781249996,
+      "wall_clock_s": 4296.541564908926
+    },
+    "value": 0.2266893310546875
+  },
+  {
+    "number": 22,
+    "params": {
+      "alpha_reward_ratio": 0.2976520392392902,
+      "batch_size": 512,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 1000,
+      "lr": 4.1044335665381675e-05,
+      "n_envs": 16,
+      "obs": "sqrt",
+      "return_scale": 40.0,
+      "target_entropy_ratio": 0.4920712662193447,
+      "tau": 0.0011341922706029541,
+      "update_ratio": 0.03125
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.007441300980982254,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 256,
+        "learning_starts": 1000,
+        "lr": 4.1044335665381675e-05,
+        "n_envs": 16,
+        "obs": "sqrt",
+        "return_scale": 40.0,
+        "seed": null,
+        "target_entropy_ratio": 0.4920712662193447,
+        "tau": 0.0011341922706029541,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.1664725341796875,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.05445433408021927,
+            "alpha": 0.0035762228071689606,
+            "critic_loss": 0.00017858893261291087,
+            "entropy": 5.278561592102051,
+            "env_steps": 300000,
+            "episodes": 3908,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 75.97,
+            "train_success": 0.11284544524053224
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 74.1416015625,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 74.1416015625,
+            "mean_pulses_successful": 45.323699421965316,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.8310546875,
+              "no_action": 0.0,
+              "success": 0.1689453125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 71.65823163709138,
+            "seed": 51001,
+            "success_err": 0.011709487751503675,
+            "success_fraction": 0.1689453125,
+            "target_states": [
+              [
+                29,
+                15
+              ],
+              [
+                4,
+                13
+              ],
+              [
+                0,
+                13
+              ],
+              [
+                44,
+                10
+              ],
+              [
+                86,
+                9
+              ],
+              [
+                3,
+                8
+              ],
+              [
+                41,
+                7
+              ],
+              [
+                58,
+                6
+              ]
+            ],
+            "unfinished_fraction": 0.8310546875
+          },
+          "score": 0.170409912109375,
+          "train_seed": 41001,
+          "wall_clock_s": 2127.7404422221007
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.056752074509859085,
+            "alpha": 0.0035753550473600626,
+            "critic_loss": 0.0001882684009615332,
+            "entropy": 5.288750648498535,
+            "env_steps": 300000,
+            "episodes": 3941,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 75.635,
+            "train_success": 0.12281146917026135
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 74.390625,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 74.390625,
+            "mean_pulses_successful": 45.18787878787879,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.8388671875,
+              "no_action": 0.0,
+              "success": 0.1611328125
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 61.90201543702278,
+            "seed": 51002,
+            "success_err": 0.011489169034926975,
+            "success_fraction": 0.1611328125,
+            "target_states": [
+              [
+                4,
+                14
+              ],
+              [
+                44,
+                10
+              ],
+              [
+                27,
+                9
+              ],
+              [
+                17,
+                8
+              ],
+              [
+                20,
+                7
+              ],
+              [
+                76,
+                6
+              ],
+              [
+                2,
+                6
+              ],
+              [
+                58,
+                5
+              ]
+            ],
+            "unfinished_fraction": 0.8388671875
+          },
+          "score": 0.16253515625,
+          "train_seed": 41002,
+          "wall_clock_s": 1925.5774563719751
+        }
+      ],
+      "score_sd": 0.0039373779296874994,
+      "wall_clock_s": 4192.797551627038
+    },
+    "value": 0.16548818969726561
+  },
+  {
+    "number": 23,
+    "params": {
+      "alpha_reward_ratio": 0.06780765486820947,
+      "batch_size": 256,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 256,
+      "learning_starts": 2000,
+      "lr": 5.336137359846513e-05,
+      "n_envs": 16,
+      "obs": "p",
+      "return_scale": 20.0,
+      "target_entropy_ratio": 0.4914326748892403,
+      "tau": 0.0017110665432120231,
+      "update_ratio": 0.03125
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.0033903827434104737,
+        "autotune_alpha": true,
+        "batch_size": 256,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 256,
+        "learning_starts": 2000,
+        "lr": 5.336137359846513e-05,
+        "n_envs": 16,
+        "obs": "p",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.4914326748892403,
+        "tau": 0.0017110665432120231,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.19805517578125,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.8571864366531372,
+            "alpha": 0.001468132482841611,
+            "critic_loss": 0.00565481698140502,
+            "entropy": 3.0769972801208496,
+            "env_steps": 300000,
+            "episodes": 4144,
+            "gradient_steps": 18626,
+            "train_mean_pulses": 73.48,
+            "train_success": 0.1710907335907336
+          },
+          "gradient_steps": 18626,
+          "metrics": {
+            "average_actions": 70.48046875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 70.48046875,
+            "mean_pulses_successful": 22.658823529411766,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.833984375,
+              "no_action": 0.0,
+              "success": 0.166015625
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 109.84197508904617,
+            "seed": 51001,
+            "success_err": 0.0116279581777144,
+            "success_fraction": 0.166015625,
+            "target_states": [
+              [
+                86,
+                21
+              ],
+              [
+                17,
+                19
+              ],
+              [
+                76,
+                19
+              ],
+              [
+                3,
+                18
+              ],
+              [
+                55,
+                18
+              ],
+              [
+                44,
+                18
+              ],
+              [
+                58,
+                17
+              ],
+              [
+                94,
+                14
+              ]
+            ],
+            "unfinished_fraction": 0.833984375
+          },
+          "score": 0.1683955078125,
+          "train_seed": 41001,
+          "wall_clock_s": 2296.25234177697
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.8621499538421631,
+            "alpha": 0.0015018958365544677,
+            "critic_loss": 0.009581992402672768,
+            "entropy": 3.455315589904785,
+            "env_steps": 300000,
+            "episodes": 4207,
+            "gradient_steps": 18626,
+            "train_mean_pulses": 69.92,
+            "train_success": 0.19538863798431186
+          },
+          "gradient_steps": 18626,
+          "metrics": {
+            "average_actions": 67.578125,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 67.578125,
+            "mean_pulses_successful": 24.695652173913043,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.775390625,
+              "no_action": 0.0,
+              "success": 0.224609375
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 59.73258786194492,
+            "seed": 51002,
+            "success_err": 0.013041400560379958,
+            "success_fraction": 0.224609375,
+            "target_states": [
+              [
+                17,
+                36
+              ],
+              [
+                44,
+                26
+              ],
+              [
+                41,
+                25
+              ],
+              [
+                55,
+                24
+              ],
+              [
+                58,
+                19
+              ],
+              [
+                94,
+                17
+              ],
+              [
+                0,
+                16
+              ],
+              [
+                76,
+                13
+              ]
+            ],
+            "unfinished_fraction": 0.775390625
+          },
+          "score": 0.22771484375,
+          "train_seed": 41002,
+          "wall_clock_s": 2006.0028550520074
+        }
+      ],
+      "score_sd": 0.029659667968749998,
+      "wall_clock_s": 4474.862854877021
+    },
+    "value": 0.19064025878906252
+  },
+  {
+    "number": 24,
+    "params": {
+      "alpha_reward_ratio": 0.26537837624010163,
+      "batch_size": 512,
+      "buffer_size": 100000,
+      "depth": 1,
+      "gamma": 0.995,
+      "hidden": 128,
+      "learning_starts": 1000,
+      "lr": 0.00015047792717528454,
+      "n_envs": 16,
+      "obs": "sqrt",
+      "return_scale": 20.0,
+      "target_entropy_ratio": 0.49969706052497553,
+      "tau": 0.003048864797383012,
+      "update_ratio": 0.015625
+    },
+    "state": "complete",
+    "user_attrs": {
+      "config": {
+        "alpha": 0.013268918812005082,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 128,
+        "learning_starts": 1000,
+        "lr": 0.00015047792717528454,
+        "n_envs": 16,
+        "obs": "sqrt",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.49969706052497553,
+        "tau": 0.003048864797383012,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "mean_score": 0.2574451904296875,
+      "per_seed": [
+        {
+          "eval_seed": 51001,
+          "final_log": {
+            "actor_loss": 0.8457685708999634,
+            "alpha": 0.0015708587598055601,
+            "critic_loss": 0.006398212164640427,
+            "entropy": 3.052422523498535,
+            "env_steps": 300000,
+            "episodes": 4005,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 69.295,
+            "train_success": 0.14307116104868914
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 70.498046875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 70.498046875,
+            "mean_pulses_successful": 33.88625592417062,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.7939453125,
+              "no_action": 0.0,
+              "success": 0.2060546875
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 72.02518858399708,
+            "seed": 51001,
+            "success_err": 0.012639694158375155,
+            "success_fraction": 0.2060546875,
+            "target_states": [
+              [
+                41,
+                27
+              ],
+              [
+                68,
+                17
+              ],
+              [
+                17,
+                16
+              ],
+              [
+                94,
+                15
+              ],
+              [
+                116,
+                14
+              ],
+              [
+                76,
+                12
+              ],
+              [
+                3,
+                12
+              ],
+              [
+                86,
+                11
+              ]
+            ],
+            "unfinished_fraction": 0.7939453125
+          },
+          "score": 0.20843017578125,
+          "train_seed": 41001,
+          "wall_clock_s": 1891.3365301369922
+        },
+        {
+          "eval_seed": 51002,
+          "final_log": {
+            "actor_loss": 0.8445816040039062,
+            "alpha": 0.0016940521309152246,
+            "critic_loss": 0.006657724734395742,
+            "entropy": 3.0117812156677246,
+            "env_steps": 300000,
+            "episodes": 4129,
+            "gradient_steps": 18688,
+            "train_mean_pulses": 68.96,
+            "train_success": 0.19350932429159604
+          },
+          "gradient_steps": 18688,
+          "metrics": {
+            "average_actions": 65.0966796875,
+            "cvar10_actions": 80.0,
+            "evaluation_batch": 128,
+            "max_pulses": 80,
+            "mean_pulses": 65.0966796875,
+            "mean_pulses_successful": 30.770967741935483,
+            "median_actions": 80.0,
+            "n_rollouts": 1024,
+            "outcomes": {
+              "max_pulses": 0.697265625,
+              "no_action": 0.0,
+              "success": 0.302734375
+            },
+            "p85_actions": 80.0,
+            "p_target": 0.98,
+            "seconds": 72.03116263705306,
+            "seed": 51002,
+            "success_err": 0.014357539436316727,
+            "success_fraction": 0.302734375,
+            "target_states": [
+              [
+                86,
+                27
+              ],
+              [
+                17,
+                25
+              ],
+              [
+                27,
+                22
+              ],
+              [
+                68,
+                20
+              ],
+              [
+                76,
+                18
+              ],
+              [
+                5,
+                17
+              ],
+              [
+                64,
+                14
+              ],
+              [
+                59,
+                14
+              ]
+            ],
+            "unfinished_fraction": 0.697265625
+          },
+          "score": 0.306460205078125,
+          "train_seed": 41002,
+          "wall_clock_s": 1979.5162866349565
+        }
+      ],
+      "score_sd": 0.049015014648437494,
+      "wall_clock_s": 4016.61399668199
+    },
+    "value": 0.24519143676757812
+  }
+]

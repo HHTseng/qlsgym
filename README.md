@@ -99,6 +99,58 @@ Monitor it with:
     python scripts/refine_thf_mix_sac.py status \
       --output results/thf_rl_optuna_mix_sac_refine
 
+### Focused SAC result — completed 21 September 2026
+
+The focused run completed 25 paired-seed broad trials, eight promotion runs
+(four candidates × two fresh seeds), and five final one-million-transition
+training seeds. Every final policy was evaluated on 5,000 FNO and 5,000 exact
+episodes. Selection used FNO validation only; the exact simulator remained an
+audit.
+
+| SAC run | Exact failure ↓ | Exact actions ↓ | FNO failure ↓ | FNO actions ↓ |
+|---|---:|---:|---:|---:|
+| Locked baseline | 69.41% | 66.07 | 72.23% | 68.03 |
+| Previous general Optuna search | 80.68% | 71.88 | 79.31% | 71.88 |
+| **Focused refinement** | **57.07%** | **59.85** | **56.59%** | **59.49** |
+
+The refined SAC lowers exact failure by **12.34 percentage points** and exact
+average actions by **6.22** relative to the locked SAC baseline. FNO failure
+falls by **15.64 points** and FNO actions by **8.53**. The exact-minus-FNO gaps
+are only +0.48 failure points and +0.36 actions for these policies, so transfer
+is good on their visited distribution.
+
+The selected `sac_t24` configuration uses 16 environments, one gradient update
+per collection step (1/16 update per transition), \(\sqrt p\) observations,
+`lr=1.5048e-4`, \(\gamma=0.995\), \(\tau=0.00305\), batch 512, replay capacity
+100,000, warmup 1,000, a single 128-unit hidden layer, reward divisor \(R=20\),
+and automatic temperature tuning toward
+\(0.4997\log|\mathcal A|\). Its initial dimensionless entropy/reward ratio is
+\(\widetilde\alpha=\alpha R=0.2654\).
+
+Across the focused search, PED-ANOVA assigns 42.3% of local variation to target
+entropy, 35.3% to the temperature/reward ratio, 4.7% to learning rate, and 3.8%
+to update ratio. The main transferable lesson is that SAC needed joint tuning
+of reward scale and entropy scale, paired-seed screening, and substantially
+fewer parallel environments than the first ThF+ search. These importances are
+search-local associations.
+
+Seed sensitivity remains material: exact failure has 18.96-percentage-point
+standard deviation across five training seeds and FNO failure has 16.68 points.
+The refined mean also remains behind optimized PPO (41.78% exact failure) and
+physics elimination (29.36%). This is a real SAC improvement under the fixed
+downloaded FNO, but it does not establish that the FNO is accurate on all
+closed-loop state distributions.
+
+See the [focused refinement report](results/thf_rl_optuna_mix_sac_refine/summary.md),
+[summary JSON](results/thf_rl_optuna_mix_sac_refine/summary.json), and
+[selected configuration](results/thf_rl_optuna_mix_sac_refine/selected_config.json).
+
+![Focused SAC versus prior runs](results/thf_rl_optuna_mix_sac_refine/sac_refined_vs_prior.png)
+
+![Focused SAC Optuna history](results/thf_rl_optuna_mix_sac_refine/sac_refine_history.png)
+
+![Focused SAC parameter importance](results/thf_rl_optuna_mix_sac_refine/sac_refine_importance.png)
+
 ## Current conclusions — downloaded `mix` rerun completed 18 September 2026
 
 The downloaded `munozariasjm/thf_qls_fno` manifest has **24/24 block/polarization checkpoints** (fingerprint `d7deb43457d3`). On Tara, PPO, SAC and DDQN were each rerun with five training seeds at approximately one million transitions per seed. All 18 controllers have 5000 exact and 5000 FNO evaluation episodes under the same locked contract as the original `rlprod120v2` study.
