@@ -64,6 +64,21 @@ def test_column_fno_checkpoint_round_trip(tmp_path):
     assert loaded.metadata() == model.metadata()
 
 
+def test_identity_logit_bias_initializes_near_static_columns():
+    molecule = load_molecule("synthetic")
+    embedding = TorchEmbedding(molecule, 0, "+", "cpu")
+    unbiased = ColumnFNO.for_block(molecule, 0, "+", tiny_config(identity_logit_bias=0.0))
+    biased = ColumnFNO.for_block(molecule, 0, "+", tiny_config(identity_logit_bias=6.0))
+    biased.net.load_state_dict(unbiased.net.state_dict())
+    omega = torch.tensor([embedding.numpy.w_res[0]], dtype=torch.float64)
+    controls = embedding.control_channels(omega, out_dtype=torch.float32)
+    plain = unbiased.columns(controls)[0, 1]
+    static = biased.columns(controls)[0, 1]
+    index = torch.arange(biased.n_states)
+    assert static[index, index].mean() > plain[index, index].mean()
+    assert torch.allclose(static.sum(0), torch.ones(biased.n_states))
+
+
 def test_column_loss_has_finite_gradients_with_structural_zeros():
     molecule = load_molecule("synthetic")
     embedding = TorchEmbedding(molecule, 0, "+", "cpu")

@@ -32,6 +32,10 @@ class ColumnFNOConfig(FNOConfig):
     """FNO that predicts a stochastic transfer column for every input state."""
 
     off_resonance_linewidths: float = 3.0
+    # Add this logit to the unchanged-state entry of every transfer column.
+    # Zero preserves v1 checkpoints; a positive value gives correction models
+    # a physically useful near-identity initialization.
+    identity_logit_bias: float = 0.0
 
 
 class BlockFNO(nn.Module):
@@ -144,6 +148,11 @@ class ColumnFNO(nn.Module):
         self.molecule_name = molecule_name
         self.fingerprint = fingerprint
         self.n_nu = n_nu
+        identity_bias = torch.zeros(2 * self.n_states, self.n_states)
+        identity_bias[torch.arange(self.n_states), torch.arange(self.n_states)] = (
+            cfg.identity_logit_bias
+        )
+        self.register_buffer("identity_bias", identity_bias, persistent=False)
         self.net = FNO(
             n_modes=(cfg.n_modes,),
             in_channels=self.in_channels,
@@ -187,7 +196,7 @@ class ColumnFNO(nn.Module):
         columns = logits.reshape(
             batch, self.n_states, 2 * self.n_states, n_tau
         ).permute(0, 3, 2, 1)
-        columns = torch.softmax(columns, dim=2)
+        columns = torch.softmax(columns + self.identity_bias[None, None], dim=2)
         static = torch.zeros(
             (2 * self.n_states, self.n_states),
             dtype=columns.dtype,

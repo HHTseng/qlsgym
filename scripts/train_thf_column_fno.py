@@ -36,6 +36,7 @@ def train_pair(args):
         domain_padding=0.1,
         positional_embedding="grid",
         off_resonance_linewidths=args.off_resonance_linewidths,
+        identity_logit_bias=args.identity_logit_bias,
     )
     config = ColumnTrainConfig(
         n_train_freq=args.train_freq,
@@ -47,6 +48,12 @@ def train_pair(args):
         seed=args.seed,
         val_seed=args.val_seed,
         n_linewidths=args.off_resonance_linewidths,
+        column_tv_weight=args.column_tv_weight,
+        column_ce_weight=args.column_ce_weight,
+        joint_tv_weight=args.joint_tv_weight,
+        branch_mass_weight=args.branch_mass_weight,
+        conditional_weight=args.conditional_weight,
+        infidelity_weight=args.infidelity_weight,
         fno=fno,
     )
     destination.mkdir(parents=True, exist_ok=True)
@@ -126,6 +133,13 @@ def parser():
     train.add_argument("--hidden", type=int, default=64)
     train.add_argument("--layers", type=int, default=3)
     train.add_argument("--off-resonance-linewidths", type=float, default=3.0)
+    train.add_argument("--identity-logit-bias", type=float, default=0.0)
+    train.add_argument("--column-tv-weight", type=float, default=1.0)
+    train.add_argument("--column-ce-weight", type=float, default=0.0)
+    train.add_argument("--joint-tv-weight", type=float, default=1.0)
+    train.add_argument("--branch-mass-weight", type=float, default=2.0)
+    train.add_argument("--conditional-weight", type=float, default=1.0)
+    train.add_argument("--infidelity-weight", type=float, default=1.0)
     train.set_defaults(func=train_pair)
     build = sub.add_parser("manifest")
     build.add_argument("--work", required=True)

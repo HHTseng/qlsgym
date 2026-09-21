@@ -32,6 +32,7 @@ class ColumnTrainConfig:
     val_seed: int = 20260922
     n_linewidths: float = 3.0
     column_tv_weight: float = 1.0
+    column_ce_weight: float = 0.0
     joint_tv_weight: float = 1.0
     branch_mass_weight: float = 2.0
     conditional_weight: float = 1.0
@@ -108,6 +109,7 @@ def sample_states(m: int, n: int, rng: np.random.Generator, device) -> torch.Ten
 def branch_aware_loss(predicted, truth, states, cfg: ColumnTrainConfig) -> tuple[torch.Tensor, dict]:
     m = states.shape[-1]
     column_tv = 0.5 * (predicted - truth).abs().sum(2).mean()
+    column_ce = -(truth * predicted.clamp_min(1e-8).log()).sum(2).mean()
     pred_pop = torch.einsum("bpom,sm->bspo", predicted, states)
     true_pop = torch.einsum("bpom,sm->bspo", truth, states)
     joint_tv = 0.5 * (pred_pop - true_pop).abs().sum(-1).mean()
@@ -133,6 +135,7 @@ def branch_aware_loss(predicted, truth, states, cfg: ColumnTrainConfig) -> tuple
     infidelity = (1.0 - overlap.square()).clamp_min(0).mean()
     total = (
         cfg.column_tv_weight * column_tv
+        + cfg.column_ce_weight * column_ce
         + cfg.joint_tv_weight * joint_tv
         + cfg.branch_mass_weight * mass_loss
         + cfg.conditional_weight * conditional_loss
@@ -141,6 +144,7 @@ def branch_aware_loss(predicted, truth, states, cfg: ColumnTrainConfig) -> tuple
     values = {
         "total": float(total.detach()),
         "column_tv": float(column_tv.detach()),
+        "column_ce": float(column_ce.detach()),
         "joint_tv": float(joint_tv.detach()),
         "branch_mass": float(mass_loss.detach()),
         "conditional_tv": float(conditional_loss.detach()),
