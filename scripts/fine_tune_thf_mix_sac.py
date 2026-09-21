@@ -107,21 +107,26 @@ def run_one(args, exact, fno, source_seed, train_seed, lr, steps, episodes, eval
     }
 
 
-def diagnose(args):
+def diagnose_lr(args, index):
     output = Path(args.output)
     destination = output / "diagnosis"
     destination.mkdir(parents=True, exist_ok=True)
+    lr = LRS[index]
+    path = destination / f"lr_{lr:.0e}.json"
+    if path.exists():
+        return
     exact, fno, contract = environments(args)
     write_json(output / "contract.json", contract)
+    write_json(path, run_one(
+        args, exact, fno, 0, 73_001, lr, args.diagnose_steps,
+        args.diagnose_eval, 73_101, f"diagnosis_lr{index}",
+    ))
+    torch.cuda.empty_cache()
+
+
+def diagnose(args):
     for index, lr in enumerate(LRS):
-        path = destination / f"lr_{lr:.0e}.json"
-        if path.exists():
-            continue
-        write_json(path, run_one(
-            args, exact, fno, 0, 73_001, lr, args.diagnose_steps,
-            args.diagnose_eval, 73_101, f"diagnosis_lr{index}",
-        ))
-        torch.cuda.empty_cache()
+        diagnose_lr(args, index)
 
 
 def select(args):
@@ -221,7 +226,7 @@ def parser():
     main = argparse.ArgumentParser(description=__doc__)
     main.add_argument(
         "command",
-        choices=("diagnose", "select", "confirm", "confirm-seed", "summarize", "run", "status"),
+        choices=("diagnose", "diagnose-lr", "select", "confirm", "confirm-seed", "summarize", "run", "status"),
     )
     main.add_argument("--output", default="results/thf_mix_sac_exact_finetune")
     main.add_argument("--source-models", default="results/thf_rl_optuna_mix_sac_refine/models")
@@ -233,11 +238,17 @@ def parser():
     main.add_argument("--final-eval", type=int, default=5_000)
     main.add_argument("--eval-batch", type=int, default=256)
     main.add_argument("--source-seed", type=int, choices=FINAL_SEEDS)
+    main.add_argument("--lr-index", type=int, choices=range(len(LRS)))
     return main
 
 
 def main():
     args = parser().parse_args()
+    if args.command == "diagnose-lr":
+        if args.lr_index is None:
+            raise ValueError("diagnose-lr requires --lr-index")
+        diagnose_lr(args, args.lr_index)
+        return
     if args.command == "confirm-seed":
         if args.source_seed is None:
             raise ValueError("confirm-seed requires --source-seed")
