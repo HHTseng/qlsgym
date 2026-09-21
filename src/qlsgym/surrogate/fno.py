@@ -27,6 +27,13 @@ class FNOConfig:
     positional_embedding: str | None = "grid"
 
 
+@dataclass(frozen=True)
+class ColumnFNOConfig(FNOConfig):
+    """FNO that predicts a stochastic transfer column for every input state."""
+
+    off_resonance_linewidths: float = 3.0
+
+
 class BlockFNO(nn.Module):
     """FNO surrogate G_theta^(f) for one Hamiltonian block and one sigma."""
 
@@ -97,8 +104,141 @@ class BlockFNO(nn.Module):
     def metadata(self) -> dict:
         """What a checkpoint records about this model."""
         return {
+            "architecture": "state_map_v1",
             "in_channels": self.in_channels,
             "out_channels": self.out_channels,
+            "block_index": self.block_index,
+            "sigma": self.sigma,
+            "config": asdict(self.config),
+            "molecule": self.molecule_name,
+            "fingerprint": self.fingerprint,
+            "n_nu": self.n_nu,
+        }
+
+
+class ColumnFNO(nn.Module):
+    """Linear-in-belief transfer operator with exact identity at zero time."""
+
+    def __init__(
+        self,
+        control_channels: int,
+        n_states: int,
+        config: ColumnFNOConfig | None = None,
+        block_index: int | None = None,
+        sigma: str = "+",
+        molecule_name: str | None = None,
+        fingerprint: str | None = None,
+        n_nu: int | None = None,
+    ) -> None:
+        super().__init__()
+        from neuralop.models import FNO
+
+        cfg = config or ColumnFNOConfig()
+        self.config = cfg
+        self.control_channels = int(control_channels)
+        self.n_states = int(n_states)
+        self.in_channels = self.control_channels
+        self.out_channels = 2 * self.n_states * self.n_states
+        self.block_index = block_index
+        self.sigma = sigma
+        self.molecule_name = molecule_name
+        self.fingerprint = fingerprint
+        self.n_nu = n_nu
+        self.net = FNO(
+            n_modes=(cfg.n_modes,),
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            hidden_channels=cfg.hidden_channels,
+            n_layers=cfg.n_layers,
+            lifting_channel_ratio=cfg.lifting_channel_ratio,
+            projection_channel_ratio=cfg.projection_channel_ratio,
+            factorization=cfg.factorization,
+            rank=cfg.rank,
+            domain_padding=cfg.domain_padding,
+            positional_embedding=cfg.positional_embedding,
+        )
+
+    @classmethod
+    def for_block(
+        cls,
+        molecule: Molecule,
+        block_index: int,
+        sigma: str = "+",
+        config: ColumnFNOConfig | None = None,
+    ) -> "ColumnFNO":
+        from .embedding import block_shapes
+
+        m, q, _ = block_shapes(molecule, block_index, sigma)
+        return cls(
+            q + 1,
+            m,
+            config,
+            block_index=int(block_index),
+            sigma=sigma,
+            molecule_name=molecule.name,
+            fingerprint=molecule.fingerprint(),
+            n_nu=int(molecule.trap.n_nu),
+        )
+
+    def columns(self, controls: torch.Tensor) -> torch.Tensor:
+        """Return stochastic columns with shape ``(B,P_tau,2M,M)``."""
+        logits = self.net(controls)
+        batch, _, n_tau = logits.shape
+        columns = logits.reshape(
+            batch, self.n_states, 2 * self.n_states, n_tau
+        ).permute(0, 3, 2, 1)
+        columns = torch.softmax(columns, dim=2)
+        static = torch.zeros(
+            (2 * self.n_states, self.n_states),
+            dtype=columns.dtype,
+            device=columns.device,
+        )
+        static[: self.n_states] = torch.eye(
+            self.n_states, dtype=columns.dtype, device=columns.device
+        )
+        if n_tau:
+            mask = torch.zeros(n_tau, dtype=columns.dtype, device=columns.device)
+            mask[0] = 1.0
+            columns = columns * (1.0 - mask[None, :, None, None])
+            columns = columns + static[None, None] * mask[None, :, None, None]
+        return columns
+
+    def propagate(self, population, embedding, omegas) -> torch.Tensor:
+        """Apply columns; clearly off-resonant rows use the static predictor."""
+        population = torch.as_tensor(
+            population, dtype=torch.float64, device=embedding.device
+        )
+        omegas = torch.as_tensor(omegas, dtype=torch.float64, device=embedding.device)
+        controls = embedding.control_channels(omegas, out_dtype=torch.float32)
+        columns = self.columns(controls).double()
+        trajectory = torch.einsum("bpom,bm->bpo", columns, population)
+        distance = embedding.numpy.resonance_distance(
+            omegas.detach().cpu().numpy()
+        )
+        off = torch.as_tensor(
+            distance > self.config.off_resonance_linewidths,
+            dtype=torch.bool,
+            device=trajectory.device,
+        )
+        if bool(off.any()):
+            static = torch.zeros_like(trajectory[off])
+            static[:, :, : self.n_states] = population[off, None, :]
+            trajectory[off] = static
+        return trajectory
+
+    def forward(self, controls: torch.Tensor) -> torch.Tensor:
+        return self.columns(controls)
+
+    def n_parameters(self) -> int:
+        return sum(parameter.numel() for parameter in self.parameters())
+
+    def metadata(self) -> dict:
+        return {
+            "architecture": "transfer_columns_v1",
+            "in_channels": self.in_channels,
+            "out_channels": self.out_channels,
+            "control_channels": self.control_channels,
+            "n_states": self.n_states,
             "block_index": self.block_index,
             "sigma": self.sigma,
             "config": asdict(self.config),

@@ -102,9 +102,13 @@ class FnoEngine:
         emb = self._embs[key]
         p0 = torch.as_tensor(sub / np.where(mass > 0.0, mass, 1.0), dtype=torch.float64, device=self.device)
         w = torch.as_tensor(omegas, device=self.device)
-        x = emb.build(p0, w, out_dtype=torch.float32)               # (n, C, P_tau)
-        y = self._models[key](x)                                    # (n, 2M, P_tau)
-        traj = y.permute(0, 2, 1).double()                          # (n, P_tau, 2M)
+        model = self._models[key]
+        if hasattr(model, "propagate"):
+            traj = model.propagate(p0, emb, w)
+        else:
+            x = emb.build(p0, w, out_dtype=torch.float32)           # (n, C, P_tau)
+            y = model(x)                                            # (n, 2M, P_tau)
+            traj = y.permute(0, 2, 1).double()                      # (n, P_tau, 2M)
         out = traj[:, self._tau_t].cpu().numpy() * mass[:, None]
         out[~live] = 0.0
         return out

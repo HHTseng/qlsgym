@@ -24,7 +24,7 @@ from qlsgym.surrogate.dataset import random_mixed_populations, transfer_columns
 from qlsgym.surrogate.embedding import TorchEmbedding
 from qlsgym.surrogate.metrics import infidelity_curve
 from qlsgym.surrogate.manifest import load_manifest
-from qlsgym.surrogate.train import evaluate_stratified, load_model
+from qlsgym.surrogate.train import evaluate_stratified, load_model, propagate_model
 
 
 @torch.no_grad()
@@ -43,7 +43,7 @@ def trajectory_diagnostics(model, molecule, block, sigma, device):
     p0 = torch.as_tensor(rng.dirichlet(np.ones(m))[None], device=device)
     columns = transfer_columns(molecule, block, np.array([omega]), sigma, device=device)[0]
     truth = torch.einsum("pjm,bm->bpj", columns, p0)
-    prediction = model(embedding.build(p0, torch.tensor([omega], device=device))).transpose(1, 2).double()
+    prediction = propagate_model(model, embedding, p0, torch.tensor([omega], device=device))
     swing = (truth[0] - truth[0, :1]).abs().amax(0)
     active = swing > 1e-4
     support = active[None] & (truth[0] > 1e-6)
@@ -60,7 +60,7 @@ def trajectory_diagnostics(model, molecule, block, sigma, device):
     for lo in range(0, m, 8):
         q = torch.as_tensor(vertices[lo:lo + 8], device=device)
         true = torch.einsum("pjm,bm->bpj", columns, q)
-        pred = model(embedding.build(q, torch.tensor([omega], device=device))).transpose(1, 2).double()
+        pred = propagate_model(model, embedding, q, torch.tensor([omega], device=device))
         error = infidelity_curve(pred, true)
         vertex_errors.extend(error.mean(1).cpu().tolist())
         vertex_curves.append(error.cpu().numpy())
@@ -72,9 +72,11 @@ def trajectory_diagnostics(model, molecule, block, sigma, device):
         conditional_curves.append(tv.cpu().numpy())
         mass_curves.append(pi.cpu().numpy())
     q = torch.as_tensor(population[:2], device=device)
-    outputs = model(embedding.build(q, torch.tensor([omega], device=device))).double()
-    mixed = model(embedding.build(q.mean(0, keepdim=True), torch.tensor([omega], device=device))).double()
-    linearity_tv = 0.5 * (mixed[0] - outputs.mean(0)).abs().sum(0).mean()
+    outputs = propagate_model(model, embedding, q, torch.tensor([omega], device=device))
+    mixed = propagate_model(
+        model, embedding, q.mean(0, keepdim=True), torch.tensor([omega], device=device)
+    )
+    linearity_tv = 0.5 * (mixed[0] - outputs.mean(0)).abs().sum(-1).mean()
     summary = {
         "representative_omega_over_2pi_khz": omega / (2 * np.pi),
         "trajectory_time_average_infidelity": float(infidelity.mean()),
@@ -119,7 +121,7 @@ def benchmark(model, molecule, block, sigma, device, batch_sizes, repeats):
                         else torch.einsum("bpjm,m->bpj", columns, q[0]))
 
             operations = {
-                "fno": lambda: model(embedding.build(q.expand(B, -1), w)),
+                "fno": lambda: propagate_model(model, embedding, q.expand(B, -1), w),
                 "exact_build_and_apply": lambda: exact(transfer_columns(molecule, block, ws, sigma, device=device)),
                 "exact_cached_columns": lambda: exact(resident_columns),
             }

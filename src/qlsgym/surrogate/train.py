@@ -17,7 +17,7 @@ from .dataset import (BlockSplit, DataConfig, build_split, random_mixed_populati
                       resonant_frequency_sample, off_resonant_frequency_sample,
                       sample_frequencies, trajectories_from_columns, transfer_columns)
 from .embedding import Embedding, TorchEmbedding
-from .fno import BlockFNO, FNOConfig
+from .fno import BlockFNO, ColumnFNO, ColumnFNOConfig, FNOConfig
 from .manifest import table_stamp
 from .metrics import (active_fraction, infidelity_curve, is_on_resonance, percentile_bands,
                       static_baseline, stratified_summary)
@@ -221,8 +221,8 @@ def load_model(
     molecule: Molecule | None = None,
     allow_mismatch: bool = False,
     legacy: bool = False,
-) -> BlockFNO:
-    """Load a best*.pt checkpoint into a BlockFNO."""
+) -> nn.Module:
+    """Load a state-map or transfer-column FNO checkpoint."""
     ckpt = torch.load(path, map_location=device, weights_only=False)
     meta = ckpt["meta"]
     fp = meta.get("fingerprint")
@@ -239,22 +239,45 @@ def load_model(
         if meta.get("molecule") not in (None, molecule.name) and not allow_mismatch:
             raise FingerprintMismatch(f"{path}: trained for molecule {meta['molecule']!r}, not {molecule.name!r}")
         emb = Embedding(molecule, int(meta["block_index"]), meta["sigma"])
-        if (meta["in_channels"], meta["out_channels"]) != (emb.n_channels, 2 * emb.n_states):
+        if meta.get("architecture") == "transfer_columns_v1":
+            expected = (emb.n_transitions + 1, 2 * emb.n_states * emb.n_states)
+        else:
+            expected = (emb.n_channels, 2 * emb.n_states)
+        if (meta["in_channels"], meta["out_channels"]) != expected:
             raise FingerprintMismatch(
                 f"{path}: channel geometry ({meta['in_channels']}, {meta['out_channels']}) does not match "
                 f"{molecule.name} block {meta['block_index']} sigma{meta['sigma']} "
-                f"({emb.n_channels}, {2 * emb.n_states})")
+                f"{expected}")
         if meta.get("n_nu") not in (None, molecule.trap.n_nu) and not allow_mismatch:
             raise FingerprintMismatch(f"{path}: trained with n_nu={meta['n_nu']}, molecule has {molecule.trap.n_nu}")
-    model = BlockFNO(meta["in_channels"], meta["out_channels"], FNOConfig(**meta["config"]),
-                     block_index=meta["block_index"], sigma=meta["sigma"],
-                     molecule_name=meta.get("molecule", molecule.name if molecule else None),
-                     fingerprint=fp, n_nu=meta.get("n_nu")).to(device)
+    if meta.get("architecture") == "transfer_columns_v1":
+        model = ColumnFNO(
+            meta["control_channels"],
+            meta["n_states"],
+            ColumnFNOConfig(**meta["config"]),
+            block_index=meta["block_index"],
+            sigma=meta["sigma"],
+            molecule_name=meta.get("molecule", molecule.name if molecule else None),
+            fingerprint=fp,
+            n_nu=meta.get("n_nu"),
+        ).to(device)
+    else:
+        model = BlockFNO(meta["in_channels"], meta["out_channels"], FNOConfig(**meta["config"]),
+                         block_index=meta["block_index"], sigma=meta["sigma"],
+                         molecule_name=meta.get("molecule", molecule.name if molecule else None),
+                         fingerprint=fp, n_nu=meta.get("n_nu")).to(device)
     # neuralop injects a non-tensor _metadata entry into state_dict.
     sd = {k: v for k, v in ckpt["state_dict"].items() if k != "_metadata"}
     model.load_state_dict(sd)
     model.eval()
     return model
+
+
+def propagate_model(model: nn.Module, embedding: TorchEmbedding, p0: Tensor, omega: Tensor) -> Tensor:
+    """Return ``(B,P_tau,2M)`` from either supported surrogate architecture."""
+    if hasattr(model, "propagate"):
+        return model.propagate(p0, embedding, omega)
+    return model(embedding.build(p0, omega, out_dtype=torch.float32)).transpose(1, 2).double()
 
 
 # Test-set evaluation (Eqs. 27-30, stratified on/off resonance)
@@ -288,8 +311,7 @@ def evaluate_test_frequencies(
             hi = min(lo + batch_size, n_init)
             pb = p0[lo:hi]
             p_true = trajectories_from_columns(t0[None], pb)                 # (b, P, 2M)
-            x = emb.build(pb, omegas_t[k].expand(hi - lo), out_dtype=torch.float32)
-            pred = model(x).transpose(1, 2).double()
+            pred = propagate_model(model, emb, pb, omegas_t[k].expand(hi - lo))
             acc += infidelity_curve(pred, p_true).sum(0)
             acc_s += static_baseline(p_true).sum(0)
             sw = torch.maximum(sw, (p_true - p_true[:, :1, :]).abs().amax())
