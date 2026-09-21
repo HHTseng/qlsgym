@@ -86,7 +86,11 @@ def summarize(args):
     records = [json.loads(path.read_text()) for path in sorted((output / "seeds").glob("seed_*.json"))]
     if len(records) != len(FINAL_SEEDS):
         raise RuntimeError(f"expected five actor records, found {len(records)}")
-    baseline_v2 = json.loads((output / "descending_population.json").read_text())["column_v2"]
+    baseline_raw = json.loads((output / "descending_population.json").read_text())["column_v2"]
+    baseline_v2 = {
+        key: baseline_raw[key]
+        for key in ("unfinished_fraction", "average_actions", "mean_pulses_successful")
+    }
     safe = json.loads(Path(args.safe_summary).read_text())["rows"]["risk_actor"]
     nonml = json.loads(Path(args.nonml_summary).read_text())["rows"]["descending_population"]
     actor_v2 = aggregate(records)
