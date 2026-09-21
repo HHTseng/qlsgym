@@ -81,6 +81,27 @@ def test_batched_fallback_latches_rows_independently():
     assert np.array_equal(policy.act_batch(beliefs, 0, rng), [0, 0])
 
 
+def test_batched_fallback_vectorizes_stateless_fallback():
+    class Actor:
+        def act_batch(self, beliefs, t, rng):
+            return np.zeros(len(beliefs), dtype=np.int64)
+
+    class Fallback:
+        stateful = False
+
+        def act_batch(self, beliefs, t, rng):
+            return np.full(len(beliefs), 3, dtype=np.int64)
+
+        def act(self, belief, t, rng):
+            raise AssertionError("stateless fallback should use act_batch")
+
+    policy = BatchedFallbackPolicy(
+        Actor(), Fallback(), max_pulses=10, switch_remaining=10,
+    )
+    beliefs = np.array([[0.6, 0.4], [0.7, 0.3]])
+    assert np.array_equal(policy.act_batch(beliefs, 0, np.random.default_rng(0)), [3, 3])
+
+
 def test_descending_population_addresses_most_populated_state(setup):
     mol, lib, _, tables = setup
     pol = DescendingPopulationPolicy(lib, tables)

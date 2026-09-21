@@ -89,15 +89,24 @@ class BatchedFallbackPolicy:
                 self.actor.act_batch(beliefs[actor_rows], t, rng), dtype=np.int64,
             ).reshape(-1)
 
-        for row in np.flatnonzero(self._using_fallback):
-            pick = self._row_fallbacks[row].act(beliefs[row], int(t), rng)
-            if pick is not None:
-                if isinstance(pick, (int, np.integer)):
-                    actor_actions[row] = int(pick)
-                elif self.action_encoder is not None:
-                    actor_actions[row] = int(self.action_encoder(pick))
-                else:
-                    raise TypeError("fallback returned an action object but no action_encoder was provided")
+        fallback_rows = np.flatnonzero(self._using_fallback)
+        if (fallback_rows.size and not getattr(self.fallback, "stateful", False)
+                and hasattr(self.fallback, "act_batch")):
+            actor_actions[fallback_rows] = np.asarray(
+                self.fallback.act_batch(beliefs[fallback_rows], int(t), rng), dtype=np.int64,
+            ).reshape(-1)
+        else:
+            for row in fallback_rows:
+                pick = self._row_fallbacks[row].act(beliefs[row], int(t), rng)
+                if pick is not None:
+                    if isinstance(pick, (int, np.integer)):
+                        actor_actions[row] = int(pick)
+                    elif self.action_encoder is not None:
+                        actor_actions[row] = int(self.action_encoder(pick))
+                    else:
+                        raise TypeError(
+                            "fallback returned an action object but no action_encoder was provided"
+                        )
         return actor_actions
 
     def act(self, belief, t, rng):
