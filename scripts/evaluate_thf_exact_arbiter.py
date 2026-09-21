@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 
@@ -124,12 +125,49 @@ def summarize(args):
         raise RuntimeError(f"expected five confirmation records, found {len(records)}")
     nonml = json.loads((output.parent / "thf_nonml_controls" / "summary.json").read_text())
     baseline = nonml["rows"]["descending_population"]
+    baseline_rollout = json.loads(
+        (output.parent / "thf_nonml_controls" / "descending_population.json").read_text()
+    )["exact"]
     source = json.loads(Path(args.source, "summary.json").read_text())["rows"]["risk_actor"]
     arbiter = {dynamics: aggregate(records, dynamics) for dynamics in ("exact", "fno")}
-    arbiter["dominates_descending_population"] = (
+    failure_differences = np.asarray([
+        row["evaluation"]["exact"]["unfinished_fraction"]
+        - baseline["exact"]["unfinished_fraction"]
+        for row in records
+    ])
+    action_differences = np.asarray([
+        row["evaluation"]["exact"]["average_actions"]
+        - baseline["exact"]["average_actions"]
+        for row in records
+    ])
+    failure_half_width = 2.776 * failure_differences.std(ddof=1) / math.sqrt(len(records))
+    base_success = np.asarray(baseline_rollout["successes"], dtype=bool)
+    rescued = lost = 0
+    for row in records:
+        success = np.asarray(row["evaluation"]["exact"]["successes"], dtype=bool)
+        rescued += int((~base_success & success).sum())
+        lost += int((base_success & ~success).sum())
+    paired = {
+        "failure_difference": float(failure_differences.mean()),
+        "failure_difference_seed_ci95": [
+            float(failure_differences.mean() - failure_half_width),
+            float(failure_differences.mean() + failure_half_width),
+        ],
+        "action_difference": float(action_differences.mean()),
+        "rescued": rescued,
+        "lost": lost,
+        "episodes": int(len(records) * len(base_success)),
+        "net_rescue_fraction": float((rescued - lost) / (len(records) * len(base_success))),
+    }
+    arbiter["mean_dominates_descending_population"] = (
         arbiter["exact"]["unfinished_fraction"] < baseline["exact"]["unfinished_fraction"]
         and arbiter["exact"]["average_actions"] < baseline["exact"]["average_actions"]
     )
+    arbiter["superiority_claim_supported"] = (
+        paired["failure_difference_seed_ci95"][1] < 0.0
+        and paired["action_difference"] < 0.0
+    )
+    arbiter["paired_vs_descending_population"] = paired
     summary = {
         "status": "complete",
         "selection": json.loads((output / "selection.json").read_text()),
@@ -173,7 +211,15 @@ def summarize(args):
         f"{arbiter['exact']['average_actions']:.2f} | {100*arbiter['fno']['unfinished_fraction']:.2f}% | "
         f"{arbiter['fno']['average_actions']:.2f} |",
         "",
-        f"Dominates descending population on both exact metrics: {arbiter['dominates_descending_population']}.",
+        f"Mean dominates descending population on both exact metrics: "
+        f"{arbiter['mean_dominates_descending_population']}.",
+        f"Paired superiority rule is supported: {arbiter['superiority_claim_supported']}.",
+        f"Failure difference (arbiter - descending): {100*paired['failure_difference']:.2f} pp "
+        f"(95% seed CI {100*paired['failure_difference_seed_ci95'][0]:.2f} to "
+        f"{100*paired['failure_difference_seed_ci95'][1]:.2f}); action difference "
+        f"{paired['action_difference']:.2f}.",
+        f"Across {paired['episodes']:,} paired rollouts: {paired['rescued']:,} rescued and "
+        f"{paired['lost']:,} lost.",
         "",
         "![Exact arbiter comparison](exact_arbiter_comparison.png)",
     ]
