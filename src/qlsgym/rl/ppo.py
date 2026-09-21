@@ -292,8 +292,14 @@ def compute_advantages(reward, value, terminal, last_value, branch_target,
     return advantage, advantage + value
 
 
-def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | None = None,
-              log=None, on_snapshot=None) -> TrainResult:
+def train_ppo(
+    env: PurificationEnv,
+    cfg: PPOConfig,
+    env_eval: PurificationEnv | None = None,
+    log=None,
+    on_snapshot=None,
+    initial_state_dict: dict | None = None,
+) -> TrainResult:
     """Train on env (its batch is set to cfg.n_envs); evaluate greedy snapshots on env_eval
     (default: env itself, which is only right when env is exact).
     """
@@ -306,6 +312,8 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
     gen = torch.Generator(device=device); gen.manual_seed(cfg.seed + 1)
     n_in = env.n_states + int(cfg.include_budget)
     net = ActorCritic(n_in, env.n_actions, cfg.hidden, cfg.n_hidden_layers).to(device)
+    if initial_state_dict is not None:
+        net.load_state_dict(initial_state_dict)
     net.max_pulses = int(env.cfg.max_pulses)
     opt = torch.optim.Adam(net.parameters(), lr=cfg.lr, eps=1e-5)
     r_scale = (1.0 / env.cfg.max_pulses) if cfg.reward_scale is None else float(cfg.reward_scale)
