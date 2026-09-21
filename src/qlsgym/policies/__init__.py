@@ -4,8 +4,9 @@ from .baselines import (CoverageSweepingPolicy, DescendingPopulationPolicy,
                         ScorePlannerPolicy, SweepingPolicy)
 from .rollout import RolloutResult, rollout
 from .score import ScoreConfig, score, score_batch, score_terms
-from .hybrid import BatchedFallbackPolicy
+from .hybrid import BatchedFallbackPolicy, ExactCandidateArbiterPolicy
 
 __all__ = ["Policy", "SweepingPolicy", "CoverageSweepingPolicy", "RandomPolicy", "DescendingPopulationPolicy",
            "PhysicsEliminationPolicy", "ScorePlannerPolicy", "RolloutResult", "rollout",
-           "ScoreConfig", "score", "score_batch", "score_terms", "BatchedFallbackPolicy"]
+           "ScoreConfig", "score", "score_batch", "score_terms", "BatchedFallbackPolicy",
+           "ExactCandidateArbiterPolicy"]

@@ -112,3 +112,61 @@ class BatchedFallbackPolicy:
     def act(self, belief, t, rng):
         belief = np.asarray(belief, dtype=np.float64)
         return int(self.act_batch(belief[None], t, rng)[0])
+
+
+class ExactCandidateArbiterPolicy:
+    """Admit a learned action only when exact one-step outcomes improve.
+
+    The learned actor and baseline each propose one action.  The arbiter first
+    compares immediate success probability, then expected posterior purity.
+    It uses cached exact action tables and never advances or mutates the audit
+    environment.
+    """
+
+    stateful = False
+
+    def __init__(
+        self,
+        actor,
+        baseline,
+        exact_environment,
+        success_margin: float = 0.0,
+        purity_margin: float = 0.0,
+    ):
+        self.actor = actor
+        self.baseline = baseline
+        self.exact_environment = exact_environment
+        self.success_margin = float(success_margin)
+        self.purity_margin = float(purity_margin)
+        if self.success_margin < 0 or self.purity_margin < 0:
+            raise ValueError("arbiter margins must be nonnegative")
+
+    def reset(self):
+        if hasattr(self.actor, "reset"):
+            self.actor.reset()
+        if hasattr(self.baseline, "reset"):
+            self.baseline.reset()
+
+    def _scores(self, beliefs, actions):
+        s0, s1, p0, p1, _, _, done0, done1 = self.exact_environment.branch_outcomes(
+            beliefs, actions,
+        )
+        success = p0 * done0.to(p0.dtype) + p1 * done1.to(p1.dtype)
+        purity = p0 * s0.max(-1).values + p1 * s1.max(-1).values
+        return success.detach().cpu().numpy(), purity.detach().cpu().numpy()
+
+    def act_batch(self, beliefs, t, rng):
+        beliefs = np.asarray(beliefs, dtype=np.float64)
+        learned = np.asarray(self.actor.act_batch(beliefs, t, rng), dtype=np.int64).reshape(-1)
+        baseline = np.asarray(self.baseline.act_batch(beliefs, t, rng), dtype=np.int64).reshape(-1)
+        learned_success, learned_purity = self._scores(beliefs, learned)
+        base_success, base_purity = self._scores(beliefs, baseline)
+        success_better = learned_success > base_success + self.success_margin
+        success_tied = np.abs(learned_success - base_success) <= self.success_margin
+        purity_better = learned_purity > base_purity + self.purity_margin
+        use_learned = success_better | (success_tied & purity_better)
+        return np.where(use_learned, learned, baseline)
+
+    def act(self, belief, t, rng):
+        belief = np.asarray(belief, dtype=np.float64)
+        return int(self.act_batch(belief[None], t, rng)[0])

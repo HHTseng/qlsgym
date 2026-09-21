@@ -7,8 +7,9 @@ import pytest
 from qlsgym import load_molecule
 from qlsgym.env import ActionLibrary, ControlGrid
 from qlsgym.policies import (BatchedFallbackPolicy, CoverageSweepingPolicy,
-                             DescendingPopulationPolicy, PhysicsEliminationPolicy, RandomPolicy,
-                             ScorePlannerPolicy, SweepingPolicy)
+                             DescendingPopulationPolicy, ExactCandidateArbiterPolicy,
+                             PhysicsEliminationPolicy, RandomPolicy, ScorePlannerPolicy,
+                             SweepingPolicy)
 from qlsgym.policies.score import ScoreConfig
 
 from _fake_tables import FakeEngine, fake_tables
@@ -100,6 +101,38 @@ def test_batched_fallback_vectorizes_stateless_fallback():
     )
     beliefs = np.array([[0.6, 0.4], [0.7, 0.3]])
     assert np.array_equal(policy.act_batch(beliefs, 0, np.random.default_rng(0)), [3, 3])
+
+
+def test_exact_candidate_arbiter_admits_only_better_action():
+    torch = pytest.importorskip("torch")
+
+    class FixedPolicy:
+        def __init__(self, action):
+            self.action = action
+
+        def act_batch(self, beliefs, t, rng):
+            return np.full(len(beliefs), self.action, dtype=np.int64)
+
+    class ExactOutcomes:
+        def branch_outcomes(self, beliefs, actions):
+            actions = torch.as_tensor(actions)
+            rows = len(actions)
+            # Action 1 improves expected posterior purity for row 0, but not row 1.
+            good = torch.tensor([True, False])[:rows] & (actions == 1)
+            q = torch.where(good, 0.8, 0.6).to(torch.float64)
+            s0 = torch.stack((q, 1 - q), dim=1)
+            s1 = s0.clone()
+            p0 = p1 = torch.full((rows,), 0.5, dtype=torch.float64)
+            reward = torch.zeros(rows, dtype=torch.float64)
+            done = torch.zeros(rows, dtype=torch.bool)
+            return s0, s1, p0, p1, reward, reward, done, done
+
+    policy = ExactCandidateArbiterPolicy(
+        FixedPolicy(1), FixedPolicy(0), ExactOutcomes(), purity_margin=0.05,
+    )
+    beliefs = np.array([[0.5, 0.5], [0.5, 0.5]])
+    actions = policy.act_batch(beliefs, 0, np.random.default_rng(0))
+    assert np.array_equal(actions, [1, 0])
 
 
 def test_descending_population_addresses_most_populated_state(setup):
