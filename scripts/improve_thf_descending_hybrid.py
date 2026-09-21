@@ -42,6 +42,21 @@ def environments(args):
     return molecule, library, exact, fno, contract
 
 
+def exact_environment(device: str):
+    """Build only cached-exact dynamics for CPU-side candidate screening."""
+    import qlsgym
+    from qlsgym.env.actions import ActionLibrary
+    from qlsgym.env.cache import build_action_tables
+    from qlsgym.env.env import EnvConfig, PurificationEnv
+
+    molecule = qlsgym.load_molecule("thf")
+    library = ActionLibrary.physics_subset(molecule)
+    tables = build_action_tables(molecule, library, device=device, progress=False)
+    config = EnvConfig(p_target=0.98, max_pulses=80, rho=0.0, penalty_mode="indicator")
+    exact = PurificationEnv(molecule, library, tables, config, device=device, batch=128)
+    return library, exact
+
+
 def parse_indices(value: str, upper: int) -> list[int]:
     if value.strip().lower() == "all":
         return list(range(upper))
@@ -85,8 +100,7 @@ def diagnose(args):
     output = Path(args.output)
     destination = output / "diagnosis"
     destination.mkdir(parents=True, exist_ok=True)
-    _, library, exact, _, contract = environments(args)
-    write_json(output / "contract.json", contract)
+    library, exact = exact_environment(args.device)
     actor = load_actor(args, 0, exact.cfg.max_pulses)
     teacher = DescendingPopulationPolicy(library, exact.tables)
     for index in parse_indices(args.indices, len(PREFIX_PULSES)):
