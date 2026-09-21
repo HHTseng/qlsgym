@@ -194,12 +194,51 @@ def summarize(args):
         raise RuntimeError(f"expected five confirmation records, found {len(records)}")
     nonml = json.loads((output.parent / "thf_nonml_controls" / "summary.json").read_text())
     teacher = nonml["rows"]["descending_population"]
+    teacher_rollout = json.loads(
+        (output.parent / "thf_nonml_controls" / "descending_population.json").read_text()
+    )["exact"]
     source = json.loads((Path(args.source) / "summary.json").read_text())["rows"]["risk_actor"]
     hybrid = {dynamics: aggregate(records, dynamics) for dynamics in ("exact", "fno")}
-    hybrid["dominates_descending_population"] = (
+    failure_differences = np.asarray([
+        row["evaluation"]["exact"]["unfinished_fraction"]
+        - teacher["exact"]["unfinished_fraction"]
+        for row in records
+    ])
+    action_differences = np.asarray([
+        row["evaluation"]["exact"]["average_actions"]
+        - teacher["exact"]["average_actions"]
+        for row in records
+    ])
+    failure_half_width = 2.776 * failure_differences.std(ddof=1) / math.sqrt(len(records))
+    teacher_success = np.asarray(teacher_rollout["successes"], dtype=bool)
+    rescued = lost = 0
+    for row in records:
+        success = np.asarray(row["evaluation"]["exact"]["successes"], dtype=bool)
+        rescued += int((~teacher_success & success).sum())
+        lost += int((teacher_success & ~success).sum())
+    paired = {
+        "failure_difference": float(failure_differences.mean()),
+        "failure_difference_seed_ci95": [
+            float(failure_differences.mean() - failure_half_width),
+            float(failure_differences.mean() + failure_half_width),
+        ],
+        "action_difference": float(action_differences.mean()),
+        "rescued": rescued,
+        "lost": lost,
+        "episodes": int(len(records) * len(teacher_success)),
+        "net_rescue_fraction": float(
+            (rescued - lost) / (len(records) * len(teacher_success))
+        ),
+    }
+    hybrid["mean_dominates_descending_population"] = (
         hybrid["exact"]["unfinished_fraction"] < teacher["exact"]["unfinished_fraction"]
         and hybrid["exact"]["average_actions"] < teacher["exact"]["average_actions"]
     )
+    hybrid["superiority_claim_supported"] = (
+        paired["failure_difference_seed_ci95"][1] < 0.0
+        and paired["action_difference"] < 0.0
+    )
+    hybrid["paired_vs_descending_population"] = paired
     summary = {
         "status": "complete",
         "selection": json.loads((output / "selection.json").read_text()),
@@ -245,7 +284,15 @@ def summarize(args):
         f"{hybrid['exact']['average_actions']:.2f} | {100*hybrid['fno']['unfinished_fraction']:.2f}% | "
         f"{hybrid['fno']['average_actions']:.2f} |",
         "",
-        f"Dominates descending population on both exact metrics: {hybrid['dominates_descending_population']}.",
+        f"Mean dominates descending population on both exact metrics: "
+        f"{hybrid['mean_dominates_descending_population']}.",
+        f"Paired superiority rule is supported: {hybrid['superiority_claim_supported']}.",
+        f"Failure difference (hybrid - descending): {100*paired['failure_difference']:.2f} pp "
+        f"(95% seed CI {100*paired['failure_difference_seed_ci95'][0]:.2f} to "
+        f"{100*paired['failure_difference_seed_ci95'][1]:.2f}); action difference "
+        f"{paired['action_difference']:.2f}.",
+        f"Across {paired['episodes']:,} paired rollouts: {paired['rescued']:,} rescued and "
+        f"{paired['lost']:,} lost.",
         "",
         "![Descending hybrid comparison](descending_hybrid_comparison.png)",
     ]
