@@ -44,7 +44,7 @@ belief, when $\beta_y^D>0$. The induced Markov kernel is
 
 $$
 P_D(s,a;B)=\sum_{y\in Y}\beta_y^D(s,a)
-\mathbf 1_B\!\left(\Phi_y^D(s,a)\right),
+\mathbf 1_B\left(\Phi_y^D(s,a)\right),
 \qquad
 \sum_{y\in Y}\beta_y^D(s,a)=1.
 $$
@@ -131,7 +131,7 @@ $a_D$ the descending-population proposal. Define exact one-step scores
 
 $$
 S(s,a)=\sum_{y\in Y}\beta_y^E(s,a)
-\mathbf 1_G\!\left(\Phi_y^E(s,a)\right),
+\mathbf 1_G\left(\Phi_y^E(s,a)\right),
 \qquad
 P(s,a)=\sum_{y\in Y}\beta_y^E(s,a)
 \left\|\Phi_y^E(s,a)\right\|_\infty.
@@ -143,7 +143,7 @@ $$
 \pi_*(s)=
 \begin{cases}
 a_L,&S(s,a_L)>S(s,a_D),\\
-a_L,&S(s,a_L)=S(s,a_D)\ \land\ P(s,a_L)>P(s,a_D)+\delta,\\
+a_L,&S(s,a_L)=S(s,a_D) \land P(s,a_L)>P(s,a_D)+\delta,\\
 a_D,&\text{otherwise}.
 \end{cases}
 $$
@@ -151,7 +151,7 @@ $$
 Relative to descending population,
 
 $$
-F_E(\pi_*)-F_E(\pi_D)=-3.61\ \text{percentage points},
+F_E(\pi_*)-F_E(\pi_D)=-3.61 \text{ percentage points},
 \qquad
 \mathrm{CI}_{0.95}=[-4.75,-2.47],
 $$
@@ -250,7 +250,7 @@ $\gamma=1$, $\lambda_{\mathrm{GAE}}=0.98$, square-root beliefs, and qMDP
 value targets. Failure-sensitive continuation adds the terminal reward
 
 $$
-r_t=-1-20\,\mathbf 1\{t=H\text{ and }s_t\notin G\}.
+r_t=-1-20\cdot\mathbf 1\{t=H\text{ and }s_t\notin G\}.
 $$
 
 The detailed Optuna records remain in
