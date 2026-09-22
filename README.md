@@ -173,7 +173,7 @@ surrogate predicts the columns of
 
 $$
 K(a)=
-\begin{pmatrix}K_0(a)\\K_1(a)\end{pmatrix}
+\begin{pmatrix}K_0(a)\\\\K_1(a)\end{pmatrix}
 \in\mathbb R_+^{2m\times m},
 \qquad
 q_y(s,a)=K_y(a)s.
@@ -187,7 +187,7 @@ K(a)\ge0,
 \mathbf 1^\top K(a)=\mathbf 1^\top,
 \qquad
 K(\omega,0)=
-\begin{pmatrix}I_m\\0\end{pmatrix}.
+\begin{pmatrix}I_m\\\\0\end{pmatrix}.
 $$
 
 Consequently probability conservation, input linearity, and zero-time identity
