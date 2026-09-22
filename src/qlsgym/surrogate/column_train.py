@@ -107,30 +107,36 @@ def sample_states(m: int, n: int, rng: np.random.Generator, device) -> torch.Ten
 
 
 def branch_aware_loss(predicted, truth, states, cfg: ColumnTrainConfig) -> tuple[torch.Tensor, dict]:
+    """Compare B̂_{α,k} with B_{α,k} at all instrument levels.
+
+    predicted and truth stack k=0,1 along their 2M output rows. For every
+    sampled s_t, the loss compares v_{α,k}, its mass p_k, and the normalized
+    posterior F_{α,k}(s_t), in addition to the transfer columns themselves.
+    """
     m = states.shape[-1]
     column_tv = 0.5 * (predicted - truth).abs().sum(2).mean()
     column_ce = -(truth * predicted.clamp_min(1e-8).log()).sum(2).mean()
-    pred_pop = torch.einsum("bpom,sm->bspo", predicted, states)
-    true_pop = torch.einsum("bpom,sm->bspo", truth, states)
-    joint_tv = 0.5 * (pred_pop - true_pop).abs().sum(-1).mean()
-    pred_branch = pred_pop.reshape(*pred_pop.shape[:-1], 2, m)
-    true_branch = true_pop.reshape(*true_pop.shape[:-1], 2, m)
-    pred_mass = pred_branch.sum(-1)
-    true_mass = true_branch.sum(-1)
-    mass_loss = (pred_mass - true_mass).abs().mean()
+    pred_joint = torch.einsum("bpom,sm->bspo", predicted, states)
+    true_joint = torch.einsum("bpom,sm->bspo", truth, states)
+    joint_tv = 0.5 * (pred_joint - true_joint).abs().sum(-1).mean()
+    pred_v = pred_joint.reshape(*pred_joint.shape[:-1], 2, m)
+    true_v = true_joint.reshape(*true_joint.shape[:-1], 2, m)
+    pred_p = pred_v.sum(-1)
+    true_p = true_v.sum(-1)
+    mass_loss = (pred_p - true_p).abs().mean()
     conditional = 0.5 * (
-        pred_branch / pred_mass.clamp_min(1e-8)[..., None]
-        - true_branch / true_mass.clamp_min(1e-8)[..., None]
+        pred_v / pred_p.clamp_min(1e-8)[..., None]
+        - true_v / true_p.clamp_min(1e-8)[..., None]
     ).abs().sum(-1)
-    mask = true_mass >= 1e-3
+    mask = true_p >= 1e-3
     conditional_loss = conditional[mask].mean() if bool(mask.any()) else conditional.mean() * 0.0
     # Exact transfer columns contain many structural zeros (especially at tau=0).
     # sqrt(0) has an infinite derivative, which produces NaN gradients even when
     # the corresponding truth factor is also zero.  A tiny floor keeps the
     # Bhattacharyya overlap differentiable without changing reported accuracy.
-    eps = torch.finfo(pred_pop.dtype).eps
+    eps = torch.finfo(pred_joint.dtype).eps
     overlap = (
-        pred_pop.clamp_min(eps).sqrt() * true_pop.clamp_min(eps).sqrt()
+        pred_joint.clamp_min(eps).sqrt() * true_joint.clamp_min(eps).sqrt()
     ).sum(-1)
     infidelity = (1.0 - overlap.square()).clamp_min(0).mean()
     total = (

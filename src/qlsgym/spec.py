@@ -166,8 +166,11 @@ class Molecule:
 
 @runtime_checkable
 class TauBatchedEngine(Protocol):
-    """Anything that can answer: *if I apply this pulse to this belief, what are the two
-    measurement branches, for every duration on my tau grid?*.
+    """Evaluate the two branch populations of the quantum instrument.
+
+    In the slide notation, p_in = s_t, the controls are
+    (ω, τ, σ) = α, and each returned row is the unnormalized population
+    v_{α,k} = B_{α,k}s_t.
     """
 
     molecule: Molecule
@@ -177,8 +180,10 @@ class TauBatchedEngine(Protocol):
     def branches_all_tau(
         self, p_in: np.ndarray, omega: float, sigma: str
     ) -> tuple[np.ndarray, np.ndarray]:
-        """(P0, P1), each (len(tau_indices), n_states) float64, unnormalised (their sums are the
-        two outcome probabilities).
+        """Return (v0, v1) for every retained duration.
+
+        Each array has shape (len(tau_indices), n_states). Its row sum is
+        p_k(s_t, α) = 1ᵀv_{α,k}.
         """
         ...
 
@@ -189,7 +194,7 @@ class BatchedEngine(TauBatchedEngine, Protocol):
     def branches_batch(
         self, p_in: np.ndarray, omegas: np.ndarray, sigma: str
     ) -> tuple[np.ndarray, np.ndarray]:
-        """(P0, P1), each (n_omega, len(tau_indices), n_states)."""
+        """Return (v0, v1) with shape (n_omega, n_tau, N)."""
         ...
 
 
@@ -209,7 +214,11 @@ def branches_batch_fallback(
 
 @dataclass(frozen=True)
 class Action:
-    """One pulse."""
+    """One physical pulse α = (ω, τ, σ).
+
+    tau_index selects τ from the common grid. A primitive uses
+    its stored duration and sets primitive >= 0.
+    """
 
     sigma: str
     omega: float
@@ -221,9 +230,9 @@ class Action:
         return self.primitive >= 0
 
 
-def check_branches(p0: np.ndarray, p1: np.ndarray, n_states: int, atol: float = 1e-6) -> None:
-    """Sanity checks shared by tests and engines: shapes, non-negativity, probability conservation."""
-    assert p0.shape == p1.shape and p0.shape[-1] == n_states, (p0.shape, p1.shape)
-    assert np.all(p0 >= -atol) and np.all(p1 >= -atol)
-    tot = p0.sum(-1) + p1.sum(-1)
+def check_branches(v0: np.ndarray, v1: np.ndarray, n_states: int, atol: float = 1e-6) -> None:
+    """Check v_{α,k} >= 0 and Σ_k 1ᵀv_{α,k} = 1."""
+    assert v0.shape == v1.shape and v0.shape[-1] == n_states, (v0.shape, v1.shape)
+    assert np.all(v0 >= -atol) and np.all(v1 >= -atol)
+    tot = v0.sum(-1) + v1.sum(-1)
     assert np.allclose(tot, 1.0, atol=atol), (tot.min(), tot.max())

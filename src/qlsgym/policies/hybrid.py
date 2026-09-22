@@ -117,10 +117,14 @@ class BatchedFallbackPolicy:
 class ExactCandidateArbiterPolicy:
     """Admit a learned action only when exact one-step outcomes improve.
 
-    The learned actor and baseline each propose one action.  The arbiter first
-    compares immediate success probability, then expected posterior purity.
-    It uses cached exact action tables and never advances or mutates the audit
-    environment.
+    The learned actor and baseline propose pulses α_L(s) and α_D(s). For each
+    α, the arbiter evaluates the exact branch probabilities p_k(s, α) and
+    posteriors F_{α,k}(s). It first compares
+
+        S_E(s, α) = Σ_k p_k(s, α) 1_{𝒢_η}(F_{α,k}(s)),
+
+    then U_E(s, α) = Σ_k p_k(s, α) ||F_{α,k}(s)||_∞. It uses cached exact
+    action tables and never advances or mutates the audit environment.
     """
 
     stateful = False
@@ -148,6 +152,7 @@ class ExactCandidateArbiterPolicy:
             self.baseline.reset()
 
     def _scores(self, beliefs, actions):
+        """Evaluate (S_E, U_E) for each row (s, α)."""
         s0, s1, p0, p1, _, _, done0, done1 = self.exact_environment.branch_outcomes(
             beliefs, actions,
         )

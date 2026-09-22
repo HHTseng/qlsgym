@@ -16,67 +16,80 @@ training.
 
 ## 1. Mathematical object
 
-Let
+Fix $N=192$. At decision time $t$ the population posterior and pulse are
 
 $$
-I=\{1,\ldots,192\},\qquad
-\mathcal S=\Delta^{191},\qquad
-\mathcal A=\{1,\ldots,312\},\qquad
-Y=\{0,1\}.
+s_t\in\Delta_{N-1},\qquad
+\alpha_t=(\omega_t,\tau_t,\sigma_t)\in\mathcal A,
+\qquad k\in\{0,1\}.
 $$
 
-An element $s\in\mathcal S$ is a molecular population vector. The action
-set contains 288 Raman controls and 24 primitives. The outcomes $y=0,1$
-denote the ground and excited motional readout branches.
+The two values of $k$ are the ground and aggregated excited motional readout
+branches. The finite library contains 288 Raman pulses and 24 primitives. Its
+Python index $a\in\{0,\ldots,311\}$ denotes the physical pulse $\alpha_a$.
 
-For dynamics $D$, define the unnormalized branch map
+For either dynamics engine $D$, let $B^D_{\alpha,k}$ be its nonnegative branch
+matrix. The associated quantum instrument is
 
 $$
-q_y^D:\mathcal S\times\mathcal A\longrightarrow\mathbb R_+^{I},
+v^D_{\alpha,k}=B^D_{\alpha,k}s_t,
 \qquad
-\beta_y^D(s,a)=\mathbf 1^\top q_y^D(s,a),
+p^D_k(s_t,\alpha)=\mathbf 1^{\mathsf T}v^D_{\alpha,k},
 \qquad
-\Phi_y^D(s,a)=\frac{q_y^D(s,a)}{\beta_y^D(s,a)}.
+F^D_{\alpha,k}(s_t)=\frac{v^D_{\alpha,k}}{p^D_k(s_t,\alpha)}.
 $$
 
-Thus $\beta_y^D$ is the Born probability and $\Phi_y^D$ is the posterior
-belief, when $\beta_y^D>0$. The induced Markov kernel is
+Here $v^D_{\alpha,k}$ is an unnormalized molecular population,
+$p^D_k$ is its Born probability, and $F^D_{\alpha,k}$ is the posterior when
+$p^D_k>0$. For $A\subseteq\Delta_{N-1}$, the belief-state kernel is
 
 $$
-P_D(s,a;B)=\sum_{y\in Y}\beta_y^D(s,a)
-\mathbf 1_B\left(\Phi_y^D(s,a)\right),
+\mathcal P_D(s,\alpha;A)=
+\sum_{k=0}^{1}p^D_k(s,\alpha)
+\mathbf 1_A\left(F^D_{\alpha,k}(s)\right),
 \qquad
-\sum_{y\in Y}\beta_y^D(s,a)=1.
+\sum_{k=0}^{1}p^D_k(s,\alpha)=1.
 $$
 
-The exact engine $E$ evaluates this kernel from cached effective-Hamiltonian
-action tables. A surrogate $\widehat E$ replaces in-window Raman maps by
-learned maps; primitive and off-window actions use exact fallback dynamics.
-The environment evolves populations, not coherences: after every measurement
-and cooling step, the next state is again an element of $\mathcal S$.
+The exact engine $E$ obtains $B^E_{\alpha,k}$ from cached
+effective-Hamiltonian tables. The surrogate $\widehat E$ evaluates learned
+in-window Raman maps and uses exact tables for primitive and off-window
+pulses. Measurement and recooling return the state to $\Delta_{N-1}$ after
+each action.
 
-For a policy $\pi$, let
-
-$$
-G=\{s\in\mathcal S:\|s\|_\infty\ge0.98\},\qquad
-\tau_\pi=\inf\{t\ge0:s_t\in G\},\qquad H=80.
-$$
-
-The two reported functionals are
+Let $\eta=0.02$, $H=80$, and
 
 $$
-F_D(\pi)=\Pr_D(\tau_\pi>H),
+\mathcal G_\eta=
+\{s\in\Delta_{N-1}:\|s\|_\infty\ge1-\eta\},
 \qquad
-C_D(\pi)=\mathbb E_D[\min(\tau_\pi,H)].
+T_\pi=\inf\{t\ge0:s_t\in\mathcal G_\eta\}.
 $$
 
-`unfinished fraction` estimates $F_D$; `average actions` estimates $C_D$.
-Controllers are ordered lexicographically by
+Suppressing the engine superscript, the unit-cost Bellman equation is
 
 $$
-\mathcal R_D(\pi)=\bigl(F_D(\pi),C_D(\pi)\bigr).
+V^\star(s)=
+\begin{cases}
+0,&s\in\mathcal G_\eta,\\
+1+\displaystyle\min_{\alpha\in\mathcal A}
+\sum_{k=0}^{1}p_k(s,\alpha)V^\star(F_{\alpha,k}(s)),
+&s\notin\mathcal G_\eta.
+\end{cases}
 $$
 
+For a policy $\pi$, define
+
+$$
+f_D(\pi)=\Pr_D(T_\pi>H),
+\qquad
+c_D(\pi)=\mathbb E_D[\min(T_\pi,H)],
+\qquad
+\mathcal R_D(\pi)=\bigl(f_D(\pi),c_D(\pi)\bigr).
+$$
+
+The reported unfinished fraction estimates $f_D$ and average actions estimates
+$c_D$. Controllers are ordered lexicographically by $\mathcal R_D$.
 Hence reliability precedes speed. Every final claim uses $D=E$.
 
 ## 2. Physical and statistical contract
@@ -101,9 +114,9 @@ A controller is declared superior to a reference only when
 
 $$
 \sup \mathrm{CI}_{0.95}
-\bigl(F_E(\pi)-F_E(\pi_0)\bigr)<0
+\bigl(f_E(\pi)-f_E(\pi_0)\bigr)<0
 \quad\text{and}\quad
-C_E(\pi)-C_E(\pi_0)<0.
+c_E(\pi)-c_E(\pi_0)<0.
 $$
 
 The confidence interval is formed over the five paired policy seeds. Common
@@ -126,15 +139,16 @@ The descending-population policy maps the most populated state to the action
 with maximum exact-table excited-branch yield. It is the strongest non-ML
 reference found in this study.
 
-For a belief $s$, let $a_L$ be the failure-sensitive PPO proposal and
-$a_D$ the descending-population proposal. Define exact one-step scores
+For $s\in\Delta_{N-1}$, let $\alpha_L(s)$ be the failure-sensitive PPO
+proposal and $\alpha_D(s)$ the descending-population proposal. Define exact
+one-step scores
 
 $$
-S(s,a)=\sum_{y\in Y}\beta_y^E(s,a)
-\mathbf 1_G\left(\Phi_y^E(s,a)\right),
+S_E(s,\alpha)=\sum_{k=0}^{1}p^E_k(s,\alpha)
+\mathbf 1_{\mathcal G_\eta}\left(F^E_{\alpha,k}(s)\right),
 \qquad
-P(s,a)=\sum_{y\in Y}\beta_y^E(s,a)
-\left\|\Phi_y^E(s,a)\right\|_\infty.
+U_E(s,\alpha)=\sum_{k=0}^{1}p^E_k(s,\alpha)
+\left\|F^E_{\alpha,k}(s)\right\|_\infty.
 $$
 
 The selected arbiter, with $\delta=10^{-4}$, is
@@ -142,21 +156,22 @@ The selected arbiter, with $\delta=10^{-4}$, is
 $$
 \pi_*(s)=
 \begin{cases}
-a_L,&S(s,a_L)>S(s,a_D),\\
-a_L,&S(s,a_L)=S(s,a_D) \land P(s,a_L)>P(s,a_D)+\delta,\\
-a_D,&\text{otherwise}.
+\alpha_L(s),&S_E(s,\alpha_L(s))>S_E(s,\alpha_D(s)),\\
+\alpha_L(s),&S_E(s,\alpha_L(s))=S_E(s,\alpha_D(s))
+\land U_E(s,\alpha_L(s))>U_E(s,\alpha_D(s))+\delta,\\
+\alpha_D(s),&\text{otherwise}.
 \end{cases}
 $$
 
 Relative to descending population,
 
 $$
-F_E(\pi_*)-F_E(\pi_D)=-3.61 \text{ percentage points},
+f_E(\pi_*)-f_E(\pi_D)=-3.61 \text{ percentage points},
 \qquad
 \mathrm{CI}_{0.95}=[-4.75,-2.47],
 $$
 
-and $C_E(\pi_*)-C_E(\pi_D)=-1.30$. Among 25,000 paired episodes,
+and $c_E(\pi_*)-c_E(\pi_D)=-1.30$. Among 25,000 paired episodes,
 the arbiter rescues 1,478 baseline failures and loses 576 baseline successes.
 This supports an empirical advantage for a model-based hybrid under the stated
 contract. It does not show that a standalone RL policy is superior.
@@ -168,25 +183,40 @@ and
 
 ## 4. FNO definition and acceptance criterion
 
-For a block/polarization pair with $m$ molecular states, a structured
-surrogate predicts the columns of
+The downloaded state-map FNO approximates the branch populations directly:
 
 $$
-K(a)=
-\begin{pmatrix}K_0(a)\\\\K_1(a)\end{pmatrix}
+\widehat v_{\alpha,k}=
+\mathcal G_{\theta,k}(s_t,\omega,\sigma)(\tau),
+\qquad
+\widehat p_k=\mathbf 1^{\mathsf T}\widehat v_{\alpha,k},
+\qquad
+\widehat F_{\alpha,k}(s_t)=
+\frac{\widehat v_{\alpha,k}}{\widehat p_k}.
+$$
+
+For a block/polarization pair with $m$ molecular states, column-v2 instead
+learns the branch matrices:
+
+$$
+\mathcal B_\theta:(\omega,\tau,\sigma)\longmapsto
+\{\widehat B_{\alpha,0},\widehat B_{\alpha,1}\},
+\qquad
+\widehat B_\alpha=
+\begin{pmatrix}\widehat B_{\alpha,0}\\\\\widehat B_{\alpha,1}\end{pmatrix}
 \in\mathbb R_+^{2m\times m},
 \qquad
-q_y(s,a)=K_y(a)s.
+\widehat v_{\alpha,k}=\widehat B_{\alpha,k}s_t.
 $$
 
 Column-v2 enforces
 
 $$
-K(a)\ge0,
+\widehat B_\alpha\ge0,
 \qquad
-\mathbf 1^\top K(a)=\mathbf 1^\top,
+\mathbf 1_{2m}^{\mathsf T}\widehat B_\alpha=\mathbf 1_m^{\mathsf T},
 \qquad
-K(\omega,0)=
+\widehat B_{(\omega,0,\sigma)}=
 \begin{pmatrix}I_m\\\\0\end{pmatrix}.
 $$
 
@@ -197,10 +227,12 @@ $$
 d_{\mathrm{TV}}(u,v)=\tfrac12\|u-v\|_1.
 $$
 
-A manifest is admissible only if every one of the 24 pairs passes every row of
-the following audit. The table reports the worst pairwise value.
+Branch-mass error compares $\widehat p_k$ with $p_k$; conditional TV compares
+$\widehat F_{\alpha,k}(s)$ with $F_{\alpha,k}(s)$. A manifest is admissible
+only if every one of the 24 block/polarization pairs passes every row of the
+following audit. The table reports the worst pairwise value.
 
-| Gate | Bound | Downloaded `mix` | Column-v2 | Column-v2 status |
+| Gate | Bound | Downloaded mix | Column-v2 | Column-v2 status |
 |---|---:|---:|---:|:---:|
 | zero-time identity TV, max | $10^{-3}$ | 0.11097 | **0** | pass |
 | input-linearity TV, P95 | $10^{-3}$ | 0.07656 | **$8.44\times10^{-17}$** | pass |
@@ -213,11 +245,11 @@ the following audit. The table reports the worst pairwise value.
 
 Column-v2 removes the elementary structural defects but worsens the quantities
 that determine measurement branches. Its worst failures occur at block 11,
-polarization `+`.
+polarization +.
 
 The closed-loop diagnostic makes the rejection decisive:
 
-| Controller | Exact | Downloaded `mix` | Column-v2 |
+| Controller | Exact | Downloaded mix | Column-v2 |
 |---|---:|---:|---:|
 | Failure-sensitive PPO | 24.92% / 45.20 | 28.98% / 48.40 | **89.51% / 73.62** |
 | Descending population | 19.98% / 40.00 | 23.68% / 41.44 | **91.10% / 73.40** |
@@ -228,8 +260,8 @@ under it. The next surrogate experiment must first reduce branch-mass,
 conditional-state, and termination errors on policy-occupancy data.
 
 See the
-[`full structural audit`](results/thf_column_fno_v2_full_audit/summary.md) and
-[`closed-loop audit`](results/thf_column_fno_v2_transfer/summary.md).
+[full structural audit](results/thf_column_fno_v2_full_audit/summary.md) and
+[closed-loop audit](results/thf_column_fno_v2_transfer/summary.md).
 
 ## 5. Retained evidence from earlier runs
 
@@ -250,7 +282,7 @@ $\gamma=1$, $\lambda_{\mathrm{GAE}}=0.98$, square-root beliefs, and qMDP
 value targets. Failure-sensitive continuation adds the terminal reward
 
 $$
-r_t=-1-20\cdot\mathbf 1\{t=H\text{ and }s_t\notin G\}.
+r_t=-1-20\cdot\mathbf 1\{t=H\text{ and }s_t\notin\mathcal G_\eta\}.
 $$
 
 The detailed Optuna records remain in
@@ -260,7 +292,28 @@ The experimental rationale is archived in
 [`docs/FNO_RL_IMPROVEMENT_PLAN.md`](docs/FNO_RL_IMPROVEMENT_PLAN.md) and
 [`docs/FNO_RL_SUPERIORITY_PLAN.md`](docs/FNO_RL_SUPERIORITY_PLAN.md).
 
-## 6. Repository map
+## 6. Notation and code
+
+The slide notation is authoritative. Python retains a few historical field
+names for checkpoint and API compatibility.
+
+| Mathematical object | Meaning | Principal code |
+|---|---|---|
+| $s_t\in\Delta_{N-1}$ | molecular population posterior | <code>belief</code>, <code>state</code>, <code>Transition.belief</code> |
+| $\alpha=(\omega,\tau,\sigma)$ | physical pulse | <code>Action</code>; integer <code>actions</code> contains the library index $a$ of $\alpha_a$ |
+| $B_{\alpha,k}$ | exact branch matrix | two row blocks of <code>ActionTables.blocks</code> or <code>PrimitiveTable.table</code> |
+| $v_{\alpha,k}=B_{\alpha,k}s_t$ | unnormalized branch population | <code>PurificationEnv.apply</code>; local variables <code>v0</code>, <code>v1</code> |
+| $p_k=\mathbf 1^{\mathsf T}v_{\alpha,k}$ | branch probability | <code>Transition.pi0</code>, <code>Transition.pi1</code>; the legacy prefix <code>pi</code> means $p_k$ |
+| $F_{\alpha,k}(s_t)$ | normalized posterior | <code>Transition.s0</code>, <code>Transition.s1</code> |
+| $\mathcal G_\eta$ | terminal set | <code>PurificationEnv.is_done</code>; <code>p_target</code> equals $1-\eta$ |
+| $\mathcal G_{\theta,k}$ | state-map FNO branch operator | <code>BlockFNO</code>, <code>FnoEngine</code> |
+| $\widehat B_{\alpha,k}$ | column-FNO branch matrix | <code>ColumnFNO.columns</code> |
+| $\sum_k p_k[r_k+\gamma c_k V(F_{\alpha,k})]$ | S18/qMDP branch expectation | PPO <code>qmdp</code>; <code>ddqn_s18_target</code>; <code>sac_s18_target</code> |
+
+The paper symbol $\nu$ for the measured motional branch is the same object as
+$k$ here. It appears only in legacy data or external-paper quotations.
+
+## 7. Repository map
 
 | Path | Role |
 |---|---|
@@ -280,7 +333,7 @@ Large checkpoints are external to Git. The downloaded
 `$QLSGYM_WORK/checkpoints/thf/mix.json`; the manifest contains 24 entries and
 uses molecule fingerprint `d7deb43457d3`.
 
-## 7. Installation and use
+## 8. Installation and use
 
 Python 3.11 or later and PyTorch 2.3 or later are required.
 

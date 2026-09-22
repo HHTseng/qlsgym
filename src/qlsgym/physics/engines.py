@@ -84,7 +84,7 @@ class _EngineBase:
                                omega, sigma, self.tau_indices)
 
     def columns(self, sector: Block, sigma: str, omega: float) -> np.ndarray:
-        """(len(tau_indices), 2 M, M) lumped transfer columns, cached per (sector, sigma, omega)."""
+        """Return [B_{α,0}; B_{α,1}] over τ, cached by (sector, σ, ω)."""
         key = (int(sector.index), tuple(sector.key), sigma, float(omega))
         t = self._cache.get(key)
         if t is None:
@@ -93,7 +93,7 @@ class _EngineBase:
         return t
 
     def exact_branches_all_tau(self, p_in, omega, sigma):
-        """Exact (P0, P1) over tau_indices through the sectors of this drive."""
+        """Evaluate exact v_{α,k}=B_{α,k}s_t over all retained τ."""
         p_in = np.asarray(p_in, dtype=np.float64)
         nt = self.tau_indices.size
         out0 = np.tile(p_in, (nt, 1))
@@ -110,7 +110,7 @@ class _EngineBase:
         return out0, out1
 
     def branches(self, p_in, omega, sigma, tau_index: int):
-        """Single-duration convenience: (P0, P1) at global tau_index."""
+        """Return (v_{α,0}, v_{α,1}) for α=(ω, τ[tau_index], σ)."""
         a, c = self.branches_all_tau(p_in, omega, sigma)
         r = self._row[int(tau_index)]
         return a[r], c[r]
@@ -144,7 +144,7 @@ class TorchExactEngine(_EngineBase):
         return self.exact_branches_all_tau(p_in, omega, sigma)
 
     def branches_batch(self, p_in, omegas, sigma):
-        """(P0, P1), each (n_omega, len(tau_indices), n_states)."""
+        """Evaluate exact (v_{α,0}, v_{α,1}) over batched ω and τ."""
         import torch
         from .torch_ops import transfer_columns
         omegas = np.asarray(omegas, dtype=np.float64).reshape(-1)
@@ -188,7 +188,7 @@ class BlockSubstituteEngine(ExactEngine):
         return self.calls["substituted"] / tot if tot else float("nan")
 
     def _substitute_block(self, b: int, sub: np.ndarray, omega: float) -> np.ndarray:
-        """(len(tau_indices), 2 M) populations, summing to sub.sum."""
+        """Return stacked (v_{α,0}, v_{α,1}) with total mass 1ᵀsub."""
         raise NotImplementedError
 
     def branches_all_tau(self, p_in, omega, sigma):

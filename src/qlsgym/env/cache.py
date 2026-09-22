@@ -15,6 +15,12 @@ from .actions import ActionLibrary
 
 @dataclass
 class PrimitiveTable:
+    """Cached instrument matrix for one primitive pulse α.
+
+    table vertically stacks B_{α,0} and B_{α,1}; hence table @ s_t stacks
+    v_{α,0} and v_{α,1}.
+    """
+
     states: np.ndarray        # (S,) sorted global indices of the union sector
     table: np.ndarray         # (2S, S) lumped transfer matrix at the primitive's tau
     tau_index: int            # row of the tau grid used
@@ -23,6 +29,13 @@ class PrimitiveTable:
 
 @dataclass
 class ActionTables:
+    """Cached branch matrices for the finite pulse library.
+
+    Each block has shape (n_grid, 2M, M). The first M output rows are
+    B_{α,0}; the last M are B_{α,1}. Each column therefore sums to one over
+    both measured branches.
+    """
+
     fingerprint: str
     library_tag: str
     blocks: list                    # per block: (n_grid, 2M, M)

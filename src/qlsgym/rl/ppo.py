@@ -276,7 +276,12 @@ def compute_advantages(reward, value, terminal, last_value, branch_target,
 
     Legacy ``qmdp`` is one-step actor-critic. ``qmdp_gae`` accumulates
     expected TD residuals along sampled paths, stopping at episode boundaries.
-    Branch targets already contain separate branch terminal/budget masks.
+    In the slide notation the supplied branch target is
+
+        Σ_k p_k(s_t, α_t) [r_k + γ c_k V(F_{α_t,k}(s_t))],
+
+    where c_k is the branch continuation mask. It already includes separate
+    branch terminal and budget masks.
     """
     torch = _torch()
     if value_target == "qmdp":
@@ -331,7 +336,7 @@ def train_ppo(
     val_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
     rew_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
     term_buf = torch.zeros((T, B), dtype=torch.float32, device=device)   # 1 where the episode ended
-    q_buf = torch.zeros((T, B), dtype=torch.float32, device=device)      # qmdp one-step target
+    qmdp_target_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
 
     history, snapshots = [], []
     best, best_sd = None, None
@@ -363,6 +368,8 @@ def train_ppo(
                 rew_buf[t] = sampled_reward * r_scale
                 term_buf[t] = ended.to(torch.float32)
                 if cfg.value_target in ("qmdp", "qmdp_gae"):
+                    # Both F_{α_t,k}(s_t) are available in tr.s0/tr.s1, so the
+                    # S18 target takes the exact expectation over k.
                     next_budget = (
                         env.cfg.max_pulses - env.steps
                     ).clamp_min(0).to(torch.float32) / env.cfg.max_pulses
@@ -376,8 +383,10 @@ def train_ppo(
                     fail1 = trunc_next * (1.0 - tr.done1.to(torch.float32))
                     r0 = tr.r0.to(torch.float32) - cfg.failure_penalty * fail0
                     r1 = tr.r1.to(torch.float32) - cfg.failure_penalty * fail1
-                    q_buf[t] = (tr.pi0.to(torch.float32) * (r0 * r_scale + cfg.gamma * c0 * v0)
-                                + tr.pi1.to(torch.float32) * (r1 * r_scale + cfg.gamma * c1 * v1))
+                    qmdp_target_buf[t] = (
+                        tr.pi0.to(torch.float32) * (r0 * r_scale + cfg.gamma * c0 * v0)
+                        + tr.pi1.to(torch.float32) * (r1 * r_scale + cfg.gamma * c1 * v1)
+                    )
                 # episode bookkeeping, then reset the finished rows
                 n_end = int(ended.sum())
                 if n_end:
@@ -395,7 +404,8 @@ def train_ppo(
 
         # advantages
         adv, ret = compute_advantages(rew_buf, val_buf, term_buf, last_value,
-                                      q_buf, cfg.gamma, cfg.gae_lambda, cfg.value_target)
+                                      qmdp_target_buf, cfg.gamma, cfg.gae_lambda,
+                                      cfg.value_target)
 
         # PPO update
         n = B * T

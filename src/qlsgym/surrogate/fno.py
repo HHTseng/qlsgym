@@ -39,7 +39,7 @@ class ColumnFNOConfig(FNOConfig):
 
 
 class BlockFNO(nn.Module):
-    """FNO surrogate G_theta^(f) for one Hamiltonian block and one sigma."""
+    """State-map FNO 𝒢_{θ,k} for one Hamiltonian block and one σ."""
 
     def __init__(
         self,
@@ -99,7 +99,7 @@ class BlockFNO(nn.Module):
         return self.net(x)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Predicted populations, normalised at each time step (Sec. II.3)."""
+        """Return the stacked branch populations (v̂_{α,0}, v̂_{α,1})."""
         return torch.softmax(self.net(x), dim=1)
 
     def n_parameters(self) -> int:
@@ -121,7 +121,11 @@ class BlockFNO(nn.Module):
 
 
 class ColumnFNO(nn.Module):
-    """Linear-in-belief transfer operator with exact identity at zero time."""
+    """Map α to (B̂_{α,0}, B̂_{α,1}), linearly acting on s_t.
+
+    The construction enforces nonnegative stochastic columns and
+    B̂_{(ω,0,σ)} = (I, 0)ᵀ.
+    """
 
     def __init__(
         self,
@@ -190,7 +194,7 @@ class ColumnFNO(nn.Module):
         )
 
     def columns(self, controls: torch.Tensor) -> torch.Tensor:
-        """Return stochastic columns with shape ``(B,P_tau,2M,M)``."""
+        """Return B̂_α=[B̂_{α,0}; B̂_{α,1}] with shape (B, P_τ, 2M, M)."""
         logits = self.net(controls)
         batch, _, n_tau = logits.shape
         columns = logits.reshape(
@@ -213,7 +217,7 @@ class ColumnFNO(nn.Module):
         return columns
 
     def propagate(self, population, embedding, omegas) -> torch.Tensor:
-        """Apply columns; clearly off-resonant rows use the static predictor."""
+        """Evaluate v̂_{α,k}=B̂_{α,k}s_t; off-resonant rows use (I, 0)ᵀ."""
         population = torch.as_tensor(
             population, dtype=torch.float64, device=embedding.device
         )
