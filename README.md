@@ -1,654 +1,333 @@
-# ThF⁺ quantum-logic spectroscopy: FNO surrogates and RL
-
-This branch studies **ThF⁺ state purification** using a Fourier neural operator (FNO) transition surrogate and PPO, categorical SAC and Double DQN. It adapts accuracy, timing and finished-episode metrics from [arXiv:2608.03702](https://arxiv.org/pdf/2608.03702), not that paper's molecule or hardware.
-
-Optimization branch **FNO_RL_optuna** extends native qlsgym branch **FNO_RL_agents**, based on main commit 2a7ee186f09c54b78d5987bcd0a6bb2399749e28. Experiment code and historical FNO results were selectively transferred from [the earlier RL branch](https://github.com/HHTseng/rl_qls_paper_replication/tree/FNO_RL_agents), commit d306d34; unrelated experiments were not merged. The underlying library remains intact.
-
-## Optuna optimization — completed 19 September 2026
-
-With the downloaded `mix` FNO fixed, two Tara H100 GPUs completed 240 broad
-Optuna trials, 18 one-million-transition promotion runs, and 15 final runs
-(three agents × five training seeds). Broad search and promotion used only FNO
-validation; exact dynamics were reserved as an audit. Each final seed used
-5,000 FNO and 5,000 exact holdout episodes.
-
-| Agent | Exact failure baseline | Optimized | Difference | Exact actions baseline | Optimized | Difference |
-|---|---:|---:|---:|---:|---:|---:|
-| PPO | 73.89% | **41.78%** | **32.11 pp lower** | 68.15 | **51.37** | **16.77 lower** |
-| SAC | **69.41%** | 80.68% | 11.27 pp higher | **66.07** | 71.88 | 5.80 higher |
-| DDQN | 98.56% | **94.61%** | **3.95 pp lower** | 78.88 | **76.00** | **2.88 lower** |
-
-- **PPO is highly tunable:** exact success rises from 26.11% to 58.22%, with
-  5.72-percentage-point standard deviation across training seeds. The chosen
-  shallow 512-unit network uses `lr=1.35e-3`, `clip=0.1`, eight epochs, 16
-  minibatches, undiscounted one-step QMDP values, and low entropy regularization.
-- **Optimization does not close the control gap.** Physics elimination still has
-  29.36% exact failure, 12.42 points below optimized PPO. Its 51.49 average
-  actions are close to PPO's 51.37 because PPO succeeds less often but uses only
-  30.91 actions on its successful episodes.
-- **SAC did not improve under this selection protocol.** The promoted setting
-  reduced the learning rate to `3.70e-5`, disabled temperature tuning, and
-  performed worse than the locked SAC configuration at one million transitions.
-  Short-budget FNO ranking is therefore not a reliable guarantee of long-budget
-  improvement for SAC.
-- **DDQN improves modestly but remains ineffective:** exact success is 5.39%
-  and varies substantially with training seed.
-- PED-ANOVA attributes 59.6% of PPO's broad-trial variation to learning rate,
-  followed by entropy coefficient (12.3%). SAC is controlled mainly by initial
-  temperature (26.9%), target-update rate (26.2%), and learning rate (20.8%);
-  DDQN is controlled mainly by network depth (35.9%) and target-update rate
-  (22.4%). These are search-local associations, not causal effects.
-- Optimized PPO's exact-minus-FNO failure gap is 2.88 points, but the fixed FNO
-  still gives the physics policy a 33.78-point gap. Hyperparameter search can
-  find a controller that tolerates the surrogate; it does not validate or fix
-  the surrogate's closed-loop dynamics.
-
-See the [optimization report](results/thf_rl_optuna_mix/summary.md),
-[`summary.json`](results/thf_rl_optuna_mix/summary.json), and
-[`selected_configs.json`](results/thf_rl_optuna_mix/selected_configs.json). The
-complete 240-trial export is in
-[`broad_trials.json`](results/thf_rl_optuna_mix/broad_trials.json).
-
-![Optimized agents versus locked baseline](results/thf_rl_optuna_mix/optimized_vs_baseline.png)
-
-![Optuna history](results/thf_rl_optuna_mix/optuna_history.png)
-
-![PED-ANOVA parameter importance](results/thf_rl_optuna_mix/parameter_importance.png)
-
-## Focused SAC refinement from the earlier RL repository
-
-The strong discrete-SAC result in
-[`rl_qls_paper_replication_FNO_RL_agents`](https://github.com/HHTseng/rl_qls_paper_replication/tree/FNO_RL_agents)
-is useful optimizer evidence, but it is not a direct ThF+ FNO result. Its selected
-H3O+ configuration came from a 12-trial validation screen using exact action
-tables, 130 states, 218 actions, $H=400$, purity 0.99, and the sampled S17 target.
-This repository uses the downloaded ThF+ `mix` FNO, 192 states, 312 actions,
-$H=80$, purity 0.98, and the S18 expectation over both measurement branches.
-
-The comparison identified four settings omitted or underrepresented in the
-first ThF+ SAC search:
-
-- H3O+ used 16 environments and two gradient steps per collection step, or
-  $2/16=0.125$ updates per transition. The previous selected ThF+ trial used
-  $4/(2\times128)=0.015625$, eight times fewer updates per transition.
-- H3O+ used raw belief $p$; ThF+ SAC fixed the input to $\sqrt p$.
-- H3O+ selected automatic temperature tuning with target entropy
-  $0.215\log|\mathcal A|$; the previous ThF+ winner disabled tuning at 0.771.
-- H3O+ selected reward divisor $R=5$ and initial $\alpha=0.027$. The focused
-  search varies $R$ and the dimensionless ratio $\widetilde\alpha=\alpha R$ so
-  reward and entropy scales remain interpretable together.
-
-`scripts/refine_thf_mix_sac.py` therefore searches `n_envs`, updates per
-transition, raw versus square-root beliefs, reward/temperature scale, entropy
-target, replay warmup and capacity, learning rate, discount, target-update rate,
-batch size, width, and depth. It keeps the FNO manifest, action library,
-environment, and S18 target fixed. Each broad trial trains paired seeds at
-300,000 transitions; four candidates are promoted at one million transitions,
-and the winner is confirmed with five fresh seeds. Exact dynamics remain an
-audit and never select a configuration.
-
-Run the resumable two-GPU pipeline on Tara with GPUs 0 and 2:
-
-    tmux new-session -d -s thf_mix_sac_refine \
-      'cd ~/qlsgym_FNO_RL_optuna && bash scripts/run_thf_mix_sac_refine.sh'
-
-Monitor it with:
-
-    source /usr/local/anaconda3/etc/profile.d/conda.sh
-    conda activate qlsgym
-    python scripts/refine_thf_mix_sac.py status \
-      --output results/thf_rl_optuna_mix_sac_refine
-
-### Focused SAC result — completed 21 September 2026
-
-The focused run completed 25 paired-seed broad trials, eight promotion runs
-(four candidates × two fresh seeds), and five final one-million-transition
-training seeds. Every final policy was evaluated on 5,000 FNO and 5,000 exact
-episodes. Selection used FNO validation only; the exact simulator remained an
-audit.
-
-| SAC run | Exact failure ↓ | Exact actions ↓ | FNO failure ↓ | FNO actions ↓ |
-|---|---:|---:|---:|---:|
-| Locked baseline | 69.41% | 66.07 | 72.23% | 68.03 |
-| Previous general Optuna search | 80.68% | 71.88 | 79.31% | 71.88 |
-| **Focused refinement** | **57.07%** | **59.85** | **56.59%** | **59.49** |
-
-The refined SAC lowers exact failure by **12.34 percentage points** and exact
-average actions by **6.22** relative to the locked SAC baseline. FNO failure
-falls by **15.64 points** and FNO actions by **8.53**. The exact-minus-FNO gaps
-are only +0.48 failure points and +0.36 actions for these policies, so transfer
-is good on their visited distribution.
-
-The selected `sac_t24` configuration uses 16 environments, one gradient update
-per collection step (1/16 update per transition), \(\sqrt p\) observations,
-`lr=1.5048e-4`, \(\gamma=0.995\), \(\tau=0.00305\), batch 512, replay capacity
-100,000, warmup 1,000, a single 128-unit hidden layer, reward divisor \(R=20\),
-and automatic temperature tuning toward
-\(0.4997\log|\mathcal A|\). Its initial dimensionless entropy/reward ratio is
-\(\widetilde\alpha=\alpha R=0.2654\).
-
-Across the focused search, PED-ANOVA assigns 42.3% of local variation to target
-entropy, 35.3% to the temperature/reward ratio, 4.7% to learning rate, and 3.8%
-to update ratio. The main transferable lesson is that SAC needed joint tuning
-of reward scale and entropy scale, paired-seed screening, and substantially
-fewer parallel environments than the first ThF+ search. These importances are
-search-local associations.
-
-Seed sensitivity remains material: exact failure has 18.96-percentage-point
-standard deviation across five training seeds and FNO failure has 16.68 points.
-The refined mean also remains behind optimized PPO (41.78% exact failure) and
-physics elimination (29.36%). This is a real SAC improvement under the fixed
-downloaded FNO, but it does not establish that the FNO is accurate on all
-closed-loop state distributions.
-
-See the [focused refinement report](results/thf_rl_optuna_mix_sac_refine/summary.md),
-[summary JSON](results/thf_rl_optuna_mix_sac_refine/summary.json), and
-[selected configuration](results/thf_rl_optuna_mix_sac_refine/selected_config.json).
-
-![Focused SAC versus prior runs](results/thf_rl_optuna_mix_sac_refine/sac_refined_vs_prior.png)
-
-![Focused SAC Optuna history](results/thf_rl_optuna_mix_sac_refine/sac_refine_history.png)
-
-![Focused SAC parameter importance](results/thf_rl_optuna_mix_sac_refine/sac_refine_importance.png)
-
-## Current conclusions — downloaded `mix` rerun completed 18 September 2026
-
-The downloaded `munozariasjm/thf_qls_fno` manifest has **24/24 block/polarization checkpoints** (fingerprint `d7deb43457d3`). On Tara, PPO, SAC and DDQN were each rerun with five training seeds at approximately one million transitions per seed. All 18 controllers have 5000 exact and 5000 FNO evaluation episodes under the same locked contract as the original `rlprod120v2` study.
-
-- **Physics elimination remains strongest:** exact failure is 29.36% and average actions are 51.49. The exact baseline values reproduce the original run because the policy and evaluation seed are unchanged.
-- **The downloaded model gives a small learned-policy improvement, not a qualitative recovery.** SAC reaches 69.41% exact failure and 66.07 actions; PPO reaches 73.89% and 68.15. Relative to the original FNO, failure improves by 2.28 percentage points for SAC and 2.86 points for PPO, but neither approaches physics elimination.
-- **DDQN remains ineffective:** exact failure is 98.56% (78.88 actions), versus 100% with the original FNO. A few successful episodes do not establish a useful greedy policy.
-- **The FNO is still not closed-loop certified.** Physics elimination fails 63.14% under `mix` but 29.36% exactly, a 33.78-point pessimistic gap. That is better than the original model's 42.40-point gap but remains large enough to distort long-horizon control.
-- **Transfer agreement depends on the visited state distribution.** PPO's aggregate exact-minus-FNO failure gap is only +0.05 points and SAC's is -2.82 points, even though the physics heuristic exposes much larger model bias. Learned-policy agreement alone therefore cannot validate the surrogate over the relevant state space.
-
-See the [downloaded-model summary](results/thf_rl_mix_tara/summary.md), [generation comparison](results/thf_rl_mix_tara/generation_comparison.md), [detailed original analysis](docs/THF_FINAL_ANALYSIS.md), and exact ranking below. Lower failure and failure-penalized average actions are better.
-
-## Physics and environment
-
-| Quantity | ThF⁺ experiment |
-|---|---|
-| Molecular belief | $s\in\Delta^{191}$: 192 states, 12 Hamiltonian blocks |
-| Motional truncation | 7 levels; Hilbert dimension $192\times7=1344$ |
-| Measured outcomes | $k=0$: ground; $k=1$: all excited motional levels |
-| Initialization | Thermal populations, 4 K |
-| Controls | 312 actions: 288 Raman $(\sigma,\omega,\tau)$ + 24 primitives |
-| Pulse duration | 200-time FNO grid, maximum 6 ms |
-| Episode | $\max_i s_i\ge0.98$ target; $H=80$ actions; $\rho=0$ |
-| Dynamics | FNO Raman propagation; primitives exact; final ranking evaluated exactly |
-
-The environment carries **populations, not coherences**: each pulse starts from a diagonal molecular mixture with the motion in its ground state. Posterior populations after readout/cooling define the next input. “Exact” below means exact within this effective-Hamiltonian, seven-level, population-reset model, not experimental certification.
-
-For action $a$, define unnormalized branch population $u_k(s,a)\ge0$, Born probability $\pi_k=\sum_i u_{k,i}$ and conditional belief $s'_k=u_k/\pi_k$. The quantum belief MDP has
-
-$$P(s'|s,a)=\sum_{k=0}^1\pi_k(s,a)\delta(s'-s'_k),\qquad \sum_k\pi_k=1.$$
-
-For a block with $m_f$ states, FNO maps $(s_f,\omega,\sigma)$ to joint populations in $\Delta^{2m_f-1}$ at all pulse times. Two readout groups do **not** mean a two-level motional Hamiltonian. Effective Hamiltonian construction: [heff](https://github.com/arianjad/heff/tree/main).
-
-### Sampled versus branch-expected updates
-
-Let $c_k=1$ only when branch $k$ is nonterminal and budget remains. Write $Q(s,a)$ for action value, $V(s)$ for the appropriate next-state value (maximum-Q for Q-learning), $r_k$ for branch reward, $\gamma$ for discount and $\eta$ for learning rate. The [earlier RL paper](https://arxiv.org/pdf/2410.11839) motivates these S17-style sampled and S18-style branch-expected targets, with terminal/budget masks:
-
-$$\text{S17:}\quad y=r_K+\gamma c_KV(s'_K),\quad K\sim\{\pi_k\};\qquad Q\leftarrow Q+\eta(y-Q),$$
-
-$$\text{S18:}\quad y=\sum_{k=0}^1\pi_k[r_k+\gamma c_kV(s'_k)];\qquad Q\leftarrow Q+\eta(y-Q).$$
-
-They represent the same expected physical Bellman operator with correct branches. Branch expectation reduces measurement-sampling variance; it does **not** fix FNO bias. DDQN uses online-action selection/target-Q evaluation, SAC a soft value, and PPO a branch-expected critic residual inside sampled-trajectory GAE. [Full protocol](docs/THF_FINAL_RL_STUDY.md).
-
-## Install and reproduce
-
-Python≥3.11, PyTorch≥2.3. The original production runs used `/home/htseng/anaconda3/envs/qlsgym` on wcs164084; the downloaded-`mix` rerun used `/home/htseng/.conda/envs/qlsgym` on Tara.
-
-    python -m pip install -e '.[gym,fno,analysis,test,tune]'
-    export QLSGYM_WORK=/path/to/qlsgym_work
-    export PYTHONPATH="$PWD/src"
-    python -m pytest -q -m 'not slow'
-
-Run one locked downloaded-`mix` job, or use `scripts/run_thf_mix_tara_study.sh` to reproduce the Tara queue:
-
-    python scripts/thf_rl_agents.py run --agent ppo --preset final \
-      --manifest "$QLSGYM_WORK/checkpoints/thf/mix.json" --fno-tag mix \
-      --min-manifest-coverage 1.0 --seed 0 --device cuda:0 \
-      --eval-batch 128 --output results/thf_rl_mix_tara
-
-### Two-GPU Optuna optimization with the downloaded FNO fixed
-
-`scripts/run_thf_mix_optuna.sh` runs the complete optimization and confirmation
-pipeline on two GPUs (Tara GPUs 0 and 2 by default):
-
-    cd ~/qlsgym_FNO_RL_optuna
-    export QLSGYM_WORK=$HOME/qlsgym_work
-    GPUS="0 2" TRIALS_PER_WORKER=40 \
-      scripts/run_thf_mix_optuna.sh
-
-The two workers jointly run 80 broad trials for each of PPO, categorical SAC,
-and DDQN. Each trial has at most 250,000 FNO transitions, and successive-halving
-pruning can stop it after any of four validation rungs. Training length is a
-fidelity budget rather than a free parameter: otherwise Optuna can prefer short,
-cheap trials even though the scientific comparison requires equal training.
-The search covers learning rate, hidden width/depth, PPO rollout and update
-geometry, discount/GAE/value target, entropy and clipping, SAC temperature and
-target entropy, DDQN exploration, replay batch size, target-update rate, and
-gradient-to-environment update ratio.
-
-Broad search and promotion select configurations only from fixed-seed FNO
-validation using
-
-$$J=p_{\mathrm{success}}+0.02\left(1-\frac{\bar A}{H}\right),\qquad H=80,$$
-
-so success dominates and failure-penalized action count $\bar A$ breaks close
-ties. The top three configurations per agent are retrained for one million
-transitions with seeds 100 and 101. The winner is retrained with seeds 0--4 and
-evaluated on 5,000 FNO plus 5,000 exact episodes per seed using holdout seed
-20001. The exact results are therefore an audit of transfer and do not influence
-selection. Outputs, Optuna storage, logs, selected configurations, models, and
-figures are written to `results/thf_rl_optuna_mix`. Monitor a running study with:
-
-    python scripts/optimize_thf_mix_rl.py status \
-      --output results/thf_rl_optuna_mix
-
-Exact environment:
-
-    import torch
-    from qlsgym import load_molecule
-    from qlsgym.env.actions import ActionLibrary
-    from qlsgym.env.cache import build_action_tables
-    from qlsgym.env.env import EnvConfig, PurificationEnv
-
-    mol = load_molecule("thf")
-    library = ActionLibrary.physics_subset(mol)
-    tables = build_action_tables(mol, library, device="cpu")
-    env = PurificationEnv(mol, library, tables,
-                          EnvConfig(p_target=0.98, max_pulses=80), batch=64)
-    state = env.reset(seed=0)
-    transition = env.step(torch.randint(library.n_actions, (64,)))
-
-Train one long FNO pair and independently test it:
-
-    python scripts/prepare_thf_fno.py train-block --work "$QLSGYM_WORK" \
-      --preset long --tag rlprod120v2 --block 0 --sigma + --device cuda:0 --storage-device cpu
-    python scripts/prepare_thf_fno.py evaluate-block --work "$QLSGYM_WORK" \
-      --tag rlprod120v2 --block 0 --sigma + --device cuda:0
-
-Repeat for all 12 blocks and both polarizations, then assemble the full manifest:
-
-    python scripts/prepare_thf_fno.py manifest --work "$QLSGYM_WORK" \
-      --tag rlprod120v2 --sigmas both --device cpu
-
-Paper-style tests and the original **full** RL grid were coordinated by scripts/run_thf_final_study.sh in tmux and completed on 17 September 2026. The downloaded-`mix` rerun used `scripts/run_thf_mix_tara_study.sh` on Tara GPUs 0, 2 and 3; GPU 1 was unavailable to PyTorch. It writes a distinct generation under `results/thf_rl_mix_tara`, validates all 18 records before aggregation, and leaves the original locked results intact. [Execution details](docs/THF_FINAL_RL_STUDY.md).
-
-<!-- FNO_RESULTS_START -->
-## Original locally trained production FNO accuracy
-
-Completed checkpoints with independent held-out tests: **24/24**. All completed models trained for 120 epochs; checkpoints are preselected `best_onres.pt`, never test-selected.
-
-| Block | σ | On-resonance median infidelity, diffuse ↓ | On-resonance median, control mixture ↓ | Control-mixture P95 ↓ | Static/no-change median |
-|---:|:---:|---:|---:|---:|---:|
-| 0 | + | 0.00622 | 0.02051 | 0.02180 | 0.17603 |
-| 1 | + | 0.00594 | 0.02051 | 0.02131 | 0.19463 |
-| 2 | + | 0.00424 | 0.01245 | 0.01309 | 0.14371 |
-| 3 | + | 0.00388 | 0.01345 | 0.01431 | 0.15958 |
-| 4 | + | 0.00207 | 0.00613 | 0.00646 | 0.10285 |
-| 5 | + | 0.00205 | 0.00647 | 0.00685 | 0.11909 |
-| 6 | + | 0.00117 | 0.00360 | 0.00411 | 0.06656 |
-| 7 | + | 0.00111 | 0.00346 | 0.00382 | 0.06888 |
-| 8 | + | 0.00049 | 0.00145 | 0.00171 | 0.04142 |
-| 9 | + | 0.00045 | 0.00150 | 0.00169 | 0.04153 |
-| 10 | + | 0.00020 | 0.00040 | 0.00046 | 0.06502 |
-| 11 | + | 0.04455 | 0.05790 | 0.07685 | 0.06502 |
-| 0 | - | 0.00578 | 0.01864 | 0.01937 | 0.15703 |
-| 1 | - | 0.00817 | 0.02600 | 0.02715 | 0.17144 |
-| 2 | - | 0.00368 | 0.01141 | 0.01224 | 0.12984 |
-| 3 | - | 0.00429 | 0.01362 | 0.01443 | 0.14811 |
-| 4 | - | 0.00202 | 0.00648 | 0.00691 | 0.09330 |
-| 5 | - | 0.00174 | 0.00595 | 0.00630 | 0.10941 |
-| 6 | - | 0.00113 | 0.00316 | 0.00358 | 0.05713 |
-| 7 | - | 0.00104 | 0.00322 | 0.00368 | 0.05737 |
-| 8 | - | 0.00044 | 0.00131 | 0.00167 | 0.04071 |
-| 9 | - | 0.00046 | 0.00129 | 0.00160 | 0.04093 |
-| 10 | - | 0.00014 | 0.00036 | 0.00126 | 0.05233 |
-| 11 | - | 0.00016 | 0.00034 | 0.00038 | 0.05233 |
-
-![Production FNO independent errors](results/thf_fno_blocks/thf_production_accuracy.png)
-
-Each row uses 32 new frequencies per stratum × 128 initial states, seeds 20260916/17, with 200 single-pulse time samples. Values average over initial states and pulse times before computing frequency percentiles. Diffuse and peaked input ensembles are not interchangeable.
-
-Accuracy on resonance improved strongly over the 30-epoch pilot, but a few-percent error floor remains on peaked beliefs. Off-resonance static predictions can outperform FNO; small unconditional error does not guarantee accurate normalized measurement branches or closed-loop purification.
-
-### Preliminary CPU audit: block 0, σ=+
-
-32 new frequencies/stratum × 128 initial states; device `cpu`. Reference: exact PyTorch, not CUDA-Q.
-
-- Representative resonant trajectory: time-average population infidelity 0.0073515.
-- Zero-time identity total-variation error: 0.052159 (ideal 0).
-- Near-pure input mean/P95 infidelity: 0.0041929/0.005594.
-- Near-pure conditional-branch P95 TV: 0.21304, excluding exact branch masses <10⁻³.
-- Input-mixture linearity TV: 0.04103 (ideal 0).
-
-![Paper-style FNO accuracy](results/thf_fno_preview/rlprod120v2_sp_block0_accuracy.png)
-
-![Near-pure measurement-branch errors](results/thf_fno_preview/rlprod120v2_sp_block0_branch_errors.png)
-
-Exact-build/FNO speedup range: 0.32–11.15×; cached-exact/FNO: 0.00153–0.0171×. These compare different amortization regimes, not the paper's CUDA-Q benchmark.
-
-![Propagation timings](results/thf_fno_preview/rlprod120v2_sp_block0_timing.png)
-
-### Full paper-style audit: block 1, σ=-
-
-100 new frequencies/stratum × 500 initial states; device `cuda:1`. Reference: exact PyTorch, not CUDA-Q.
-
-- Representative resonant trajectory: time-average population infidelity 0.016159.
-- Zero-time identity total-variation error: 0.067162 (ideal 0).
-- Near-pure input mean/P95 infidelity: 0.004456/0.0065554.
-- Near-pure conditional-branch P95 TV: 0.50592, excluding exact branch masses <10⁻³.
-- Input-mixture linearity TV: 0.027968 (ideal 0).
-
-![Paper-style FNO accuracy](results/thf_fno_validation/rlprod120v2_sm_block1_accuracy.png)
-
-![Near-pure measurement-branch errors](results/thf_fno_validation/rlprod120v2_sm_block1_branch_errors.png)
-
-Exact-build/FNO speedup range: 0.91–103.15×; cached-exact/FNO: 0.0145–0.141×. These compare different amortization regimes, not the paper's CUDA-Q benchmark.
-
-![Propagation timings](results/thf_fno_validation/rlprod120v2_sm_block1_timing.png)
-
-### Full paper-style audit: block 0, σ=+
-
-100 new frequencies/stratum × 500 initial states; device `cuda:0`. Reference: exact PyTorch, not CUDA-Q.
-
-- Representative resonant trajectory: time-average population infidelity 0.0073515.
-- Zero-time identity total-variation error: 0.052159 (ideal 0).
-- Near-pure input mean/P95 infidelity: 0.0041929/0.005594.
-- Near-pure conditional-branch P95 TV: 0.21304, excluding exact branch masses <10⁻³.
-- Input-mixture linearity TV: 0.04103 (ideal 0).
-
-![Paper-style FNO accuracy](results/thf_fno_validation/rlprod120v2_sp_block0_accuracy.png)
-
-![Near-pure measurement-branch errors](results/thf_fno_validation/rlprod120v2_sp_block0_branch_errors.png)
-
-Exact-build/FNO speedup range: 0.79–85.98×; cached-exact/FNO: 0.0124–0.116×. These compare different amortization regimes, not the paper's CUDA-Q benchmark.
-
-![Propagation timings](results/thf_fno_validation/rlprod120v2_sp_block0_timing.png)
-
-The CPU preview finds 5.2% zero-time identity TV, 4.1% input-linearity TV, and conditional-branch P95 TV ≈21% despite near-pure mean joint infidelity ≈0.0042. Large MRE spikes are driven by small positive true populations; infidelity and absolute/TV diagnostics give complementary context. Low joint error is not a closed-loop certification.
-
-For fixed-frequency state batches, exact propagation amortizes one eigendecomposition over many input states. Fresh frequency batches reach up to 11.2× FNO speedup, but cached exact is 58–655× faster across tested workloads. These CPU timings do not predict GPU timings; full audits log those separately. A compact fixed312-action problem can favor exact tables; FNO's stronger motivation is larger or changing/continuous control sets.
-<!-- FNO_RESULTS_END -->
-
-<!-- FINAL_RL_RESULTS_START -->
-## External `mix` FNO exact-simulator ranking
-
-Complete locked grid: 15 learned policies and three baselines. Each policy has 5000 exact and 5000 surrogate rollouts.
-
-| Controller | Training seeds | Exact average actions ↓ (95% CI) | Exact failure ↓ (95% CI) | FNO average actions | FNO failure |
-|---|---:|---:|---:|---:|---:|
-| Physics elimination | 0 | 51.49 [50.78, 52.22] | 29.36% [28.11, 30.64] | 64.52 | 63.14% |
-| Discrete SAC | 5 | 66.07 [62.67, 70.87] | 69.41% [63.28, 77.18] | 68.03 | 72.23% |
-| PPO | 5 | 68.15 [67.39, 68.91] | 73.89% [72.12, 75.67] | 69.14 | 73.84% |
-| Random | 0 | 74.57 [74.11, 75.01] | 85.62% [84.62, 86.57] | 75.91 | 86.20% |
-| Double DQN | 5 | 78.88 [78.03, 79.58] | 98.56% [97.48, 99.46] | 79.69 | 98.97% |
-| Sweeping | 0 | 79.97 [79.94, 80.00] | 99.92% [99.79, 99.97] | 79.94 | 99.82% |
-
-![External mix ThF+ RL ranking](results/thf_rl_mix_tara/thf_final_ranking.png)
-
-Order is descriptive: exact failure rate, then average actions. PPO/DDQN use γ=1; SAC uses γ=0.99 with an entropy bonus, so these are operational performance scores, not equal training objectives.
-
-Learned-policy intervals bootstrap five training-seed means; baseline mean intervals bootstrap rollouts and failure intervals use Wilson bounds. Five seeds do not establish statistical dominance. Inspect individual JSONs and the FNO-to-exact gap before interpreting a learned advantage.
-<!-- FINAL_RL_RESULTS_END -->
-
-## Original production FNO versus downloaded `mix` FNO
-
-All entries use the same five-seed, one-million-transition, 5000-exact-rollout contract. Deltas are `mix - original`; negative is better for both exact metrics.
-
-| Controller | Original exact actions | `mix` exact actions | Delta | Original exact failure | `mix` exact failure | Delta |
-|---|---:|---:|---:|---:|---:|---:|
-| Sweeping | 79.97 | 79.97 | +0.00 | 99.92% | 99.92% | +0.00 pp |
-| Random | 74.57 | 74.57 | +0.00 | 85.62% | 85.62% | +0.00 pp |
-| Physics elimination | 51.49 | 51.49 | +0.00 | 29.36% | 29.36% | +0.00 pp |
-| PPO | 69.07 | 68.15 | -0.92 | 76.75% | 73.89% | -2.86 pp |
-| Discrete SAC | 66.83 | 66.07 | -0.76 | 71.69% | 69.41% | -2.28 pp |
-| Double DQN | 80.00 | 78.88 | -1.12 | 100.00% | 98.56% | -1.44 pp |
-
-Transfer failure gap is exact failure minus FNO failure. Negative values mean the FNO environment is pessimistic.
-
-| Controller | Original transfer gap | `mix` transfer gap |
-|---|---:|---:|
-| Sweeping | +0.10 pp | +0.10 pp |
-| Random | -2.84 pp | -0.58 pp |
-| Physics elimination | -42.40 pp | -33.78 pp |
-| PPO | -0.46 pp | +0.05 pp |
-| Discrete SAC | -1.75 pp | -2.82 pp |
-| Double DQN | +0.40 pp | -0.41 pp |
-
-![Original production FNO versus downloaded mix](results/thf_rl_mix_tara/thf_mix_vs_rlprod120v2.png)
-
-## `refiningFNO+RL`: structural audit, gated FNO pilot, and exact fine-tuning
-
-This study executes [`docs/FNO_RL_IMPROVEMENT_PLAN.md`](docs/FNO_RL_IMPROVEMENT_PLAN.md)
-against downloaded manifest fingerprint `d7deb43457d3`. All learned rows below
-use five training seeds and 5,000 final exact plus 5,000 FNO rollouts per seed.
-Policies are ranked only by exact failure and then exact failure-penalized actions.
-
-| Rank | Controller | Training | Exact failure ↓ | Exact actions ↓ | FNO failure | FNO actions |
-|---:|---|---|---:|---:|---:|---:|
-| 1 | Physics elimination | exact model-based baseline | 29.36% | 51.49 | 63.14% | 64.52 |
-| 2 | Hybrid PPO | downloaded-`mix` pretraining + 250k cached-exact | 33.44% ± 3.97 | 48.21 ± 3.01 | 36.35% | 50.71 |
-| 3 | Exact-trained PPO | 1M cached-exact | 34.23% ± 6.32 | 48.88 ± 2.02 | 40.16% | 54.11 |
-| 4 | Hybrid SAC | downloaded-`mix` pretraining + 250k cached-exact | 41.52% ± 3.77 | 50.70 ± 2.43 | 43.48% | 52.23 |
-| 5 | FNO-trained PPO | 1M downloaded `mix` | 41.78% ± 5.72 | 51.37 ± 3.53 | 38.90% | 50.86 |
-| 6 | FNO-trained refined SAC | 1M downloaded `mix` | 57.07% ± 18.96 | 59.85 ± 9.11 | 56.59% | 59.49 |
-
-![Final exact-dynamics ranking](results/thf_fno_rl_refinement/final_exact_ranking.png)
-
-Exact training improved PPO by **7.54 failure percentage points** and **2.49
-actions** over FNO-only training. FNO-pretrained PPO followed by exact
-fine-tuning improved it by **8.34 points** and **3.16 actions**. The hybrid PPO
-mean is 0.80 failure points below exact-only PPO, but five seeds and overlapping
-seed variation do not establish that pretraining is better than exact training.
-For SAC, exact fine-tuning improved failure by **15.55 points**, actions by
-**9.16**, and reduced the across-seed failure SD from 18.96 to 3.77 points.
-
-The initial 100k exact screen selected belief-only PPO at 48.9% success. Adding
-remaining pulse budget $b_t=(H-t)/H$ reduced PPO success to 35.8%, so the budget
-feature was not promoted. The learning-rate screens selected $6\times10^{-4}$
-for PPO fine-tuning and $10^{-4}$ for SAC fine-tuning.
-
-The complete downloaded-`mix` structural audit found **0/24** block/polarization
-pairs passing every declared gate:
-
-| Worst-pair metric | Downloaded `mix` | Gate |
-|---|---:|---:|
-| $\tau=0$ identity TV, maximum | 0.11097 | ≤ 0.001 |
-| Input-linearity TV, P95 | 0.07656 | ≤ 0.001 |
-| Off-resonance joint TV, P95 | 0.06716 | ≤ 0.005 |
-| Branch-mass absolute error, P95 | 0.01659 | ≤ 0.005 |
-| Conditional TV for branch mass ≥$10^{-2}$, P95 | 0.12558 | ≤ 0.05 |
-| Conditional TV for branch mass ≥$10^{-3}$, P95 | 0.21491 | ≤ 0.10 |
-| Local termination classification error | 0.04838 | ≤ 0.005 |
-
-A physics-constrained transfer-column FNO was piloted on blocks 0± and 1±. It
-made identity and input linearity exact and reduced median off-resonance P95 TV
-to 0.0081 times the downloaded model. It simultaneously increased branch-mass
-error **15.21×**, conditional TV above $10^{-2}$ **4.07×**, and conditional TV
-above $10^{-3}$ **2.62×**. The preregistered promotion gate therefore stopped
-the 24-pair retrain. No improved-FNO RL result is reported from a model that
-failed this gate; compute moved to exact fine-tuning as specified in the plan.
-
-Strong-policy transfer still exceeds the desired tolerance. Hybrid PPO's FNO
-evaluation is 2.91 failure points and 2.50 actions more pessimistic than exact;
-hybrid SAC differs by 1.96 points and 1.53 actions. The downloaded model remains
-useful for initialization and candidate generation, but it is not certified as
-the sole dynamics engine for final RL claims.
-
-- [Final machine-readable comparison](results/thf_fno_rl_refinement/summary.json)
-- [Exact-training diagnosis](results/thf_fno_rl_improvement/summary.md)
-- [Hybrid PPO comparison](results/thf_mix_ppo_exact_finetune/summary.md)
-- [Downloaded-FNO structural audit](results/thf_mix_structural_audit/summary.md)
-- [Transfer-column pilot decision](results/thf_column_fno_pilot_comparison.json)
-
-![Hybrid PPO comparison](results/thf_mix_ppo_exact_finetune/hybrid_ppo_comparison.png)
-
-![Hybrid SAC comparison](results/thf_mix_sac_exact_finetune/hybrid_sac_comparison.png)
-
-## Safe hybrid optimization against non-ML controls
-
-The follow-up study implements the first executable stages of
-[`docs/FNO_RL_SUPERIORITY_PLAN.md`](docs/FNO_RL_SUPERIORITY_PLAN.md). It keeps
-the downloaded `mix` FNO fixed for pretraining, then optimizes the metric that
-is used for final selection: cached-exact failure first and failure-penalized
-actions second. Each learned row is the mean of five independently trained
-policies and 5,000 exact plus 5,000 FNO episodes per policy.
-
-| Controller | Exact failure ↓ (95% seed CI) | Exact actions ↓ | FNO failure | FNO actions |
-|---|---:|---:|---:|---:|
-| Physics elimination | 29.36% | 51.49 | 63.14% | 64.52 |
-| Hybrid PPO | 33.16% [27.85, 38.47] | 48.09 | 35.58% | 50.41 |
-| Hybrid PPO + frozen physics fallback | 22.70% [19.98, 25.41] | 47.15 | 37.59% | 50.69 |
-| **Failure-sensitive PPO** | **24.92% [23.69, 26.15]** | **45.20** | 28.98% | 48.40 |
-| **Failure-sensitive PPO + physics fallback** | **20.72% [20.17, 21.27]** | **45.25** | 36.01% | 49.54 |
-
-Failure-sensitive PPO is a learned actor with no model-based inference. It
-therefore establishes the requested learned-policy improvement over physics
-elimination: **4.44 percentage points fewer failures and 6.29 fewer actions**.
-Its upper seed-level failure interval is also below the 29.36% physics point
-estimate. Adding the conservative physics fallback improves failure by **8.64
-points** and actions by **6.24** relative to physics elimination. The stronger
-descending-population control evaluated below supersedes both as the non-ML
-reference, so these rows do not establish general superiority over non-ML
-control.
-
-The exact validation screen selected a timeout cost of
-$\lambda_f=20$ and rejected the remaining-budget observation. On 25,000 paired
-exact episodes relative to the source actor, failure-sensitive PPO rescued
-3,521 and lost 1,461 episodes (net 8.24%); its fallback form rescued 4,367 and
-lost 1,257 (net 12.44%). A frozen fallback alone also crossed the physics
-baseline, showing that much of the original gap was concentrated in the
-recoverable failure tail rather than the policy's successful trajectories.
-
-The current FNO is still not suitable for final policy ranking. The pure
-failure-sensitive actor is 4.06 failure points and 3.20 actions worse under FNO
-than under exact dynamics; the fallback controller's gaps are 15.29 points and
-4.30 actions. Final claims therefore use cached-exact evaluation.
-
-The coverage-balanced sweep visits 80 evenly spaced controls across all 312
-actions. It reaches 87.60% exact failure and 79.11 actions. This improves the
-99.92% failure of fixed-order sweeping, but remains far behind both physics
-elimination and learned control. A stronger adaptive descending-population
-controller reaches **19.98% failure and 40.00 actions**, making it the final
-non-ML reference.
-
-- [Safe-hybrid report](results/thf_safe_hybrid/summary.md)
-- [Machine-readable safe-hybrid results](results/thf_safe_hybrid/summary.json)
-- [Coverage-balanced sweeping](results/thf_nonml_controls/summary.md)
-
-![Safe-hybrid exact and FNO comparison](results/thf_safe_hybrid/safe_hybrid_comparison.png)
-
-## Final gated FNO + RL superiority study — completed 21 September 2026
-
-The completed study follows
-[`docs/FNO_RL_SUPERIORITY_PLAN.md`](docs/FNO_RL_SUPERIORITY_PLAN.md). All final
-learned and hybrid rows use five policy seeds and 5,000 exact holdout episodes
-per seed. The ranking is lexicographic: exact unfinished fraction first, then
-exact failure-penalized actions.
-
-| Rank | Controller | Type | Exact failure ↓ | Exact actions ↓ | Inference requirement |
-|---:|---|---|---:|---:|---|
-| 1 | **Exact candidate arbiter** | exact-table hybrid | **16.37%** | **38.70** | score actor and baseline proposals with cached-exact one-step outcomes |
-| 2 | 15-pulse PPO + descending fallback | hybrid | 18.40% | 41.31 | actor prefix, then descending rule |
-| 3 | Descending population | non-ML | 19.98% | 40.00 | cached-exact table rule |
-| 4 | Failure-sensitive PPO + physics fallback | hybrid | 20.72% | 45.25 | actor with terminal-tail fallback |
-| 5 | Failure-sensitive PPO | standalone RL | 24.92% | 45.20 | actor only |
-| 6 | Physics elimination | non-ML | 29.36% | 51.49 | physics rule |
-| 7 | FNO_RL_optuna PPO | standalone RL | 41.78% | 51.37 | actor only |
-| 8 | Coverage-balanced sweep | non-ML | 87.60% | 79.11 | fixed schedule |
-
-The exact candidate arbiter selects purity margin \(10^{-4}\). Relative to the
-descending controller, it lowers failure by **3.61 percentage points** with a
-paired 95% seed interval of **[-4.75, -2.47] points** and lowers actions by
-**1.30**. Across 25,000 paired rollouts it rescues 1,478 episodes and loses 576.
-It passes the declared two-metric superiority rule. This result is a
-model-based hybrid: cached-exact tables are required at every decision. The
-standalone actor and the fixed-prefix hybrid do not beat descending population
-on both metrics.
+# `qlsgym`: ThF⁺ purification with exact dynamics, FNOs, and RL
+
+This branch, `refiningFNO+RL`, studies finite-horizon purification of the
+internal state of ThF⁺. It contains exact-table controls, FNO surrogates, PPO,
+categorical SAC, Double DQN, and conservative hybrids.
+
+**State of the branch (21 September 2026).** The best verified controller is
+an exact one-step arbiter between a failure-sensitive PPO actor and a
+descending-population rule. On the exact holdout it has **16.37% unfinished
+episodes** and **38.70 failure-penalized actions**. The strongest standalone
+actor has 24.92% and 45.20. The new column-v2 FNO passes every structural gate
+for only 10 of 24 block/polarization pairs; it is therefore rejected for RL
+training.
 
 ![Final exact comparison](results/thf_fno_rl_superiority/final_exact_comparison.png)
 
-### Branch-aware FNO decision
+## 1. Mathematical object
 
-The column-v2 pilot enforced exact identity and input linearity and reduced the
-five median branch-aware accuracy errors by at least 66%. Its promotion logic
-applied those two structural bounds pairwise and used median improvement plus
-regression limits for the other metrics. The former criterion label has been
-corrected so it no longer implies that every pilot pair passed all seven
-absolute bounds.
+Let
 
-The full 24-pair audit passed every absolute gate for only **10/24** pairs:
+\[
+I=\{1,\ldots,192\},\qquad
+\mathcal S=\Delta^{191},\qquad
+\mathcal A=\{1,\ldots,312\},\qquad
+Y=\{0,1\}.
+\]
 
-| Worst-pair metric | Column-v2 | Gate | Decision |
-|---|---:|---:|:---:|
-| \(\tau=0\) identity TV, maximum | 0 | 0.001 | pass |
-| Input-linearity TV, P95 | \(8.44\times10^{-17}\) | 0.001 | pass |
-| Off-resonance joint TV, P95 | 0.000945 | 0.005 | pass |
-| Branch-mass absolute error, P95 | 0.07254 | 0.005 | fail |
-| Conditional TV, mass ≥\(10^{-2}\), P95 | 0.27775 | 0.05 | fail |
-| Conditional TV, mass ≥\(10^{-3}\), P95 | 0.68902 | 0.10 | fail |
-| Local termination error | 0.10705 | 0.005 | fail |
+An element \(s\in\mathcal S\) is a molecular population vector. The action
+set contains 288 Raman controls and 24 primitives. The outcomes \(y=0,1\)
+denote the ground and excited motional readout branches.
 
-Block \((11,+)\) is the worst pair for all four failed metrics. The all-pair
-gate therefore blocked the planned PPO continuation. A diagnostic closed-loop
-audit, which was not used for training, shows why:
+For dynamics \(D\), define the unnormalized branch map
 
-| Controller | Exact failure / actions | Downloaded `mix` | Column-v2 |
+\[
+q_y^D:\mathcal S\times\mathcal A\longrightarrow\mathbb R_+^{I},
+\qquad
+\beta_y^D(s,a)=\mathbf 1^\top q_y^D(s,a),
+\qquad
+\Phi_y^D(s,a)=\frac{q_y^D(s,a)}{\beta_y^D(s,a)}.
+\]
+
+Thus \(\beta_y^D\) is the Born probability and \(\Phi_y^D\) is the posterior
+belief, when \(\beta_y^D>0\). The induced Markov kernel is
+
+\[
+P_D(s,a;B)=\sum_{y\in Y}\beta_y^D(s,a)
+\mathbf 1_B\!\left(\Phi_y^D(s,a)\right),
+\qquad
+\sum_{y\in Y}\beta_y^D(s,a)=1.
+\]
+
+The exact engine \(E\) evaluates this kernel from cached effective-Hamiltonian
+action tables. A surrogate \(\widehat E\) replaces in-window Raman maps by
+learned maps; primitive and off-window actions use exact fallback dynamics.
+The environment evolves populations, not coherences: after every measurement
+and cooling step, the next state is again an element of \(\mathcal S\).
+
+For a policy \(\pi\), let
+
+\[
+G=\{s\in\mathcal S:\|s\|_\infty\ge0.98\},\qquad
+\tau_\pi=\inf\{t\ge0:s_t\in G\},\qquad H=80.
+\]
+
+The two reported functionals are
+
+\[
+F_D(\pi)=\Pr_D(\tau_\pi>H),
+\qquad
+C_D(\pi)=\mathbb E_D[\min(\tau_\pi,H)].
+\]
+
+`unfinished fraction` estimates \(F_D\); `average actions` estimates \(C_D\).
+Controllers are ordered lexicographically by
+
+\[
+\mathcal R_D(\pi)=\bigl(F_D(\pi),C_D(\pi)\bigr).
+\]
+
+Hence reliability precedes speed. Every final claim uses \(D=E\).
+
+## 2. Physical and statistical contract
+
+| Object | Value |
+|---|---:|
+| Molecular states | 192 in 12 Hamiltonian blocks |
+| Motional truncation | 7 levels; Hilbert dimension \(192\times7=1344\) |
+| Initial distribution | thermal populations at 4 K |
+| Raman time grid | 200 points, at most 6 ms |
+| Action set | 312 controls |
+| Success set | \(\|s\|_\infty\ge0.98\) |
+| Horizon | 80 actions |
+| Learned/hybrid confirmation | 5 policy seeds × 5,000 exact episodes |
+
+“Exact” means exact within this effective-Hamiltonian, seven-level,
+population-reset model. It does not mean experimental certification.
+
+Configuration selection and final evaluation use disjoint seeds. FNO scores
+may select an FNO-trained policy, but they never establish the final ranking.
+A controller is declared superior to a reference only when
+
+\[
+\sup \operatorname{CI}_{0.95}
+\bigl(F_E(\pi)-F_E(\pi_0)\bigr)<0
+\quad\text{and}\quad
+C_E(\pi)-C_E(\pi_0)<0.
+\]
+
+The confidence interval is formed over the five paired policy seeds. Common
+episode seeds are used within each comparison.
+
+## 3. Final controller result
+
+| Rank | Controller | Class | Exact failure ↓ | Exact actions ↓ | Inference |
+|---:|---|---|---:|---:|---|
+| 1 | **Exact candidate arbiter** | hybrid | **16.37%** | **38.70** | exact one-step scores |
+| 2 | 15-pulse PPO + descending fallback | hybrid | 18.40% | 41.31 | actor prefix, then exact-table rule |
+| 3 | Descending population | non-ML | 19.98% | 40.00 | exact-table rule |
+| 4 | Failure-sensitive PPO + fallback | hybrid | 20.72% | 45.25 | actor, then physics rule |
+| 5 | Failure-sensitive PPO | standalone RL | 24.92% | 45.20 | actor only |
+| 6 | Physics elimination | non-ML | 29.36% | 51.49 | physics rule |
+| 7 | Optuna PPO trained on downloaded FNO | standalone RL | 41.78% | 51.37 | actor only |
+| 8 | Coverage-balanced sweep | non-ML | 87.60% | 79.11 | fixed schedule |
+
+The descending-population policy maps the most populated state to the action
+with maximum exact-table excited-branch yield. It is the strongest non-ML
+reference found in this study.
+
+For a belief \(s\), let \(a_L\) be the failure-sensitive PPO proposal and
+\(a_D\) the descending-population proposal. Define exact one-step scores
+
+\[
+S(s,a)=\sum_{y\in Y}\beta_y^E(s,a)
+\mathbf 1_G\!\left(\Phi_y^E(s,a)\right),
+\qquad
+P(s,a)=\sum_{y\in Y}\beta_y^E(s,a)
+\left\|\Phi_y^E(s,a)\right\|_\infty.
+\]
+
+The selected arbiter, with \(\delta=10^{-4}\), is
+
+\[
+\pi_*(s)=
+\begin{cases}
+a_L,&S(s,a_L)>S(s,a_D),\\
+a_L,&S(s,a_L)=S(s,a_D)\ \land\ P(s,a_L)>P(s,a_D)+\delta,\\
+a_D,&\text{otherwise}.
+\end{cases}
+\]
+
+Relative to descending population,
+
+\[
+F_E(\pi_*)-F_E(\pi_D)=-3.61\ \text{percentage points},
+\qquad
+\operatorname{CI}_{0.95}=[-4.75,-2.47],
+\]
+
+and \(C_E(\pi_*)-C_E(\pi_D)=-1.30\). Among 25,000 paired episodes,
+the arbiter rescues 1,478 baseline failures and loses 576 baseline successes.
+This supports an empirical advantage for a model-based hybrid under the stated
+contract. It does not show that a standalone RL policy is superior.
+
+Detailed data and the comparison figure are in
+[`results/thf_exact_candidate_arbiter`](results/thf_exact_candidate_arbiter)
+and
+[`results/thf_fno_rl_superiority`](results/thf_fno_rl_superiority).
+
+## 4. FNO definition and acceptance criterion
+
+For a block/polarization pair with \(m\) molecular states, a structured
+surrogate predicts the columns of
+
+\[
+K(a)=
+\begin{pmatrix}K_0(a)\\K_1(a)\end{pmatrix}
+\in\mathbb R_+^{2m\times m},
+\qquad
+q_y(s,a)=K_y(a)s.
+\]
+
+Column-v2 enforces
+
+\[
+K(a)\ge0,
+\qquad
+\mathbf 1^\top K(a)=\mathbf 1^\top,
+\qquad
+K(\omega,0)=
+\begin{pmatrix}I_m\\0\end{pmatrix}.
+\]
+
+Consequently probability conservation, input linearity, and zero-time identity
+hold by construction. Let
+
+\[
+d_{\mathrm{TV}}(u,v)=\tfrac12\|u-v\|_1.
+\]
+
+A manifest is admissible only if every one of the 24 pairs passes every row of
+the following audit. The table reports the worst pairwise value.
+
+| Gate | Bound | Downloaded `mix` | Column-v2 | Column-v2 status |
+|---|---:|---:|---:|:---:|
+| zero-time identity TV, max | \(10^{-3}\) | 0.11097 | **0** | pass |
+| input-linearity TV, P95 | \(10^{-3}\) | 0.07656 | **\(8.44\times10^{-17}\)** | pass |
+| off-resonance joint TV, P95 | 0.005 | 0.06716 | **0.000945** | pass |
+| branch-mass absolute error, P95 | 0.005 | **0.01659** | 0.07254 | fail |
+| conditional TV, mass \(\ge10^{-2}\), P95 | 0.05 | **0.12558** | 0.27775 | fail |
+| conditional TV, mass \(\ge10^{-3}\), P95 | 0.10 | **0.21491** | 0.68902 | fail |
+| block-local termination error | 0.005 | **0.04838** | 0.10705 | fail |
+| pairs passing all gates | 24 required | 0/24 | **10/24** | fail |
+
+Column-v2 removes the elementary structural defects but worsens the quantities
+that determine measurement branches. Its worst failures occur at block 11,
+polarization `+`.
+
+The closed-loop diagnostic makes the rejection decisive:
+
+| Controller | Exact | Downloaded `mix` | Column-v2 |
 |---|---:|---:|---:|
-| Failure-sensitive PPO | 24.92% / 45.20 | 28.98% / 48.40 | 89.51% / 73.62 |
-| Descending population | 19.98% / 40.00 | 23.68% / 41.44 | 91.10% / 73.40 |
+| Failure-sensitive PPO | 24.92% / 45.20 | 28.98% / 48.40 | **89.51% / 73.62** |
+| Descending population | 19.98% / 40.00 | 23.68% / 41.44 | **91.10% / 73.40** |
 
-The structured surrogate fixes identity, linearity, and off-resonance behavior,
-but its remaining branch errors compound catastrophically along policy
-trajectories. No RL policy was trained under column-v2. Further surrogate work
-should repair the failing pairs—especially \((11,+)\)—and include
-policy-occupancy data before another full RL run.
+Each entry is failure/actions. Since column-v2 violates the all-pair gate and
+changes closed-loop failure by about 70 percentage points, no policy is trained
+under it. The next surrogate experiment must first reduce branch-mass,
+conditional-state, and termination errors on policy-occupancy data.
 
-- [Final machine-readable decision](results/thf_fno_rl_superiority/summary.json)
-- [Exact-arbiter report](results/thf_exact_candidate_arbiter/summary.md)
-- [Learned-prefix report](results/thf_descending_hybrid/summary.md)
-- [Full 24-pair FNO audit](results/thf_column_fno_v2_full_audit/summary.md)
-- [Column-v2 closed-loop audit](results/thf_column_fno_v2_transfer/summary.md)
+See the
+[`full structural audit`](results/thf_column_fno_v2_full_audit/summary.md) and
+[`closed-loop audit`](results/thf_column_fno_v2_transfer/summary.md).
 
-![Column-v2 closed-loop transfer](results/thf_column_fno_v2_transfer/column_v2_transfer.png)
+## 5. Retained evidence from earlier runs
 
-## Metric interpretation
+The following results explain the choices retained in this branch. They are
+not separate claims.
 
-Let $T_j$ be first successful pulse count ($\infty$ if unfinished), $L_j=\min(T_j,H)$, and $N$ rollout count. Early stopping without success still scores failure and $H$.
+| Lineage | Training dynamics | Controller | Exact failure | Exact actions | Retained conclusion |
+|---|---|---|---:|---:|---|
+| `FNO_RL_agents` | downloaded `mix` | locked PPO | 73.89% | 68.15 | the downloaded model alone did not recover RL |
+| `FNO_RL_optuna` | downloaded `mix` | Optuna PPO | 41.78% | 51.37 | PPO is sensitive to learning rate and update geometry |
+| `FNO_RL_optuna` | downloaded `mix` | focused SAC | 57.07% | 59.85 | entropy/reward co-tuning helps, but seed variance remains large |
+| `refiningFNO+RL` | `mix`, then exact | PPO fine-tune | 33.44% | 48.21 | exact fine-tuning corrects part of the surrogate bias |
+| `refiningFNO+RL` | exact | failure-sensitive PPO | 24.92% | 45.20 | a terminal penalty aligns training with failure-first evaluation |
 
-$$f=1-\frac1N\sum_j\mathbf1\{T_j\le H\},\qquad
-A=\frac1N\sum_jL_j,\qquad C(h)=\frac1N\sum_j\mathbf1\{T_j\le h\}.$$
+The retained PPO initialization is `ppo_t71`: one 512-unit hidden layer,
+learning rate \(1.346\times10^{-3}\), clip 0.1, eight epochs, 16 minibatches,
+\(\gamma=1\), \(\lambda_{\mathrm{GAE}}=0.98\), square-root beliefs, and qMDP
+value targets. Failure-sensitive continuation adds the terminal reward
 
-**Failure rate $f$ and average actions $A$: lower better; finished-episode curve $C(h)$: higher better.** Average actions is failure-penalized, not successful-only mean. P85 and worst-10% CVaR of $L$ are lower-better tail metrics, often saturated at80 when failure is high.
+\[
+r_t=-1-20\,\mathbf 1\{t=H\text{ and }s_t\notin G\}.
+\]
 
-Population infidelity $I_p=1-(\sum_b\sqrt{p_b\widehat p_b})^2$: **lower better**, measuring populations, not coherence. Near-pure, identity and conditional-branch errors matter for repeated purification. Speedup $T_{\rm exact}/T_{\rm FNO}$: **higher faster**, but fresh propagation and cached tables are different references. [Precise definitions](docs/FNO_PAPER_METRICS.md).
+The detailed Optuna records remain in
+[`results/thf_rl_optuna_mix`](results/thf_rl_optuna_mix) and
+[`results/thf_rl_optuna_mix_sac_refine`](results/thf_rl_optuna_mix_sac_refine).
+The experimental rationale is archived in
+[`docs/FNO_RL_IMPROVEMENT_PLAN.md`](docs/FNO_RL_IMPROVEMENT_PLAN.md) and
+[`docs/FNO_RL_SUPERIORITY_PLAN.md`](docs/FNO_RL_SUPERIORITY_PLAN.md).
 
-## Historical pilot — not a final ranking
+## 6. Repository map
 
-30-epoch low-width FNO, only8192 training transitions, one seed,200 holdout episodes:
+| Path | Role |
+|---|---|
+| `src/qlsgym/env` | belief MDP, action library, cached transition tables |
+| `src/qlsgym/physics` | effective-Hamiltonian propagation |
+| `src/qlsgym/surrogate` | FNOs, manifests, datasets, metrics |
+| `src/qlsgym/rl` | PPO, categorical SAC, Double DQN |
+| `src/qlsgym/policies` | non-ML and hybrid policies |
+| `scripts` | training, audits, evaluation, aggregation |
+| `results/thf_fno_rl_superiority` | final ranking and figure |
+| `results/thf_exact_candidate_arbiter` | selected arbiter and paired statistics |
+| `results/thf_column_fno_v2_full_audit` | 24-pair FNO audit |
+| `results/thf_column_fno_v2_transfer` | closed-loop FNO diagnostic |
 
-| Controller | Exact average actions ↓ | Exact failure ↓ | FNO average actions | FNO failure |
-|---|---:|---:|---:|---:|
-| Physics elimination | 51.455 | 28.0% | 80.000 | 100.0% |
-| Random | 74.315 | 88.0% | 78.595 | 97.0% |
-| PPO | 74.255 | 86.5% | 74.010 | 84.5% |
-| Discrete SAC (old temperature) | 73.860 | 85.0% | 77.140 | 93.5% |
-| Double DQN | 80.000 | 100.0% | 79.720 | 99.5% |
-| Sweeping | 80.000 | 100.0% | 80.000 | 100.0% |
+Large checkpoints are external to Git. The downloaded
+`munozariasjm/thf_qls_fno` checkpoints must be installed as
+`$QLSGYM_WORK/checkpoints/thf/mix.json`; the manifest contains 24 entries and
+uses molecule fingerprint `d7deb43457d3`.
 
-![Historical ThF pilot](results/thf_pilot_history/thf_fno_agent_comparison.png)
+## 7. Installation and use
 
-No learned advantage was established. Physics elimination's exact/FNO discrepancy exposed invalid pilot dynamics. Fixed-order sweeping visits only the first80/312 controls before timeout, missing all primitives; it is an order-dependent reference, not optimal sweeping. Raw pilot JSONs are retained for provenance, never pooled with new scores.
+Python 3.11 or later and PyTorch 2.3 or later are required.
 
-## Reports and next work
+```bash
+python -m pip install -e '.[gym,fno,analysis,test,tune]'
+export QLSGYM_WORK=/path/to/qlsgym_work
+export PYTHONPATH="$PWD/src"
+python -m pytest -q -m 'not slow'
+```
 
-- [Detailed numerical report](docs/THF_RESULTS.md), [paper-style audit](docs/FNO_PAPER_METRICS.md), [locked RL study](docs/THF_FINAL_RL_STUDY.md).
-- Completed: the original and downloaded-`mix` five-seed grids, exact rankings, generation comparison and original-model GPU audits. Next: train paired agents with exact dynamics to separate RL limitations from surrogate bias, and evaluate `mix` on the policy-induced belief/branch distribution before extending training or tuning.
-- If peaked/conditional errors persist, train on exact collected beliefs/vertices and test identity/linearity constraints, not just more epochs.
-- Add remaining-budget observations; compare exact-trained RL and stronger full-library sweeping schedules.
-- Tune hyperparameters only on separate validation seeds after checking model validity; keep final holdout locked. Match discounts for equal-objective claims.
+Load the downloaded surrogate:
 
-The library lives under src/qlsgym/{molecules,physics,surrogate,env,policies,rl}; scripts/ holds experiments, tests/ correctness checks, results/ JSON/NPZ/figures. Weights, datasets, caches and logs are not committed.
+```python
+from qlsgym import load_molecule
+from qlsgym.surrogate.manifest import load_manifest
+
+mol = load_molecule("thf")
+engine = load_manifest(mol, "mix")
+```
+
+Regenerate the final compact report from committed results:
+
+```bash
+python scripts/summarize_thf_fno_rl_superiority.py \
+  --results results --output results/thf_fno_rl_superiority
+```
+
+The principal full-study commands are:
+
+```bash
+# Strong non-ML controls.
+python scripts/evaluate_thf_nonml_controls.py
+
+# Exact continuation of the retained PPO and conservative hybrids.
+GPU0=0 GPU1=2 bash scripts/run_thf_safe_hybrid.sh
+GPU0=0 GPU1=2 bash scripts/run_thf_descending_hybrid.sh
+GPU0=0 GPU1=2 bash scripts/run_thf_exact_arbiter.sh
+
+# Structured FNO pilot. Continue to the full run only if its gate passes.
+GPU0=0 GPU1=2 bash scripts/run_thf_column_fno_v2_pilot.sh
+
+# Full training, all-pair audit, and diagnostic transfer.
+GPU0=0 GPU1=2 bash scripts/run_thf_column_fno_v2_full.sh
+GPU0=0 GPU1=2 bash scripts/run_thf_column_v2_transfer.sh
+```
+
+The scripts persist per-candidate and per-seed records. GPU jobs use physical
+devices 0 and 2 with at most one process on each device. A failed FNO gate is
+a stopping condition: downstream RL training must not be started from that
+manifest.
