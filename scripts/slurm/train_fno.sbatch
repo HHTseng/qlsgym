@@ -18,7 +18,8 @@
 
 set -euo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# sbatch runs a spooled copy, so BASH_SOURCE points at /var/spool; name the repo explicitly
+REPO="${QLSGYM_REPO:-/n/home02/josemm/RESEARCH/PROJECTS/MOLESQLS/qlsgym}"
 source "$REPO/scripts/env.sh"
 mkdir -p "$QLSGYM_WORK/logs" "$QLSGYM_WORK/runs"
 exec > "${QLSGYM_WORK}/logs/fno_${SLURM_JOB_NAME:-train}_${SLURM_ARRAY_JOB_ID:-$SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID:-0}.out" 2>&1

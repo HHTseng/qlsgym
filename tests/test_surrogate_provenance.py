@@ -3,6 +3,8 @@ enforcement in build_manifest / load_manifest.
 """
 import dataclasses
 import json
+import os
+import sys
 import warnings
 
 import numpy as np
@@ -231,12 +233,13 @@ def test_block_outside_molecule_is_a_failed_check(tabled, tmp_path, block):
 # build_manifest / load_manifest
 
 
-def _save_ckpt(mol, run, block, stamp=None):
-    m = BlockFNO.for_block(mol, block, "+", TINY)
-    ck = checkpoint_dict(m, TrainConfig(fno=TINY), DataConfig(), DataConfig(), 0, 0.1, 0.2, tables=stamp)
-    for k in ("fingerprint", "molecule", "n_nu"):     # a source-package (legacy) checkpoint
-        ck["meta"].pop(k)
-    ck.pop("source")
+def _save_ckpt(mol, run, block, stamp=None, sigma="+", legacy=True):
+    m = BlockFNO.for_block(mol, block, sigma, TINY)
+    ck = checkpoint_dict(m, TrainConfig(fno=TINY), DataConfig(alpha=-2.0), DataConfig(), 0, 0.1, 0.2, tables=stamp)
+    if legacy:
+        for k in ("fingerprint", "molecule", "n_nu"):     # a source-package (legacy) checkpoint
+            ck["meta"].pop(k)
+        ck.pop("source")
     torch.save(ck, f"{run}/best_onres.pt")
 
 
@@ -265,6 +268,46 @@ def test_build_manifest_checks_every_entry_and_records_provenance(tabled, tmp_pa
         load_manifest(mol, "prov", work=work, fallback=FakeExact(mol), device="cpu", blocks={(0, "+")})
     finally:
         ctx.__exit__(None, None, None)
+
+
+def test_build_manifest_from_mix_run_dirs_checks_the_stamp(tabled, tmp_path):
+    """scripts/make_manifest.py's qlsgym path: collect <work>/runs/mix_{sp,sm}_block<b>, accept them on
+    their own table stamp, and refuse the whole tag once the tables move under them.
+    """
+    mol, _, rf = tabled
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+    import make_manifest
+
+    torch.manual_seed(0)
+    work = tmp_path / "work"
+    (work / "runs").mkdir(parents=True)
+    want = {(0, "+"), (1, "-")}
+    for b, sg in sorted(want):
+        d = work / "runs" / f"mix_{'sp' if sg == '+' else 'sm'}_block{b}"
+        d.mkdir()
+        _save_ckpt(mol, str(d), b, table_stamp(mol), sigma=sg, legacy=False)
+    (work / "runs" / "other_sp_block0").mkdir()            # a different tag is not collected
+    runs = make_manifest.block_runs(str(work), "mix_", ("+", "-"), range(len(mol.blocks)))
+    assert set(runs) == want
+
+    ctx = _no_warnings()                                   # a stamped run is accepted silently
+    try:
+        m = build_manifest(mol, "mix", runs, source="qlsgym")
+    finally:
+        ctx.__exit__(None, None, None)
+    assert {k: e.provenance for k, e in m.entries.items()} == {"0,+": "tables-sha256", "1,-": "tables-sha256"}
+    assert m.entries["0,+"].train_data["alpha"] == -2.0
+    m.save(work=str(work))
+
+    rf.write_text("# rabi\n0 1 1.0 0.0 1.0001\n")          # tables regenerated after training
+    for flag in (False, True):                             # allow_unprovenanced never rescues a FAILED check
+        with pytest.raises(StaleCheckpoint, match="tables-sha256 check failed") as exc:
+            build_manifest(mol, "mix", runs, source="qlsgym", allow_unprovenanced=flag)
+        assert "2 of 2 checkpoints" in str(exc.value) and RETRAIN in str(exc.value)
+    # the stamp is a *build-time* guard: the manifest written before the tables moved still loads, which
+    # is why make_manifest.py has to be re-run (and will then refuse) whenever the tables are regenerated
+    eng = load_manifest(mol, "mix", work=str(work), fallback=FakeExact(mol), device="cpu")
+    assert eng.trained == want
 
 
 @pytest.mark.parametrize("value", [None, "", "trust-me"])

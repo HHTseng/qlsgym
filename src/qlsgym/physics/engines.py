@@ -431,6 +431,7 @@ def select_engine(molecule: Molecule, tau_indices=None, prefer: str | None = Non
     if choice == "exact":
         return _announce(ExactEngine(molecule, tau_indices=tau_indices), choice, "asked for", log)
 
+    # imported here, not at module scope: cudaq_engine imports _EngineBase from this module
     from .cudaq_engine import CudaqEngine, dynamics_available
 
     ok, reason = dynamics_available()

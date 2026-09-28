@@ -7,10 +7,16 @@ import os
 import sys
 
 from qlsgym import load_molecule
+from qlsgym.surrogate.dataset import work_dir
 from qlsgym.surrogate.manifest import StaleCheckpoint, build_manifest
 
 
-def thffno_runs(work: str, prefix: str, sigmas: tuple, blocks=range(12)) -> dict:
+def block_runs(work: str, prefix: str, sigmas: tuple = ("+", "-"), blocks=range(12)) -> dict:
+    """{(block, sigma): run_dir} for <work>/runs/<prefix>{sp|sm}_block<b>.
+
+    The layout scripts/train_fno.py writes (``--tag <prefix minus the trailing _>``), and the one
+    thffno's trainer writes, so it collects both this repo's runs and the source projects'.
+    """
     runs = {}
     for sigma in sigmas:
         p = "sp" if sigma == "+" else "sm"
@@ -55,6 +61,11 @@ def fnorepl_runs(work: str) -> dict:
 def validate(manifest, molecule_name: str) -> None:
     """Compare each entry against the source package's own FnoEngine, where importable."""
     import numpy as np
+
+    if manifest.source == "qlsgym":
+        print(f"[{molecule_name}/{manifest.tag}] trained in qlsgym: no source-package checkpoint to "
+              f"compare against; skipping --validate (tests/test_surrogate_parity.py covers the port)")
+        return
 
     from qlsgym.physics.engines import ExactEngine
     from qlsgym.surrogate.fno_engine import FnoEngine
@@ -102,6 +113,8 @@ def validate(manifest, molecule_name: str) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--molecule", required=True, choices=["thf", "h3o"])
+    ap.add_argument("--tags", nargs="+", default=None,
+                    help="only build these manifest tags (default: every tag known for the molecule)")
     ap.add_argument("--validate", action="store_true", help="run the real-checkpoint parity "
                     "check against the source package's own FnoEngine and record the residual")
     ap.add_argument("--check-load", dest="check_load", action="store_true", default=True)
@@ -114,37 +127,52 @@ def main() -> None:
     args = ap.parse_args()
 
     mol = load_molecule(args.molecule)
+    n_blocks = len(mol.blocks)
 
     if args.molecule == "thf":
         work = os.environ.get("THFFNO_WORK")
         if not work:
             raise SystemExit("THFFNO_WORK is not set; source scripts/env.sh")
         specs = [
-            ("mix", thffno_runs(work, "mix_", ("+", "-")), "thffno",
+            ("mix", work, block_runs(work, "mix_", ("+", "-"), range(n_blocks)), "thffno",
              "log-uniform concentrated mixture (alpha=-2); recommended for closed-loop control"),
-            ("a1.0", thffno_a1_runs(work), "thffno",
+            ("a1.0", work, thffno_a1_runs(work, range(n_blocks)), "thffno",
              "uniform-simplex training (alpha=1, the paper's implicit choice); kept for comparison"),
         ]
     else:
-        work = os.environ.get("FNOREPL_WORK")
-        if not work:
-            raise SystemExit("FNOREPL_WORK is not set; source scripts/env.sh")
-        # H3O+ physics is unchanged since these were trained; they carry no table stamp but every run
-        # has stratified_eval.npz and passes the resonance check, so no --allow-unprovenanced is needed.
+        qwork = work_dir()
         specs = [
-            ("prod", fnorepl_runs(work), "fnorepl",
-             "one checkpoint per unique (K, parity) block [0,2,3,5,7,8]; the four parity "
-             "partners are NOT covered (qlsgym does not implement parity relabelling) and fall "
-             "back to the exact engine through FnoEngine"),
+            ("mix", qwork, block_runs(qwork, "mix_", ("+", "-"), range(n_blocks)), "qlsgym",
+             "log-uniform concentrated mixture (alpha=-2), trained in qlsgym (scripts/train_fno.py) "
+             "on the current tables; one checkpoint per (block, polarisation), no parity relabelling "
+             "and no fallback to the exact engine once all 2 x n_blocks entries are present"),
         ]
+        fwork = os.environ.get("FNOREPL_WORK")
+        if fwork:
+            # H3O+ physics is unchanged since these were trained; they carry no table stamp but every run
+            # has stratified_eval.npz and passes the resonance check, so no --allow-unprovenanced is needed.
+            specs.append(
+                ("prod", fwork, fnorepl_runs(fwork), "fnorepl",
+                 "one checkpoint per unique (K, parity) block [0,2,3,5,7,8]; the four parity "
+                 "partners are NOT covered (qlsgym does not implement parity relabelling) and fall "
+                 "back to the exact engine through FnoEngine"))
+        elif not args.tags or "prod" in args.tags:
+            print("FNOREPL_WORK is not set (source scripts/env.sh); skipping the legacy 'prod' tag")
+
+    if args.tags:
+        known = [t for t, *_ in specs]
+        unknown = [t for t in args.tags if t not in known]
+        if unknown:
+            raise SystemExit(f"unknown tag(s) {unknown} for --molecule {args.molecule}; known: {known}")
+        specs = [sp for sp in specs if sp[0] in args.tags]
 
     # build (and provenance-check) every tag before writing any, so a refusal leaves nothing behind
     built = []
-    for tag, runs, source, note in specs:
+    for tag, work, runs, source, note in specs:
         if not runs:
             print(f"[{args.molecule}/{tag}] no run directories found under {work}/runs; skipping")
             continue
-        ckpt_name = "best_onres.pt" if source == "thffno" else "best.pt"
+        ckpt_name = "best.pt" if source == "fnorepl" else "best_onres.pt"
         print(f"[{args.molecule}/{tag}] {len(runs)} checkpoints ({ckpt_name}) from {work}/runs")
         try:
             m = build_manifest(mol, tag, runs, source=source, checkpoint_name=ckpt_name, note=note,

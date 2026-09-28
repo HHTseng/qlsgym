@@ -171,7 +171,7 @@
    "exact_untrained": 0,
    "exact_primitive": 0
   },
-  "surrogate_fraction": NaN
+  "surrogate_fraction": null
  },
  "rl": {
   "run_dir": "/n/netscratch/iaifi_lab/Lab/josemm/QLSGYM/runs/ppo/h3o/rl-fno_prod_73277b70ce71_seed0",

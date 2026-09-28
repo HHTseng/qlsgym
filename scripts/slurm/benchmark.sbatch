@@ -4,8 +4,8 @@
 #SBATCH --output=/dev/null
 #SBATCH --error=/dev/null
 #
-# One benchmark arm.  Everything is chosen by environment variable:
-# ARM MOL NEPS SEED DEVICE LIBRARY FNO_TAG NPOOL MAXPULSES EXTRA OUTROOT ENGINE
+# One benchmark arm.  Everything is chosen by environment variable; ARM and MOL are required,
+# the rest have defaults: NEPS SEED DEVICE LIBRARY FNO_TAG NPOOL MAXPULSES EXTRA OUTROOT ENGINE
 #
 #   ARM=sweeping MOL=h3o sbatch --partition=sapphire --time=2:00:00 \
 #       --cpus-per-task=4 --mem=16G scripts/slurm/benchmark.sbatch
@@ -22,25 +22,28 @@
 set -euo pipefail
 
 : "${ARM:?set ARM to one of sweeping random planner-exact planner-fno rl-exact rl-fno}"
-: "${MOL:=h3o}"
+# required, not defaulted: a forgotten MOL used to run h3o and look like a thf result
+: "${MOL:?set MOL to h3o or thf}"
 : "${NEPS:=1000}"
 : "${DEVICE:=cpu}"
 : "${LIBRARY:=physics_subset}"
-: "${FNO_TAG:=prod}"
 : "${NPOOL:=16}"
-# the published arms were measured with the exact engine; ENGINE=auto opts into CUDA-Q
+# FNO_TAG and MAXPULSES are deliberately unset by default: benchmark.py resolves both per
+# molecule (tag "mix" where its manifest exists else "prod"; horizon h3o 400, thf 800).
+# A fixed FNO_TAG=prod here used to crash ThF+ jobs, which have no prod manifest.
+: "${FNO_TAG:=}"
+# the published arms were measured with the exact engine; ENGINE=auto opts into CUDA-Q.
+# CUDA-Q costs ~6.5 h per ThF+ drive (3.6e7 RK steps at FNO_REPL's measured 0.65 ms/step)
+# against 0.5 s for the whole exact tau grid on one CPU core, hence the pin.
 : "${ENGINE:=${QLSGYM_ENGINE:-exact}}"
 export QLSGYM_ENGINE="$ENGINE"
 : "${MAXPULSES:=}"
 : "${EXTRA:=}"
 
-MAXP_ARG=()
-if [[ -n "$MAXPULSES" ]]; then
-  MAXP_ARG=(--max-pulses "$MAXPULSES")
-elif [[ "$EXTRA" != *--max-pulses* ]]; then
-  echo "WARNING: MAXPULSES is unset and EXTRA carries no --max-pulses; the horizon falls back" >&2
-  echo "WARNING: to molecule.task.max_pulses, which is shorter than one sweep of the library." >&2
-fi
+# plain `[[ ... ]] && OPT_ARGS+=(...)` would exit the script under `set -e` when the test fails
+OPT_ARGS=()
+if [[ -n "$MAXPULSES" ]]; then OPT_ARGS+=(--max-pulses "$MAXPULSES"); fi
+if [[ -n "$FNO_TAG" ]]; then OPT_ARGS+=(--fno-tag "$FNO_TAG"); fi
 
 QLSGYM_REPO=/n/home02/josemm/RESEARCH/PROJECTS/MOLESQLS/qlsgym
 source "${QLSGYM_REPO}/scripts/env.sh"
@@ -60,9 +63,9 @@ fi
 STAMP="${SLURM_JOB_ID:-local}${SLURM_ARRAY_TASK_ID:+_$SLURM_ARRAY_TASK_ID}"
 exec > "${LOGS}/bench_${MOL}_${ARM}_${STAMP}.out" 2>&1
 
-echo "arm=$ARM molecule=$MOL episodes=$NEPS seed=$SEED device=$DEVICE library=$LIBRARY max_pulses=${MAXPULSES:-<molecule default>} engine=$ENGINE"
+echo "arm=$ARM molecule=$MOL episodes=$NEPS seed=$SEED device=$DEVICE library=$LIBRARY max_pulses=${MAXPULSES:-<molecule default>} fno_tag=${FNO_TAG:-<molecule default>} engine=$ENGINE"
 [[ "$DEVICE" == cuda* ]] && nvidia-smi -L || true
 
 srun python "${QLSGYM_REPO}/scripts/benchmark.py" run "$MOL" "$ARM" \
   --library "$LIBRARY" --n-episodes "$NEPS" --seed "$SEED" --device "$DEVICE" \
-  --fno-tag "$FNO_TAG" --n-pool "$NPOOL" "${MAXP_ARG[@]}" "${PART_ARG[@]}" $EXTRA
+  --n-pool "$NPOOL" "${OPT_ARGS[@]}" "${PART_ARG[@]}" $EXTRA

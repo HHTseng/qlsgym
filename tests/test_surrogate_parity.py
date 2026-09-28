@@ -28,9 +28,8 @@ def test_build_manifest_accepts_retrained_thf_checkpoint():
         pytest.skip(f"no run at {run} (SKIPPED)")
     mol = load_molecule("thf")
     man = build_manifest(mol, "current", {(0, "+"): run}, source="thffno")
-    entry = man["entries"]["0,+"]
-    assert entry["provenance"] == "tables-sha256"
-    assert man["fingerprint"] == mol.fingerprint()
+    assert man.fingerprint == mol.fingerprint()
+    assert man.entries["0,+"].provenance == "tables-sha256"
 
 
 def test_thf_mix_sp_block0_port_matches_thffno():

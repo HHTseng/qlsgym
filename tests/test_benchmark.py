@@ -13,8 +13,8 @@ from qlsgym.benchmark import (ARMS, BenchmarkConfig, finished_curve, from_rollou
                               pulses_to, read_results, run_arm, unmerged_parts, write_result)
 from qlsgym.benchmark.figure import (GUIDE_COLOUR, STYLE, draw, render, style_legend,
                                     table)
-from qlsgym.benchmark.protocol import (build_library, exact_env, rl_run_dir, score_config,
-                                       train_or_load_actor)
+from qlsgym.benchmark.protocol import (build_library, exact_env, molecule_defaults, resolve_fno_tag,
+                                       rl_run_dir, score_config, train_or_load_actor)
 from qlsgym.rl.ppo import PPOConfig
 
 
@@ -259,11 +259,38 @@ def test_saved_actor_is_refused_when_it_does_not_match_the_request(synthetic_cfg
     assert meta2["loaded_from"].endswith("actor_best.pt")
 
 
-def test_benchmark_sbatch_passes_the_horizon_through():
+def test_benchmark_sbatch_passes_the_horizon_and_the_tag_through():
     here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sb = open(os.path.join(here, "scripts", "slurm", "benchmark.sbatch")).read()
-    assert "MAXPULSES" in sb
-    assert "--max-pulses" in sb and '"${MAXP_ARG[@]}"' in sb
+    assert "MAXPULSES" in sb and "--max-pulses" in sb
+    assert "FNO_TAG" in sb and "--fno-tag" in sb
+    assert '"${OPT_ARGS[@]}"' in sb
+    # neither may carry one molecule's value here: benchmark.py resolves both per molecule
+    assert ': "${MAXPULSES:=}"' in sb and ': "${FNO_TAG:=}"' in sb
+
+
+def test_both_molecules_have_a_horizon_and_an_evaluation_mode():
+    for name, lib_actions in (("h3o", 167), ("thf", 312)):
+        d = molecule_defaults(name)
+        assert d["max_pulses"] > lib_actions      # one full sweep of the library must fit
+        assert isinstance(d["eval_greedy"], bool)
+    assert molecule_defaults("thf")["eval_greedy"] is False
+    assert molecule_defaults("no-such-molecule")["max_pulses"] is None
+
+
+def test_fno_tag_defaults_to_mix_where_its_manifest_exists(tmp_path, monkeypatch):
+    monkeypatch.setenv("QLSGYM_WORK", str(tmp_path))
+    ck = tmp_path / "checkpoints" / "thf"
+    ck.mkdir(parents=True)
+    (ck / "prod.json").write_text("{}")
+    assert resolve_fno_tag("thf", "planner-fno", log=lambda s: None) == "prod"
+    (ck / "mix.json").write_text("{}")
+    assert resolve_fno_tag("thf", "planner-fno", log=lambda s: None) == "mix"
+    assert resolve_fno_tag("thf", "planner-fno", "a1.0", log=lambda s: None) == "a1.0"
+    # an arm that never touches the surrogate must not need a manifest at all
+    assert resolve_fno_tag("h3o", "sweeping", log=lambda s: None) == BenchmarkConfig.fno_tag
+    with pytest.raises(FileNotFoundError):
+        resolve_fno_tag("h3o", "planner-fno", log=lambda s: None)
 
 
 def test_fno_arm_needs_a_manifest(synthetic_cfg):

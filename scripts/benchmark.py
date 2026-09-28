@@ -13,7 +13,8 @@ from dataclasses import fields, replace
 from qlsgym import load_molecule
 from qlsgym.benchmark import ARMS, BenchmarkConfig, merge_results, read_results, run_arm, write_result
 from qlsgym.benchmark.figure import render, table
-from qlsgym.benchmark.protocol import outputs_dir, result_path, unmerged_parts
+from qlsgym.benchmark.protocol import (molecule_defaults, outputs_dir, resolve_fno_tag,
+                                       result_path, unmerged_parts)
 from qlsgym.policies.score import ScoreConfig
 from qlsgym.rl.ppo import PPOConfig
 
@@ -40,14 +41,23 @@ def _typed(dc_type, kv: list):
 
 
 def cmd_run(a) -> None:
+    log = lambda s: print(s, flush=True)
+    defaults = molecule_defaults(a.molecule)
+    max_pulses = a.max_pulses if a.max_pulses is not None else defaults["max_pulses"]
+    ppo = _typed(PPOConfig, a.ppo)
+    if not any(kv.partition("=")[0] == "eval_greedy" for kv in a.ppo or []):
+        ppo = replace(ppo, eval_greedy=defaults["eval_greedy"])
+    fno_tag = resolve_fno_tag(a.molecule, a.arm, a.fno_tag, log=log)
+    log(f"[benchmark] {a.molecule} {a.arm}: max_pulses {max_pulses}, fno_tag {fno_tag}, "
+        f"eval_greedy {ppo.eval_greedy} (molecule defaults unless given on the command line)")
     cfg = BenchmarkConfig(
         molecule=a.molecule, library=a.library, n_episodes=a.n_episodes, seed=a.seed,
-        max_pulses=a.max_pulses, p_target=a.p_target, fno_tag=a.fno_tag, device=a.device,
+        max_pulses=max_pulses, p_target=a.p_target, fno_tag=fno_tag, device=a.device,
+        engine=a.engine,
         n_pool=(None if a.n_pool in ("none", "None") else int(a.n_pool)), delta_s=a.delta_s,
         score=_typed(ScoreConfig, a.score), rho=a.rho, penalty_mode=a.penalty_mode,
-        ppo=_typed(PPOConfig, a.ppo), retrain=a.retrain, n_freq=a.n_freq, n_tau_slots=a.n_tau_slots,
+        ppo=ppo, retrain=a.retrain, n_freq=a.n_freq, n_tau_slots=a.n_tau_slots,
         grid_seed=a.grid_seed)
-    log = lambda s: print(s, flush=True)
     res = run_arm(a.arm, cfg, log=log, progress=a.progress)
     path = a.out or result_path(a.molecule, a.arm, a.part)
     write_result(res, path)
@@ -112,10 +122,14 @@ def main() -> None:
     r.add_argument("--library", default="physics_subset", choices=["physics_subset", "rl_discrete"])
     r.add_argument("--n-episodes", type=int, default=1000)
     r.add_argument("--seed", type=int, default=777)
-    r.add_argument("--max-pulses", type=int, default=None)
+    r.add_argument("--max-pulses", type=int, default=None,
+                   help="episode horizon; default per molecule (h3o 400, thf 800)")
     r.add_argument("--p-target", type=float, default=None)
-    r.add_argument("--fno-tag", default="prod")
+    r.add_argument("--fno-tag", default=None,
+                   help="surrogate manifest tag; default 'mix' where it exists, else 'prod'")
     r.add_argument("--device", default="cpu")
+    r.add_argument("--engine", default="auto", choices=["auto", "cudaq", "exact"],
+                   help="dynamics engine for the planner arms and the surrogate fallback")
     r.add_argument("--n-pool", default="16", help="planner pool size, or 'none' for greedy")
     r.add_argument("--delta-s", type=float, default=0.003)
     r.add_argument("--score", action="append", default=[], metavar="KEY=VALUE")

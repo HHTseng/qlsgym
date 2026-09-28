@@ -16,6 +16,7 @@ import numpy as np
 from ..env.actions import ActionLibrary, ControlGrid
 from ..env.cache import build_action_tables, work_dir
 from ..env.env import EnvConfig, PurificationEnv
+from ..physics.engines import engine_choice
 from ..policies.baselines import RandomPolicy, ScorePlannerPolicy, SweepingPolicy
 from ..policies.rollout import RolloutResult, rollout
 from ..policies.score import ScoreConfig
@@ -24,7 +25,20 @@ from ..spec import Molecule
 from .curve import finished_curve, from_rollout, pulses_to
 
 ARMS = ("sweeping", "random", "planner-exact", "planner-fno", "rl-exact", "rl-fno")
+FNO_ARMS = ("planner-fno", "rl-fno")
 LIBRARIES = ("physics_subset", "rl_discrete")
+
+# Per-molecule benchmark defaults, measured 2026-09-16; the published runs used these.
+#   max_pulses: the benchmark horizon, long enough for one full sweep of the physics_subset
+#     library (h3o 167 actions, thf 312).  molecule.task.max_pulses is 80, the task budget,
+#     and is far too short to be a benchmark horizon.
+#   eval_greedy: thf's actor is evaluated by sampling -- the argmax of a 312-action stochastic
+#     policy locks onto a single pulse (sampled 0.985 success, greedy 0.005).
+MOLECULE_DEFAULTS = {"h3o": {"max_pulses": 400, "eval_greedy": True},
+                     "thf": {"max_pulses": 800, "eval_greedy": False}}
+DEFAULTS_FALLBACK = {"max_pulses": None, "eval_greedy": True}
+# Surrogate tags tried, in order, when --fno-tag is not given.
+FNO_TAG_ORDER = ("mix", "prod")
 
 
 @dataclass(frozen=True)
@@ -33,10 +47,12 @@ class BenchmarkConfig:
     library: str = "physics_subset"     # LIBRARIES
     n_episodes: int = 1000
     seed: int = 777                     # evaluation seed; never used for training or selection
-    max_pulses: int | None = None       # None -> molecule.task
+    max_pulses: int | None = None       # None -> molecule.task (80); MOLECULE_DEFAULTS for runs
     p_target: float | None = None
-    fno_tag: str = "prod"               # $QLSGYM_WORK/checkpoints/<molecule>/<fno_tag>.json
+    # $QLSGYM_WORK/checkpoints/<molecule>/<fno_tag>.json; resolve_fno_tag picks it per molecule
+    fno_tag: str = "prod"
     device: str = "cpu"
+    engine: str = "auto"                # dynamics engine: auto | cudaq | exact
     # planner (arXiv:2608.03702 Sec. II.4): active pool of the top n_pool scores
     # plus everything within delta_s of the best; None -> greedy
     n_pool: int | None = 16
@@ -57,10 +73,45 @@ class BenchmarkConfig:
             raise ValueError(f"library must be one of {LIBRARIES}, got {self.library!r}")
         if self.n_episodes < 1:
             raise ValueError("n_episodes must be >= 1")
+        engine_choice(self.engine)
 
     def as_dict(self) -> dict:
         d = asdict(self)
         return d
+
+
+def molecule_defaults(molecule_name: str) -> dict:
+    """The benchmark horizon and evaluation mode for a molecule (MOLECULE_DEFAULTS)."""
+    return dict(MOLECULE_DEFAULTS.get(str(molecule_name), DEFAULTS_FALLBACK))
+
+
+def default_fno_tag(molecule_name: str, log=None) -> str:
+    """The first of FNO_TAG_ORDER whose manifest exists for this molecule."""
+    from ..surrogate.manifest import manifest_path
+    say = log if log is not None else (lambda s: print(s, flush=True))
+    have = [t for t in FNO_TAG_ORDER if os.path.exists(manifest_path(str(molecule_name), t))]
+    if not have:
+        d = os.path.dirname(manifest_path(str(molecule_name), FNO_TAG_ORDER[0]))
+        present = sorted(f[:-5] for f in os.listdir(d)) if os.path.isdir(d) else []
+        raise FileNotFoundError(
+            f"no surrogate manifest for {molecule_name} under {d} (tried {list(FNO_TAG_ORDER)}; "
+            f"present: {present or 'none'}); pass --fno-tag explicitly")
+    if have[0] != FNO_TAG_ORDER[0]:
+        say(f"[benchmark] {molecule_name} has no {FNO_TAG_ORDER[0]!r} manifest; "
+            f"fno tag defaults to {have[0]!r}")
+    return have[0]
+
+
+def resolve_fno_tag(molecule_name: str, arm: str, tag: str | None = None, log=None) -> str:
+    """cfg.fno_tag for a run: what was asked for, else the molecule's default."""
+    if tag is not None:
+        return str(tag)
+    try:
+        return default_fno_tag(molecule_name, log=log)
+    except FileNotFoundError:
+        if arm in FNO_ARMS:
+            raise
+        return BenchmarkConfig.fno_tag
 
 
 # building blocks
@@ -111,21 +162,16 @@ def exact_env(cfg: BenchmarkConfig, molecule: Molecule, library: ActionLibrary, 
     return PurificationEnv(molecule, library, tables, env_config(cfg), device=cfg.device, batch=batch)
 
 
-def exact_engine(molecule: Molecule, tau_indices):
-    from ..physics.engines import ExactEngine
-    return ExactEngine(molecule, tau_indices=tau_indices)
-
-
-def default_engine(molecule: Molecule, tau_indices, log=None):
-    """CUDA-Q where it can run, exact otherwise; $QLSGYM_ENGINE forces either."""
+def default_engine(cfg: BenchmarkConfig, molecule: Molecule, tau_indices, log=None):
+    """CUDA-Q where it can run, exact otherwise; cfg.engine / $QLSGYM_ENGINE forces either."""
     from ..physics.engines import select_engine
-    return select_engine(molecule, tau_indices=tau_indices, log=log)
+    return select_engine(molecule, tau_indices=tau_indices, prefer=cfg.engine, log=log)
 
 
 def fno_engine(cfg: BenchmarkConfig, molecule: Molecule, tau_indices, fallback=None, log=None):
     """The surrogate of cfg.fno_tag, with the default engine as fallback where untrained."""
     from ..surrogate.manifest import load_manifest
-    fb = default_engine(molecule, tau_indices, log=log) if fallback is None else fallback
+    fb = default_engine(cfg, molecule, tau_indices, log=log) if fallback is None else fallback
     return load_manifest(molecule, cfg.fno_tag, tau_indices=tau_indices, device=cfg.device, fallback=fb)
 
 
@@ -277,11 +323,12 @@ def run_arm(arm: str, cfg: BenchmarkConfig, log=None, progress: bool = False) ->
     elif arm == "random":
         policy = RandomPolicy(library.n_actions)
     elif arm.startswith("planner-"):
-        ref = default_engine(molecule, taus, log=say)
+        ref = default_engine(cfg, molecule, taus, log=say)
         engine = ref if arm == "planner-exact" else fno_engine(cfg, molecule, taus, fallback=ref)
         policy = ScorePlannerPolicy(engine, library, score_config(cfg, molecule), tau_mode="library",
                                     n_pool=cfg.n_pool, delta_s=cfg.delta_s)
-        policy_desc = f"{arm} (n_pool={cfg.n_pool}, delta_s={cfg.delta_s})"
+        policy_desc = (f"{arm} (n_pool={cfg.n_pool}, delta_s={cfg.delta_s}, "
+                       f"dynamics={type(ref).__name__})")
     else:  # rl-*
         if arm == "rl-exact":
             env_train, builder = env.clone(cfg.ppo.n_envs), "physics"
