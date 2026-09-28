@@ -80,7 +80,7 @@ def evaluate_loss(model: nn.Module, split: BlockSplit, cfg: TrainConfig, device:
         idx = torch.arange(lo, min(lo + cfg.batch_size, n))
         xb, yb, wb = split.batch(idx, device)
         pred = model(xb).transpose(1, 2)
-        total += float(weighted_loss(pred.float(), yb, wb, "sum"))
+        total += float(weighted_loss(pred.float(), yb, wb, "sum", cfg.per_sample_sqrt))
     return total / n
 
 

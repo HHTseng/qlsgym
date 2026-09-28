@@ -11,7 +11,7 @@ import numpy as np
 import torch
 
 from ..spec import Molecule
-from .embedding import TorchEmbedding, resonance_geometry_of
+from .embedding import TorchEmbedding, embedding_delta_max, resonance_geometry_of
 from .metrics import is_on_resonance
 
 Tensor = torch.Tensor
@@ -315,9 +315,18 @@ def dataset_dir(molecule: Molecule, work: str | None = None) -> str:
     return os.path.join(work or work_dir(), "data", molecule.name, molecule.fingerprint())
 
 
-def split_path(molecule: Molecule, block_index: int, sigma: str, cfg: DataConfig, work: str | None = None) -> str:
+def split_path(molecule: Molecule, block_index: int, sigma: str, cfg: DataConfig, work: str | None = None,
+               activity_lambda: float = 1.0, activity_eps: float = 1e-8) -> str:
+    """The split's file.  Its name hashes cfg and every other setting build_split bakes into the
+    tensors -- the embedding constants (not in the fingerprint) and the activity weights -- so
+    changing one of them builds a new split instead of reloading a stale one.
+    """
     s = "sp" if sigma == "+" else "sm"
-    return os.path.join(dataset_dir(molecule, work), f"block{int(block_index)}_{s}_{cfg.key()}.pt")
+    recipe = {"data": asdict(cfg), "s_emb": molecule.window.s_emb, "beta_emb": molecule.window.beta_emb,
+              "delta_max": embedding_delta_max(molecule),
+              "activity": [float(activity_lambda), float(activity_eps)]}
+    key = hashlib.sha256(json.dumps(recipe, sort_keys=True).encode()).hexdigest()[:10]
+    return os.path.join(dataset_dir(molecule, work), f"block{int(block_index)}_{s}_{key}.pt")
 
 
 def save_split(path: str, split: BlockSplit) -> None:
@@ -339,7 +348,8 @@ def build_or_load_split(
     storage_device=None, work: str | None = None, cache: bool = True, **kw,
 ) -> BlockSplit:
     """build_split, memoised under split_path."""
-    path = split_path(molecule, block_index, sigma, cfg, work)
+    path = split_path(molecule, block_index, sigma, cfg, work,
+                      kw.get("activity_lambda", 1.0), kw.get("activity_eps", 1e-8))
     store = storage_device if storage_device is not None else device
     if cache and os.path.exists(path):
         return load_split(path, store)

@@ -87,3 +87,7 @@ def test_build_split_if_physics_present(mol, tmp_path):
     assert split_path(mol, 0, "+", cfg, str(tmp_path)).startswith(str(tmp_path)) and mol.fingerprint() in split_path(mol, 0, "+", cfg, str(tmp_path))
     sp2 = build_or_load_split(mol, 0, cfg, "+", device="cpu", work=str(tmp_path))   # from disk
     np.testing.assert_allclose(sp2.x.numpy(), sp.x.numpy())
+    # different activity weights must not reload the cached split
+    sp3 = build_or_load_split(mol, 0, cfg, "+", device="cpu", work=str(tmp_path), activity_lambda=0.0)
+    assert split_path(mol, 0, "+", cfg, str(tmp_path), activity_lambda=0.0) != split_path(mol, 0, "+", cfg, str(tmp_path))
+    assert not np.allclose(sp3.weights.numpy(), sp.weights.numpy())

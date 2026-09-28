@@ -245,7 +245,7 @@ class ScorePlannerPolicy:
 
     def act(self, p, t, rng):
         p = np.asarray(p, dtype=np.float64)
-        cands: list = []                       # (value, pick) per drive, in visiting order
+        cands: list = []                       # (value, pick): best per drive, or every duration when pooling
         for sg, ws, rows_list in self._groups:
             P0, P1 = branches_batch_fallback(self.engine, p, ws, sg)
             self.calls += int(ws.size)
@@ -253,11 +253,14 @@ class ScorePlannerPolicy:
                 sc = score_batch(p, np.asarray(a), np.asarray(c), self.cfg)
                 if self.tau_mode == "library":
                     r = np.asarray([r for r, _ in rows])
-                    j = int(np.argmax(sc[r]))
-                    cands.append((float(sc[r[j]]), rows[j][1]))
+                    if self.n_pool is not None:
+                        cands.extend((float(sc[row]), action) for row, action in rows)
+                    else:
+                        j = int(np.argmax(sc[r]))
+                        cands.append((float(sc[r[j]]), rows[j][1]))
                 else:
-                    k = int(np.argmax(sc))
-                    cands.append((float(sc[k]), (sg, float(w), int(self._eng_tau[k]), rows)))
+                    indices = range(len(sc)) if self.n_pool is not None else [int(np.argmax(sc))]
+                    cands.extend((float(sc[k]), (sg, float(w), int(self._eng_tau[k]), rows)) for k in indices)
         if not cands:
             return None
         pick = self._choose(cands, rng)

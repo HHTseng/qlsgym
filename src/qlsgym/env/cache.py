@@ -170,7 +170,7 @@ def tables_from_physics(molecule: Molecule, library: ActionLibrary, device: str 
     # shares the propagator and differs only in the tau row gathered.
     for sigma in sorted(set(library.sigmas.tolist())):
         sel = np.where(library.sigmas == sigma)[0]
-        om_r = np.round(library.omegas[sel], 9)
+        om_r = library.omegas[sel]  # Preserve valid window endpoints exactly.
         uniq, inv = np.unique(om_r, return_inverse=True)
         need_tau = np.unique(library.tau_indices[sel])
         pos = {int(t): i for i, t in enumerate(need_tau)}
