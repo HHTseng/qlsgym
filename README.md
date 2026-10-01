@@ -9,9 +9,9 @@ encoders to the strongest PPO and SAC configurations from `FNO_RL_optuna`.
 Training used the fixed downloaded `mix` FNO; exact cached dynamics were a
 held-out transfer audit.
 
-At decision time $ t $, $ s_t\in\Delta^{191} $ is the post-measurement
-population belief, $ a_t\in\{0,\ldots,311\} $ the pulse, and
-$ k_t\in\{0,1\} $ the measurement branch.  A length-$ K $ context is
+At decision time $`t`$, $`s_t\in\Delta^{191}`$ is the post-measurement
+population belief, $`a_t\in\{0,\ldots,311\}`$ the pulse, and
+$`k_t\in\{0,1\}`$ the measurement branch.  A length-$`K`$ context is
 
 $$
 H_t=(x_{t-K+1},\ldots,x_t),
@@ -35,20 +35,20 @@ $$
 
 The six-hour-bounded Tara study used GPUs 0 and 2 for 2 h 12 min.  It trained
 44 policies: 15 architecture screens per algorithm followed by matched
-two-seed confirmations.  The screen included $ K\in\{1,4,8\} $, frame stacks, GRUs,
+two-seed confirmations.  The screen included $`K\in\{1,4,8\}`$, frame stacks, GRUs,
 state-history/no-position ablations, and token-LayerNorm ablations.  Lower
-exact unfinished fraction $ f_E=P_E(T>80) $ and failure-penalized actions
-$ A_E=E_E[\min(T,80)] $ are better.
+exact unfinished fraction $`f_E=P_E(T>80)`$ and failure-penalized actions
+$`A_E=E_E[\min(T,80)]`$ are better.
 
-| Agent | Encoder | $ f_E $ | $ A_E $ | Failure change from matched MLP | Action change |
+| Agent | Encoder | $`f_E`$ | $`A_E`$ | Failure change from matched MLP | Action change |
 |---|---|---:|---:|---:|---:|
 | PPO | **MLP** | **27.53%** | **42.91** | 0 | 0 |
-| PPO | GRU, $ K=8 $ | 73.78% | 62.51 | +46.25 pp | +19.60 |
-| PPO | Transformer, $ K=8 $, state history | 90.50% | 74.91 | +62.98 pp | +32.00 |
-| PPO | Transformer + token LN, $ K=8 $, state history | 89.35% | 73.07 | +61.82 pp | +30.16 |
+| PPO | GRU, $`K=8`$ | 73.78% | 62.51 | +46.25 pp | +19.60 |
+| PPO | Transformer, $`K=8`$, state history | 90.50% | 74.91 | +62.98 pp | +32.00 |
+| PPO | Transformer + token LN, $`K=8`$, state history | 89.35% | 73.07 | +61.82 pp | +30.16 |
 | SAC | **MLP** | **44.38%** | **52.46** | 0 | 0 |
-| SAC | frame stack, $ K=4 $ | 58.40% | 59.17 | +14.03 pp | +6.71 |
-| SAC | Transformer, $ K=8 $, state history | 55.85% | 56.99 | +11.48 pp | +4.53 |
+| SAC | frame stack, $`K=4`$ | 58.40% | 59.17 | +14.03 pp | +6.71 |
+| SAC | Transformer, $`K=8`$, state history | 55.85% | 56.99 | +11.48 pp | +4.53 |
 
 Every sequence candidate loses to the matched MLP on both confirmation seeds.
 Full-token SAC Transformers collapse to nearly deterministic policies and fail
@@ -134,21 +134,21 @@ The strong discrete-SAC result in
 [`rl_qls_paper_replication_FNO_RL_agents`](https://github.com/HHTseng/rl_qls_paper_replication/tree/FNO_RL_agents)
 is useful optimizer evidence, but it is not a direct ThF+ FNO result. Its selected
 H3O+ configuration came from a 12-trial validation screen using exact action
-tables, 130 states, 218 actions, $ H=400 $, purity 0.99, and the sampled S17 target.
+tables, 130 states, 218 actions, $`H=400`$, purity 0.99, and the sampled S17 target.
 This repository uses the downloaded ThF+ `mix` FNO, 192 states, 312 actions,
-$ H=80 $, purity 0.98, and the S18 expectation over both measurement branches.
+$`H=80`$, purity 0.98, and the S18 expectation over both measurement branches.
 
 The comparison identified four settings omitted or underrepresented in the
 first ThF+ SAC search:
 
 - H3O+ used 16 environments and two gradient steps per collection step, or
-  $ 2/16=0.125 $ updates per transition. The previous selected ThF+ trial used
-  $ 4/(2\times128)=0.015625 $, eight times fewer updates per transition.
-- H3O+ used raw belief $ p $; ThF+ SAC fixed the input to $ \sqrt p $.
+  $`2/16=0.125`$ updates per transition. The previous selected ThF+ trial used
+  $`4/(2\times128)=0.015625`$, eight times fewer updates per transition.
+- H3O+ used raw belief $`p`$; ThF+ SAC fixed the input to $`\sqrt p`$.
 - H3O+ selected automatic temperature tuning with target entropy
-  $ 0.215\log|\mathcal A| $; the previous ThF+ winner disabled tuning at 0.771.
-- H3O+ selected reward divisor $ R=5 $ and initial $ \alpha=0.027 $. The focused
-  search varies $ R $ and the dimensionless ratio $ \widetilde\alpha=\alpha R $ so
+  $`0.215\log|\mathcal A|`$; the previous ThF+ winner disabled tuning at 0.771.
+- H3O+ selected reward divisor $`R=5`$ and initial $`\alpha=0.027`$. The focused
+  search varies $`R`$ and the dimensionless ratio $`\widetilde\alpha=\alpha R`$ so
   reward and entropy scales remain interpretable together.
 
 `scripts/refine_thf_mix_sac.py` therefore searches `n_envs`, updates per
@@ -193,12 +193,12 @@ are only +0.48 failure points and +0.36 actions for these policies, so transfer
 is good on their visited distribution.
 
 The selected `sac_t24` configuration uses 16 environments, one gradient update
-per collection step (1/16 update per transition), $ \sqrt{p} $ observations,
-`lr=1.5048e-4`, $ \gamma=0.995 $, $ \tau=0.00305 $, batch 512, replay capacity
-100,000, warmup 1,000, a single 128-unit hidden layer, reward divisor $ R=20 $,
+per collection step (1/16 update per transition), $`\sqrt{p}`$ observations,
+`lr=1.5048e-4`, $`\gamma=0.995`$, $`\tau=0.00305`$, batch 512, replay capacity
+100,000, warmup 1,000, a single 128-unit hidden layer, reward divisor $`R=20`$,
 and automatic temperature tuning toward
-$ 0.4997\log|\mathcal A| $. Its initial dimensionless entropy/reward ratio is
-$ \widetilde\alpha=\alpha R=0.2654 $.
+$`0.4997\log|\mathcal A|`$. Its initial dimensionless entropy/reward ratio is
+$`\widetilde\alpha=\alpha R=0.2654`$.
 
 Across the focused search, PED-ANOVA assigns 42.3% of local variation to target
 entropy, 35.3% to the temperature/reward ratio, 4.7% to learning rate, and 3.8%
@@ -240,26 +240,26 @@ See the [downloaded-model summary](results/thf_rl_mix_tara/summary.md), [generat
 
 | Quantity | ThF⁺ experiment |
 |---|---|
-| Molecular belief | $ s\in\Delta^{191} $: 192 states, 12 Hamiltonian blocks |
-| Motional truncation | 7 levels; Hilbert dimension $ 192\times7=1344 $ |
-| Measured outcomes | $ k=0 $: ground; $ k=1 $: all excited motional levels |
+| Molecular belief | $`s\in\Delta^{191}`$: 192 states, 12 Hamiltonian blocks |
+| Motional truncation | 7 levels; Hilbert dimension $`192\times7=1344`$ |
+| Measured outcomes | $`k=0`$: ground; $`k=1`$: all excited motional levels |
 | Initialization | Thermal populations, 4 K |
-| Controls | 312 actions: 288 Raman $ (\sigma,\omega,\tau) $ + 24 primitives |
+| Controls | 312 actions: 288 Raman $`(\sigma,\omega,\tau)`$ + 24 primitives |
 | Pulse duration | 200-time FNO grid, maximum 6 ms |
-| Episode | $ \max_i s_i\ge0.98 $ target; $ H=80 $ actions; $ \rho=0 $ |
+| Episode | $`\max_i s_i\ge0.98`$ target; $`H=80`$ actions; $`\rho=0`$ |
 | Dynamics | FNO Raman propagation; primitives exact; final ranking evaluated exactly |
 
 The environment carries **populations, not coherences**: each pulse starts from a diagonal molecular mixture with the motion in its ground state. Posterior populations after readout/cooling define the next input. “Exact” below means exact within this effective-Hamiltonian, seven-level, population-reset model, not experimental certification.
 
-For action $ a $, define unnormalized branch population $ u_k(s,a)\ge0 $, Born probability $ \pi_k=\sum_i u_{k,i} $ and conditional belief $ s'_k=u_k/\pi_k $. The quantum belief MDP has
+For action $`a`$, define unnormalized branch population $`u_k(s,a)\ge0`$, Born probability $`\pi_k=\sum_i u_{k,i}`$ and conditional belief $`s'_k=u_k/\pi_k`$. The quantum belief MDP has
 
 $$P(s'|s,a)=\sum_{k=0}^1\pi_k(s,a)\delta(s'-s'_k),\qquad \sum_k\pi_k=1.$$
 
-For a block with $ m_f $ states, FNO maps $ (s_f,\omega,\sigma) $ to joint populations in $ \Delta^{2m_f-1} $ at all pulse times. Two readout groups do **not** mean a two-level motional Hamiltonian. Effective Hamiltonian construction: [heff](https://github.com/arianjad/heff/tree/main).
+For a block with $`m_f`$ states, FNO maps $`(s_f,\omega,\sigma)`$ to joint populations in $`\Delta^{2m_f-1}`$ at all pulse times. Two readout groups do **not** mean a two-level motional Hamiltonian. Effective Hamiltonian construction: [heff](https://github.com/arianjad/heff/tree/main).
 
 ### Sampled versus branch-expected updates
 
-Let $ c_k=1 $ only when branch $ k $ is nonterminal and budget remains. Write $ Q(s,a) $ for action value, $ V(s) $ for the appropriate next-state value (maximum-Q for Q-learning), $ r_k $ for branch reward, $ \gamma $ for discount and $ \eta $ for learning rate. The [earlier RL paper](https://arxiv.org/pdf/2410.11839) motivates these S17-style sampled and S18-style branch-expected targets, with terminal/budget masks:
+Let $`c_k=1`$ only when branch $`k`$ is nonterminal and budget remains. Write $`Q(s,a)`$ for action value, $`V(s)`$ for the appropriate next-state value (maximum-Q for Q-learning), $`r_k`$ for branch reward, $`\gamma`$ for discount and $`\eta`$ for learning rate. The [earlier RL paper](https://arxiv.org/pdf/2410.11839) motivates these S17-style sampled and S18-style branch-expected targets, with terminal/budget masks:
 
 $$\text{S17:}\quad y=r_K+\gamma c_KV(s'_K),\quad K\sim\{\pi_k\};\qquad Q\leftarrow Q+\eta(y-Q),$$
 
@@ -308,7 +308,7 @@ validation using
 
 $$J=p_{\mathrm{success}}+0.02\left(1-\frac{\bar A}{H}\right),\qquad H=80,$$
 
-so success dominates and failure-penalized action count $ \bar A $ breaks close
+so success dominates and failure-penalized action count $`\bar A`$ breaks close
 ties. The top three configurations per agent are retrained for one million
 transitions with seeds 100 and 101. The winner is retrained with seeds 0--4 and
 evaluated on 5,000 FNO plus 5,000 exact episodes per seed using holdout seed
@@ -495,14 +495,14 @@ Transfer failure gap is exact failure minus FNO failure. Negative values mean th
 
 ## Metric interpretation
 
-Let $ T_j $ be first successful pulse count ($ \infty $ if unfinished), $ L_j=\min(T_j,H) $, and $ N $ rollout count. Early stopping without success still scores failure and $ H $.
+Let $`T_j`$ be first successful pulse count ($`\infty`$ if unfinished), $`L_j=\min(T_j,H)`$, and $`N`$ rollout count. Early stopping without success still scores failure and $`H`$.
 
 $$f=1-\frac1N\sum_j\mathbf1\{T_j\le H\},\qquad
 A=\frac1N\sum_jL_j,\qquad C(h)=\frac1N\sum_j\mathbf1\{T_j\le h\}.$$
 
-**Failure rate $ f $ and average actions $ A $: lower better; finished-episode curve $ C(h) $: higher better.** Average actions is failure-penalized, not successful-only mean. P85 and worst-10% CVaR of $ L $ are lower-better tail metrics, often saturated at80 when failure is high.
+**Failure rate $`f`$ and average actions $`A`$: lower better; finished-episode curve $`C(h)`$: higher better.** Average actions is failure-penalized, not successful-only mean. P85 and worst-10% CVaR of $`L`$ are lower-better tail metrics, often saturated at80 when failure is high.
 
-Population infidelity $ I_p=1-(\sum_b\sqrt{p_b\widehat p_b})^2 $: **lower better**, measuring populations, not coherence. Near-pure, identity and conditional-branch errors matter for repeated purification. Speedup $ T_{\rm exact}/T_{\rm FNO} $: **higher faster**, but fresh propagation and cached tables are different references. [Precise definitions](docs/FNO_PAPER_METRICS.md).
+Population infidelity $`I_p=1-(\sum_b\sqrt{p_b\widehat p_b})^2`$: **lower better**, measuring populations, not coherence. Near-pure, identity and conditional-branch errors matter for repeated purification. Speedup $`T_{\rm exact}/T_{\rm FNO}`$: **higher faster**, but fresh propagation and cached tables are different references. [Precise definitions](docs/FNO_PAPER_METRICS.md).
 
 ## Historical pilot — not a final ranking
 

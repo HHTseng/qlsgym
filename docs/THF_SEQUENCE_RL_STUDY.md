@@ -2,7 +2,7 @@
 
 ## Question
 
-At decision time $ t $, let
+At decision time $`t`$, let
 
 $$
 s_t\in\Delta^{191},\qquad a_t\in\{0,\ldots,311\},\qquad k_t\in\{0,1\}
@@ -13,7 +13,7 @@ measured branch.  The experiment asks whether replacing the optimized MLP by a
 finite-history encoder improves control under the fixed downloaded `mix` FNO.
 
 The ideal environment is already Markov in the full belief and remaining
-budget $ b_t=(80-t)/80 $:
+budget $`b_t=(80-t)/80`$:
 
 $$
 P(s_{t+1},r_t\mid s_{0:t},a_{0:t})
@@ -22,12 +22,12 @@ $$
 
 History therefore has no information-theoretic advantage in the nominal
 model.  It can help only through finite-network approximation, FNO error, or a
-latent variable omitted from $ s_t $.  This makes the MLP a necessary matched
+latent variable omitted from $`s_t`$.  This makes the MLP a necessary matched
 control rather than an obsolete architecture.
 
 ## Implemented model
 
-For context length $ K $, define
+For context length $`K`$, define
 
 $$
 H_t=(x_{t-K+1},\ldots,x_t),
@@ -48,8 +48,8 @@ $$
 $$
 
 contains normalized detuning and duration, polarization sign, and a
-primitive-pulse indicator.  Learned START embeddings define $ a_{-1} $ and
-$ k_{-1} $.  The code provides frame-stack, GRU, and pre-norm causal
+primitive-pulse indicator.  Learned START embeddings define $`a_{-1}`$ and
+$`k_{-1}`$.  The code provides frame-stack, GRU, and pre-norm causal
 Transformer encoders.  Transformer tokens can additionally use LayerNorm after
 feature summation.  The MLP code path remains unchanged.
 
@@ -59,7 +59,7 @@ a context cross an episode reset.  Actor and twin SAC critics use independent
 encoders.
 
 Both algorithms preserve the two-branch S18 target.  For the branch states
-$ s_{t+1}^{(k)} $, the code constructs distinct counterfactual histories
+$`s_{t+1}^{(k)}`$, the code constructs distinct counterfactual histories
 
 $$
 H_{t+1}^{(k)}=
@@ -73,7 +73,7 @@ y_t=\sum_{k=0}^{1}p_{t,k}
 \left[r_{t,k}+\gamma c_{t,k}V(H_{t+1}^{(k)})\right].
 $$
 
-For SAC, $ V $ is the target soft value.  Thus the architecture experiment does
+For SAC, $`V`$ is the target soft value.  Thus the architecture experiment does
 not replace quantum branch expectation by a sampled one-branch target.
 
 ## Bounded experiment
@@ -85,9 +85,9 @@ evaluated 86,000 episodes across FNO and exact cached dynamics.
 The single-seed screen tested 15 architectures for each algorithm:
 
 - MLP;
-- frame stacks and GRUs with $ K\in\{4,8\} $;
-- Transformers with $ K\in\{1,4,8\} $;
-- $ K=8 $ state-history and no-position ablations;
+- frame stacks and GRUs with $`K\in\{4,8\}`$;
+- Transformers with $`K\in\{1,4,8\}`$;
+- $`K=8`$ state-history and no-position ablations;
 - five corresponding token-LayerNorm Transformer ablations.
 
 PPO used 100,000 screen and 300,000 confirmation transitions.  SAC used 40,000
@@ -100,31 +100,31 @@ candidate.
 
 The plan's exact-first and latent-drift stages were not mixed into this study:
 the requested intervention was architecture under the fixed downloaded FNO.
-The exact simulator is instead a held-out transfer audit.  $ K=16 $, shuffled
-order, and latent-physics variants were not promoted because every $ K\leq8 $
+The exact simulator is instead a held-out transfer audit.  $`K=16`$, shuffled
+order, and latent-physics variants were not promoted because every $`K\leq8`$
 sequence family lost to its matched MLP during the bounded screen.
 
 ## Results
 
-Lower unfinished fraction $ f_E=P_E(T>80) $ and failure-penalized actions
-$ A_E=E_E[\min(T,80)] $ are better.  Values are means and sample standard
+Lower unfinished fraction $`f_E=P_E(T>80)`$ and failure-penalized actions
+$`A_E=E_E[\min(T,80)]`$ are better.  Values are means and sample standard
 deviations over two training seeds.
 
-| Agent | Encoder | $ f_E $ | $ A_E $ | Failure change from matched MLP | Action change |
+| Agent | Encoder | $`f_E`$ | $`A_E`$ | Failure change from matched MLP | Action change |
 |---|---|---:|---:|---:|---:|
 | PPO | **MLP** | **27.53% +/- 1.59%** | **42.91 +/- 0.28** | 0 | 0 |
-| PPO | GRU, $ K=8 $ | 73.78% +/- 4.70% | 62.51 +/- 2.04 | +46.25 pp | +19.60 |
-| PPO | Transformer, $ K=8 $, state history | 90.50% +/- 13.01% | 74.91 +/- 7.02 | +62.98 pp | +32.00 |
-| PPO | Transformer + token LN, $ K=8 $, state history | 89.35% +/- 9.33% | 73.07 +/- 6.04 | +61.82 pp | +30.16 |
+| PPO | GRU, $`K=8`$ | 73.78% +/- 4.70% | 62.51 +/- 2.04 | +46.25 pp | +19.60 |
+| PPO | Transformer, $`K=8`$, state history | 90.50% +/- 13.01% | 74.91 +/- 7.02 | +62.98 pp | +32.00 |
+| PPO | Transformer + token LN, $`K=8`$, state history | 89.35% +/- 9.33% | 73.07 +/- 6.04 | +61.82 pp | +30.16 |
 | SAC | **MLP** | **44.38% +/- 1.73%** | **52.46 +/- 1.22** | 0 | 0 |
-| SAC | frame stack, $ K=4 $ | 58.40% +/- 1.77% | 59.17 +/- 0.67 | +14.03 pp | +6.71 |
-| SAC | Transformer, $ K=8 $, state history | 55.85% +/- 1.34% | 56.99 +/- 0.50 | +11.48 pp | +4.53 |
+| SAC | frame stack, $`K=4`$ | 58.40% +/- 1.77% | 59.17 +/- 0.67 | +14.03 pp | +6.71 |
+| SAC | Transformer, $`K=8`$, state history | 55.85% +/- 1.34% | 56.99 +/- 0.50 | +11.48 pp | +4.53 |
 
 Every paired confirmation seed favors the MLP in both primary metrics.  The
 result does not depend on one unlucky sequence seed.
 
 The full-token SAC Transformers exhibit a stronger failure mode.  Their
-single-seed unfinished fractions are 98.8%--100% for $ K\in\{1,4,8\} $, and
+single-seed unfinished fractions are 98.8%--100% for $`K\in\{1,4,8\}`$, and
 actor entropy collapses toward zero during training.  Token LayerNorm does not
 remove the collapse: its full-token variants fail 99%--100%.  Removing action,
 outcome, and physical-action embeddings prevents the immediate entropy
@@ -142,7 +142,7 @@ Architecture claims use only the matched seeds and budgets in the table.
 ## Interpretation
 
 The downloaded FNO does not make temporal memory useful under the present
-observation model.  The current $ s_t $ already contains the posterior needed
+observation model.  The current $`s_t`$ already contains the posterior needed
 by the transition kernel, and the extra sequence encoder makes optimization
 harder.  The MLP remains the supported PPO and SAC architecture for this fixed
 FNO.
@@ -154,7 +154,7 @@ $$
 \delta\omega_{t+1}=\rho_\omega\delta\omega_t+\epsilon_t,
 $$
 
-finite-shot estimates of $ s_t $, partial observation, or residual motional
+finite-shot estimates of $`s_t`$, partial observation, or residual motional
 memory.  In that POMDP, compare MLP, GRU, and Transformer at equal transition
 budgets, and add a direct current-state residual path so attention models cannot
 discard the sufficient present belief.  For nominal fixed-FNO training, more
