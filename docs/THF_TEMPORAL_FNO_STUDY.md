@@ -192,9 +192,9 @@ control improves some fixed-grid branch metrics while worsening temporal
 derivative and spectral errors; therefore that improvement is evidence of
 grid-position memorization, not physical temporal ordering.
 
-![Worst pilot gate divided by its threshold](../results/thf_temporal_baseline_audit/comparison/pilot_gate_comparison.png)
+![Worst pilot gate divided by its threshold](../results/thf_temporal_fno_study/gate_comparison.png)
 
-![Block 11/+ transfer-column error versus pulse time](../results/thf_temporal_baseline_audit/comparison/hard_pair_temporal_error.png)
+![Block 11/+ transfer-column error versus pulse time](../results/thf_temporal_fno_study/hard_pair_temporal_error.png)
 
 The six-pair promotion rule failed.  Full 24-pair training and new RL training
 were therefore stopped.  This is a scientific gate, not a compute failure.  The
