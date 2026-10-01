@@ -291,6 +291,43 @@ def summarize(args) -> None:
                 "fno": aggregate(group, "fno"),
                 "exact": aggregate(group, "exact"),
             })
+    for agent in ("ppo", "sac"):
+        control = next(
+            (row for row in rows if row["agent"] == agent and row["candidate"] == "mlp"),
+            None,
+        )
+        if control is None:
+            continue
+        for row in rows:
+            if row["agent"] != agent:
+                continue
+            row["delta_vs_mlp"] = {
+                "exact_failure_percentage_points": 100.0 * (
+                    row["exact"]["unfinished_fraction"]
+                    - control["exact"]["unfinished_fraction"]
+                ),
+                "exact_average_actions": (
+                    row["exact"]["average_actions"]
+                    - control["exact"]["average_actions"]
+                ),
+            }
+    screen_rows = []
+    for record in records:
+        if record["stage"] == "screen":
+            screen_rows.append({
+                "agent": record["agent"], "candidate": record["candidate"]["id"],
+                "steps": record["steps"], "parameter_count": record["parameter_count"],
+                "fno": record["evaluation"]["fno"],
+                "exact": record["evaluation"]["exact"],
+                "selection_score_fno": record["selection_score_fno"],
+            })
+    budgets = {}
+    for agent in ("ppo", "sac"):
+        budgets[agent] = {
+            stage: sorted({record["steps"] for record in records
+                           if record["agent"] == agent and record["stage"] == stage})
+            for stage in ("screen", "confirm")
+        }
     base_ppo = json.loads((ROOT / "results/thf_rl_optuna_mix/summary.json").read_text())["rows"]["ppo"]
     base_sac = json.loads((ROOT / "results/thf_rl_optuna_mix_sac_refine/summary.json").read_text())["row"]
     summary = {
@@ -305,12 +342,16 @@ def summarize(args) -> None:
             "screen_seed": SCREEN_SEED, "confirm_seeds": list(CONFIRM_SEEDS),
             "selection_dynamics": "downloaded mix FNO",
             "transfer_audit": "exact cached tables",
-            "screen_steps": args.screen_steps, "confirm_steps": args.confirm_steps,
-            "screen_eval": args.screen_eval, "confirm_eval": args.confirm_eval,
+            "budgets_by_agent": budgets,
+            "screen_eval": sorted({record["evaluation"]["exact"]["n_rollouts"]
+                                   for record in records if record["stage"] == "screen"}),
+            "confirm_eval": sorted({record["evaluation"]["exact"]["n_rollouts"]
+                                    for record in records if record["stage"] == "confirm"}),
         },
         "historical_five_seed_reference": {
             "ppo": base_ppo, "sac": base_sac,
         },
+        "screen_rows": screen_rows,
         "rows": rows,
     }
     write_json(output / "summary.json", summary)
