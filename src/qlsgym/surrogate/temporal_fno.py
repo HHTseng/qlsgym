@@ -36,6 +36,7 @@ class TemporalColumnFNOConfig:
     attention_gate_init: float = 0.075
     off_resonance_linewidths: float = 3.0
     identity_logit_bias: float = 6.0
+    spectral_trunk: bool = True
     # A fixed permutation of E_tau is a negative control.  None is physical.
     shuffled_time_seed: int | None = None
 
@@ -131,19 +132,28 @@ class TemporalColumnFNO(nn.Module):
         self.n_nu = n_nu
         self.register_buffer("taus", torch.as_tensor(taus, dtype=torch.float32).clone())
 
-        self.fno = FNO(
-            n_modes=(cfg.n_modes,),
-            in_channels=self.control_channels,
-            out_channels=cfg.d_model,
-            hidden_channels=cfg.fno_hidden,
-            n_layers=cfg.fno_layers,
-            lifting_channel_ratio=cfg.lifting_channel_ratio,
-            projection_channel_ratio=cfg.projection_channel_ratio,
-            factorization=cfg.factorization,
-            rank=cfg.rank,
-            domain_padding=cfg.domain_padding,
-            positional_embedding=cfg.positional_embedding,
-        )
+        if cfg.spectral_trunk:
+            self.fno = FNO(
+                n_modes=(cfg.n_modes,),
+                in_channels=self.control_channels,
+                out_channels=cfg.d_model,
+                hidden_channels=cfg.fno_hidden,
+                n_layers=cfg.fno_layers,
+                lifting_channel_ratio=cfg.lifting_channel_ratio,
+                projection_channel_ratio=cfg.projection_channel_ratio,
+                factorization=cfg.factorization,
+                rank=cfg.rank,
+                domain_padding=cfg.domain_padding,
+                positional_embedding=cfg.positional_embedding,
+            )
+        else:
+            # Pure-Transformer ablation: pointwise control lifting, so all
+            # cross-time mixing must come from attention rather than Fourier modes.
+            self.fno = nn.Sequential(
+                nn.Conv1d(self.control_channels, cfg.d_model, kernel_size=1),
+                nn.GELU(),
+                nn.Conv1d(cfg.d_model, cfg.d_model, kernel_size=1),
+            )
         self.time_embedding = ContinuousTimeEmbedding(
             cfg.d_model, cfg.time_frequencies
         )
@@ -243,7 +253,11 @@ class TemporalColumnFNO(nn.Module):
 
     def metadata(self) -> dict:
         return {
-            "architecture": "temporal_column_fno_v1",
+            "architecture": (
+                "temporal_column_fno_v1"
+                if self.config.spectral_trunk
+                else "temporal_transformer_columns_v1"
+            ),
             "in_channels": self.in_channels,
             "out_channels": self.out_channels,
             "control_channels": self.control_channels,

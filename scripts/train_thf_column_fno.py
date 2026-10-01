@@ -59,6 +59,7 @@ def train_pair(args):
         attention_gate_init=args.attention_gate_init,
         off_resonance_linewidths=args.off_resonance_linewidths,
         identity_logit_bias=args.identity_logit_bias,
+        spectral_trunk=args.architecture != "transformer",
         shuffled_time_seed=args.shuffled_time_seed,
     )
     config = ColumnTrainConfig(
@@ -149,7 +150,9 @@ def parser():
     train.add_argument("--block", type=int, required=True, choices=range(12))
     train.add_argument("--sigma", required=True, choices=("+", "-"))
     train.add_argument("--device", default="cuda:0")
-    train.add_argument("--architecture", choices=("column", "temporal"), default="column")
+    train.add_argument(
+        "--architecture", choices=("column", "temporal", "transformer"), default="column"
+    )
     train.add_argument("--cache-dir")
     train.add_argument("--train-freq", type=int, default=256)
     train.add_argument("--val-freq", type=int, default=48)

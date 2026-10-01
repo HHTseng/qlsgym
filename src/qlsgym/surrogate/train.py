@@ -240,7 +240,11 @@ def load_model(
         if meta.get("molecule") not in (None, molecule.name) and not allow_mismatch:
             raise FingerprintMismatch(f"{path}: trained for molecule {meta['molecule']!r}, not {molecule.name!r}")
         emb = Embedding(molecule, int(meta["block_index"]), meta["sigma"])
-        if meta.get("architecture") in {"transfer_columns_v1", "temporal_column_fno_v1"}:
+        if meta.get("architecture") in {
+            "transfer_columns_v1",
+            "temporal_column_fno_v1",
+            "temporal_transformer_columns_v1",
+        }:
             expected = (emb.n_transitions + 1, 2 * emb.n_states * emb.n_states)
         else:
             expected = (emb.n_channels, 2 * emb.n_states)
@@ -251,7 +255,10 @@ def load_model(
                 f"{expected}")
         if meta.get("n_nu") not in (None, molecule.trap.n_nu) and not allow_mismatch:
             raise FingerprintMismatch(f"{path}: trained with n_nu={meta['n_nu']}, molecule has {molecule.trap.n_nu}")
-    if meta.get("architecture") == "temporal_column_fno_v1":
+    if meta.get("architecture") in {
+        "temporal_column_fno_v1",
+        "temporal_transformer_columns_v1",
+    }:
         model = TemporalColumnFNO(
             meta["control_channels"],
             meta["n_states"],

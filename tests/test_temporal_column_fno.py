@@ -88,6 +88,22 @@ def test_temporal_checkpoint_round_trip(tmp_path):
     assert loaded.metadata() == model.metadata()
 
 
+def test_pure_transformer_ablation_round_trip(tmp_path):
+    molecule = load_molecule("synthetic")
+    model = TemporalColumnFNO.for_block(
+        molecule, 0, "+", tiny_config(spectral_trunk=False)
+    )
+    assert model.metadata()["architecture"] == "temporal_transformer_columns_v1"
+    path = tmp_path / "transformer.pt"
+    torch.save(
+        {"state_dict": model.state_dict(), "meta": model.metadata(), "source": "qlsgym"},
+        path,
+    )
+    loaded = load_model(str(path), "cpu", molecule=molecule)
+    assert isinstance(loaded, TemporalColumnFNO)
+    assert loaded.metadata() == model.metadata()
+
+
 def test_temporal_losses_and_gradients_are_finite():
     molecule = load_molecule("synthetic")
     embedding = TorchEmbedding(molecule, 0, "+", "cpu")

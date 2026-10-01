@@ -6,7 +6,7 @@ import json
 import math
 import os
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 
 import numpy as np
 import torch
@@ -281,9 +281,12 @@ def train_column_fno(
     )
     if cfg.architecture == "column":
         model = ColumnFNO.for_block(molecule, block, sigma, cfg.fno).to(device)
-    elif cfg.architecture == "temporal":
+    elif cfg.architecture in {"temporal", "transformer"}:
+        temporal_config = replace(
+            cfg.temporal, spectral_trunk=cfg.architecture == "temporal"
+        )
         model = TemporalColumnFNO.for_block(
-            molecule, block, sigma, cfg.temporal
+            molecule, block, sigma, temporal_config
         ).to(device)
     else:
         raise ValueError(f"unknown column architecture {cfg.architecture!r}")
