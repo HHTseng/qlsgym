@@ -9,6 +9,7 @@ from qlsgym.env import ActionLibrary, ControlGrid, EnvConfig, PurificationEnv
 from qlsgym.rl.off_policy import DiscreteSACAgent, SACConfig, sac_policy
 from qlsgym.rl.ppo import PPOConfig, policy_from_state_dict, train_ppo
 from qlsgym.rl.sequence import RollingHistory, branch_histories
+from qlsgym.rl.sequence import HistoryEncoder
 
 from _fake_tables import FakeEngine, fake_tables
 
@@ -52,6 +53,18 @@ def test_counterfactual_histories_keep_both_measurement_branches():
     )
     assert branches["previous_action"][:, -1].tolist() == [2, 2]
     assert branches["previous_outcome"][:, -1].tolist() == [0, 1]
+
+
+def test_causal_transformer_is_finite_with_leading_padding():
+    history = RollingHistory(
+        torch.tensor([[0.5, 0.5]]), context_len=4, n_actions=3, max_pulses=8
+    )
+    encoder = HistoryEncoder(
+        n_states=2, n_actions=3, context_len=4, encoder="transformer",
+        d_model=8, n_layers=2, n_heads=2, ff_dim=16, dropout=0.0,
+        obs="sqrt",
+    )
+    assert torch.isfinite(encoder(history.view())).all()
 
 
 @pytest.mark.parametrize("encoder", ["stack", "gru", "transformer"])

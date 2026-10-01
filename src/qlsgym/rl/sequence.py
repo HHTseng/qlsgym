@@ -258,12 +258,22 @@ class HistoryEncoder(nn.Module):
                 update = self.sequence(token[:, index], hidden)
                 hidden = torch.where(valid[:, index, None], update, hidden)
             return hidden
+        # Histories are stored right aligned so the current token is always at
+        # K-1.  Move the valid suffix to the left before causal attention.  If
+        # right-aligned padding is passed directly, an early padded query has
+        # every permitted key masked and softmax(-inf,...) produces NaN.
+        length = valid.sum(dim=1)
+        index = torch.arange(self.context_len, device=token.device)[None]
+        order = (index + self.context_len - length[:, None]) % self.context_len
+        token = token.gather(1, order[:, :, None].expand_as(token))
+        valid = index < length[:, None]
         causal = torch.triu(
             torch.ones(self.context_len, self.context_len, dtype=torch.bool, device=token.device),
             diagonal=1,
         )
         encoded = self.sequence(token, mask=causal, src_key_padding_mask=~valid)
-        return encoded[:, -1]
+        batch = torch.arange(len(token), device=token.device)
+        return encoded[batch, length - 1]
 
 
 class SequenceHead(nn.Module):
