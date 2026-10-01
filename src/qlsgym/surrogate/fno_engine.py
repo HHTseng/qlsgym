@@ -13,7 +13,7 @@ from .train import load_model
 
 
 class FnoEngine:
-    """FnoEngine(molecule, {(block_index, sigma): path, ...})."""
+    """Evaluate v̂_{α,k}=𝒢_{θ,k}(s_t,ω,σ)(τ), with exact fallback."""
 
     def __init__(
         self,
@@ -89,7 +89,7 @@ class FnoEngine:
     # surrogate evaluation
     @torch.no_grad()
     def _fno_block_batch(self, key: tuple, sub: np.ndarray, omegas: np.ndarray) -> np.ndarray:
-        """(n, len(tau_indices), 2 M_f) populations from the surrogate."""
+        """Return stacked (v̂_{α,0}, v̂_{α,1}) for one molecular block."""
         sub = np.atleast_2d(np.asarray(sub, dtype=np.float64))      # (1, M) or (n, M)
         omegas = np.asarray(omegas, dtype=np.float64).ravel()
         n = omegas.size
@@ -100,17 +100,25 @@ class FnoEngine:
         mass = sub.sum(1, keepdims=True)                            # (n, 1)
         live = mass[:, 0] > 0.0
         emb = self._embs[key]
-        p0 = torch.as_tensor(sub / np.where(mass > 0.0, mass, 1.0), dtype=torch.float64, device=self.device)
+        s_block = torch.as_tensor(
+            sub / np.where(mass > 0.0, mass, 1.0),
+            dtype=torch.float64,
+            device=self.device,
+        )
         w = torch.as_tensor(omegas, device=self.device)
-        x = emb.build(p0, w, out_dtype=torch.float32)               # (n, C, P_tau)
-        y = self._models[key](x)                                    # (n, 2M, P_tau)
-        traj = y.permute(0, 2, 1).double()                          # (n, P_tau, 2M)
+        model = self._models[key]
+        if hasattr(model, "propagate"):
+            traj = model.propagate(s_block, emb, w)
+        else:
+            x = emb.build(s_block, w, out_dtype=torch.float32)      # (n, C, P_tau)
+            y = model(x)                                            # (n, 2M, P_tau)
+            traj = y.permute(0, 2, 1).double()                      # (n, P_tau, 2M)
         out = traj[:, self._tau_t].cpu().numpy() * mass[:, None]
         out[~live] = 0.0
         return out
 
     def block_branches(self, block_index: int, sigma: str, sub: np.ndarray, omegas: np.ndarray) -> np.ndarray:
-        """Surrogate populations for one block, batched over rows."""
+        """Return stacked (v̂_{α,0}, v̂_{α,1}) for one block and many ω."""
         key = (int(block_index), str(sigma))
         if key not in self._models:
             raise KeyError(f"no surrogate for block {block_index} sigma{sigma}; "
@@ -121,14 +129,14 @@ class FnoEngine:
 
     # protocol
     def branches_batch(self, p_in: np.ndarray, omegas: np.ndarray, sigma: str) -> tuple[np.ndarray, np.ndarray]:
-        """(P0, P1) of shape (n_omega, len(tau_indices), n_states)."""
+        """Return (v̂_{α,0}, v̂_{α,1}) with shape (n_omega, n_tau, N)."""
         p_in = np.asarray(p_in, dtype=np.float64)
         omegas = np.asarray(omegas, dtype=np.float64).ravel()
         n, ns, nt = omegas.size, self.molecule.n_states, self.tau_indices.size
-        out0 = np.zeros((n, nt, ns))
-        out1 = np.zeros((n, nt, ns))
+        v0 = np.zeros((n, nt, ns))
+        v1 = np.zeros((n, nt, ns))
         if n == 0:
-            return out0, out1
+            return v0, v1
         in_win = np.array([self.in_window(w) for w in omegas])
         idx_in = np.where(in_win)[0]
         p_rest = p_in.copy()
@@ -143,36 +151,41 @@ class FnoEngine:
                     self.calls["fno"] += int(idx_in.size)
                     res = self._fno_block_batch(key, sub, omegas[idx_in])
                     m = b.n_states
-                    out0[np.ix_(idx_in, np.arange(nt), b.states)] = res[..., :m]
-                    out1[np.ix_(idx_in, np.arange(nt), b.states)] = res[..., m:]
+                    v0[np.ix_(idx_in, np.arange(nt), b.states)] = res[..., :m]
+                    v1[np.ix_(idx_in, np.arange(nt), b.states)] = res[..., m:]
                     p_rest[b.states] = 0.0
                 else:
                     self.calls["exact_sigma_minus" if sigma == "-" else "exact_untrained"] += int(idx_in.size)
             if p_rest.sum() > 0.0:
-                a, c = branches_batch_fallback(self.fallback, p_rest, omegas[idx_in], sigma)
-                out0[idx_in] += a
-                out1[idx_in] += c
-        for k in np.where(~in_win)[0]:
+                exact0, exact1 = branches_batch_fallback(
+                    self.fallback, p_rest, omegas[idx_in], sigma
+                )
+                v0[idx_in] += exact0
+                v1[idx_in] += exact1
+        for row in np.where(~in_win)[0]:
             self.calls["exact_primitive"] += 1
-            out0[k], out1[k] = self.fallback.branches_all_tau(p_in, float(omegas[k]), sigma)
-        self._check_conservation(out0, out1, p_in)
-        return out0, out1
+            v0[row], v1[row] = self.fallback.branches_all_tau(
+                p_in, float(omegas[row]), sigma
+            )
+        self._check_conservation(v0, v1, p_in)
+        return v0, v1
 
     def branches_all_tau(self, p_in: np.ndarray, omega: float, sigma: str) -> tuple[np.ndarray, np.ndarray]:
-        """(P0, P1) of shape (len(tau_indices), n_states) for one drive."""
-        a, c = self.branches_batch(p_in, np.array([float(omega)]), sigma)
-        return a[0], c[0]
+        """Return (v̂_{α,0}, v̂_{α,1}) over τ for one (s_t, ω, σ)."""
+        v0, v1 = self.branches_batch(p_in, np.array([float(omega)]), sigma)
+        return v0[0], v1[0]
 
     def branches(self, p_in: np.ndarray, omega: float, sigma: str, tau_index: int) -> tuple[np.ndarray, np.ndarray]:
-        """One duration: tau_index is an index into molecule.tau_grid."""
+        """Return (v̂_{α,0}, v̂_{α,1}) for α=(ω, τ[tau_index], σ)."""
         rows = np.where(self.tau_indices == int(tau_index))[0]
         if rows.size == 0:
             raise ValueError(f"tau_index {tau_index} is not in this engine's tau_indices")
-        a, c = self.branches_all_tau(p_in, omega, sigma)
-        return a[rows[0]], c[rows[0]]
+        v0, v1 = self.branches_all_tau(p_in, omega, sigma)
+        return v0[rows[0]], v1[rows[0]]
 
-    def _check_conservation(self, out0, out1, p_in) -> None:
-        total = out0.sum(-1) + out1.sum(-1)
+    def _check_conservation(self, v0, v1, p_in) -> None:
+        """Check Σ_k 1ᵀv̂_{α,k}=1ᵀs_t for every evaluated α."""
+        total = v0.sum(-1) + v1.sum(-1)
         if not np.allclose(total, float(p_in.sum()), atol=1e-4):
             raise RuntimeError(
                 f"FnoEngine broke probability conservation: sum(p_out) in "
