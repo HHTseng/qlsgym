@@ -152,12 +152,12 @@ are only +0.48 failure points and +0.36 actions for these policies, so transfer
 is good on their visited distribution.
 
 The selected `sac_t24` configuration uses 16 environments, one gradient update
-per collection step (1/16 update per transition), \(\sqrt p\) observations,
-`lr=1.5048e-4`, \(\gamma=0.995\), \(\tau=0.00305\), batch 512, replay capacity
-100,000, warmup 1,000, a single 128-unit hidden layer, reward divisor \(R=20\),
+per collection step (1/16 update per transition), $\sqrt p$ observations,
+`lr=1.5048e-4`, $\gamma=0.995$, $\tau=0.00305$, batch 512, replay capacity
+100,000, warmup 1,000, a single 128-unit hidden layer, reward divisor $R=20$,
 and automatic temperature tuning toward
-\(0.4997\log|\mathcal A|\). Its initial dimensionless entropy/reward ratio is
-\(\widetilde\alpha=\alpha R=0.2654\).
+$0.4997\log|\mathcal A|$. Its initial dimensionless entropy/reward ratio is
+$\widetilde\alpha=\alpha R=0.2654$.
 
 Across the focused search, PED-ANOVA assigns 42.3% of local variation to target
 entropy, 35.3% to the temperature/reward ratio, 4.7% to learning rate, and 3.8%

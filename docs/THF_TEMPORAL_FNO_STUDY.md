@@ -50,20 +50,20 @@ with a continuous Fourier embedding of `tau/tau_max`, and processed by a small
 bidirectional Transformer encoder:
 
 $$
-H_F=\operatorname{FNO}_{\phi}(C),
+H_F=\mathrm{FNO}_{\phi}(C),
 \qquad
 Z_0=H_F^{\mathsf T}+E_{\tau},
 $$
 
 $$
-Z=Z_0+g\left(\operatorname{Transformer}_{\psi}(Z_0)-Z_0\right),
+Z=Z_0+g\left(\mathrm{Transformer}_{\psi}(Z_0)-Z_0\right),
 \qquad
-g=\operatorname{sigmoid}(g_{\rm raw}),
+g=\mathrm{sigmoid}(g_{\rm raw}),
 $$
 
 $$
 \widehat B_{\alpha}=
-\operatorname{softmax}_{\text{output state}}(WZ+b).
+\mathrm{softmax}_{\text{output state}}(WZ+b).
 $$
 
 The initial gate is `g=0.075`.  The implementation enforces
