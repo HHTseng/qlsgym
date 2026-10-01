@@ -2,6 +2,79 @@
 
 This branch studies **ThF⁺ state purification** using a Fourier neural operator (FNO) transition surrogate and PPO, categorical SAC and Double DQN. It adapts accuracy, timing and finished-episode metrics from [arXiv:2608.03702](https://arxiv.org/pdf/2608.03702), not that paper's molecule or hardware.
 
+## Sequence-aware PPO and SAC — completed 1 October 2026
+
+Branch `FNO_seqRL` adds episode-safe frame-stack, GRU, and causal-Transformer
+encoders to the strongest PPO and SAC configurations from `FNO_RL_optuna`.
+Training used the fixed downloaded `mix` FNO; exact cached dynamics were a
+held-out transfer audit.
+
+At decision time $t$, $s_t\in\Delta^{191}$ is the post-measurement
+population belief, $a_t\in\{0,\ldots,311\}$ the pulse, and
+$k_t\in\{0,1\}$ the measurement branch.  A length-$K$ context is
+
+$$
+H_t=(x_{t-K+1},\ldots,x_t),
+$$
+
+where
+
+$$
+x_i=E_s(\sqrt{s_i})+E_a(a_{i-1})+E_k(k_{i-1})+E_b(b_i)
++E_{\mathrm{phys}}(\alpha_{i-1})+E_{\mathrm{pos}}(i),
+\qquad b_i=\frac{80-i}{80}.
+$$
+
+PPO and SAC retain separate counterfactual histories for the two measurement
+branches and the S18 target
+
+$$
+y_t=\sum_{k=0}^{1}p_{t,k}
+\left[r_{t,k}+\gamma c_{t,k}V(H_{t+1}^{(k)})\right].
+$$
+
+The six-hour-bounded Tara study used GPUs 0 and 2 for 2 h 12 min.  It trained
+44 policies: 15 architecture screens per algorithm followed by matched
+two-seed confirmations.  The screen included $K\in\{1,4,8\}$, frame stacks, GRUs,
+state-history/no-position ablations, and token-LayerNorm ablations.  Lower
+exact unfinished fraction $f_E=P_E(T>80)$ and failure-penalized actions
+$A_E=E_E[\min(T,80)]$ are better.
+
+| Agent | Encoder | $f_E$ | $A_E$ | Failure change from matched MLP | Action change |
+|---|---|---:|---:|---:|---:|
+| PPO | **MLP** | **27.53%** | **42.91** | 0 | 0 |
+| PPO | GRU, $K=8$ | 73.78% | 62.51 | +46.25 pp | +19.60 |
+| PPO | Transformer, $K=8$, state history | 90.50% | 74.91 | +62.98 pp | +32.00 |
+| PPO | Transformer + token LN, $K=8$, state history | 89.35% | 73.07 | +61.82 pp | +30.16 |
+| SAC | **MLP** | **44.38%** | **52.46** | 0 | 0 |
+| SAC | frame stack, $K=4$ | 58.40% | 59.17 | +14.03 pp | +6.71 |
+| SAC | Transformer, $K=8$, state history | 55.85% | 56.99 | +11.48 pp | +4.53 |
+
+Every sequence candidate loses to the matched MLP on both confirmation seeds.
+Full-token SAC Transformers collapse to nearly deterministic policies and fail
+98.8%--100% of screen episodes; token LayerNorm does not repair this.  The
+state-history ablation avoids the immediate entropy collapse but still performs
+worse.  This agrees with the model definition:
+
+$$
+P(s_{t+1},r_t\mid s_{0:t},a_{0:t})
+=P(s_{t+1},r_t\mid s_t,a_t).
+$$
+
+The full posterior is designed to be Markov, so continuity inside a pulse does
+not imply that history across projective measurements contains new control
+information.  Sequence models should be revisited under controlled latent
+drift, finite-shot state estimation, partial observation, or residual memory.
+For the fixed downloaded FNO, retain the MLP.
+
+See the [complete study](docs/THF_SEQUENCE_RL_STUDY.md),
+[machine-readable summary](results/thf_sequence_rl_mix/summary.json), and
+[compact run index](results/thf_sequence_rl_mix/run_index.json).
+
+![Matched sequence encoders versus MLP](results/thf_sequence_rl_mix/sequence_vs_mlp.png)
+
+![Complete architecture screen](results/thf_sequence_rl_mix/sequence_screen.png)
+
 Optimization branch **FNO_RL_optuna** extends native qlsgym branch **FNO_RL_agents**, based on main commit 2a7ee186f09c54b78d5987bcd0a6bb2399749e28. Experiment code and historical FNO results were selectively transferred from [the earlier RL branch](https://github.com/HHTseng/rl_qls_paper_replication/tree/FNO_RL_agents), commit d306d34; unrelated experiments were not merged. The underlying library remains intact.
 
 ## Optuna optimization — completed 19 September 2026
@@ -120,12 +193,12 @@ are only +0.48 failure points and +0.36 actions for these policies, so transfer
 is good on their visited distribution.
 
 The selected `sac_t24` configuration uses 16 environments, one gradient update
-per collection step (1/16 update per transition), \(\sqrt p\) observations,
-`lr=1.5048e-4`, \(\gamma=0.995\), \(\tau=0.00305\), batch 512, replay capacity
-100,000, warmup 1,000, a single 128-unit hidden layer, reward divisor \(R=20\),
+per collection step (1/16 update per transition), $\sqrt{p}$ observations,
+`lr=1.5048e-4`, $\gamma=0.995$, $\tau=0.00305$, batch 512, replay capacity
+100,000, warmup 1,000, a single 128-unit hidden layer, reward divisor $R=20$,
 and automatic temperature tuning toward
-\(0.4997\log|\mathcal A|\). Its initial dimensionless entropy/reward ratio is
-\(\widetilde\alpha=\alpha R=0.2654\).
+$0.4997\log|\mathcal A|$. Its initial dimensionless entropy/reward ratio is
+$\widetilde\alpha=\alpha R=0.2654$.
 
 Across the focused search, PED-ANOVA assigns 42.3% of local variation to target
 entropy, 35.3% to the temperature/reward ratio, 4.7% to learning rate, and 3.8%

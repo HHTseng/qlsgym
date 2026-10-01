@@ -1,0 +1,1001 @@
+{
+  "claim": "Architecture comparison under a fixed downloaded mix FNO; exact cached dynamics are a transfer audit. The full belief is theoretically Markov, so history is beneficial only empirically under approximation or latent-state effects.",
+  "design": {
+    "budgets_by_agent": {
+      "ppo": {
+        "confirm": [
+          300000
+        ],
+        "screen": [
+          100000
+        ]
+      },
+      "sac": {
+        "confirm": [
+          100000
+        ],
+        "screen": [
+          40000
+        ]
+      }
+    },
+    "confirm_eval": [
+      2000
+    ],
+    "confirm_seeds": [
+      31001,
+      31002
+    ],
+    "screen_eval": [
+      500
+    ],
+    "screen_seed": 23001,
+    "selection_dynamics": "downloaded mix FNO",
+    "transfer_audit": "exact cached tables"
+  },
+  "historical_five_seed_reference": {
+    "ppo": {
+      "config": {
+        "clip": 0.1,
+        "ent_coef": 0.0005417800781171913,
+        "epochs": 8,
+        "eval_every": 15,
+        "eval_greedy": false,
+        "eval_rollouts": 256,
+        "gae_lambda": 0.98,
+        "gamma": 1.0,
+        "hidden": 512,
+        "lr": 0.001346363908197788,
+        "max_grad_norm": 1.0,
+        "minibatches": 16,
+        "n_envs": 128,
+        "n_hidden_layers": 1,
+        "n_steps": 32,
+        "obs": "sqrt",
+        "reward_scale": 0.025,
+        "seed": 10071,
+        "total_steps": 250000,
+        "value_target": "qmdp",
+        "vf_coef": 0.5
+      },
+      "config_id": "ppo_t71",
+      "exact": {
+        "average_actions": 51.370439999999995,
+        "average_actions_sd": 3.5288854144049497,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 30.907695039923976,
+        "mean_pulses_successful_sd": 1.9000373789898917,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.58224,
+        "success_fraction_sd": 0.057161245612740115,
+        "unfinished_fraction": 0.41776,
+        "unfinished_fraction_sd": 0.057161245612740115
+      },
+      "fno": {
+        "average_actions": 50.855999999999995,
+        "average_actions_sd": 2.8224416132136376,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 32.27855766348517,
+        "mean_pulses_successful_sd": 2.1275467933606085,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.611,
+        "success_fraction_sd": 0.05519583317606503,
+        "unfinished_fraction": 0.38899999999999996,
+        "unfinished_fraction_sd": 0.05519583317606503
+      },
+      "improvement_vs_locked_baseline": {
+        "exact_average_actions": 16.774639999999998,
+        "exact_failure_percentage_points": 32.111999999999995,
+        "fno_average_actions": 18.283320000000003,
+        "fno_failure_percentage_points": 34.94000000000001
+      },
+      "training_seeds": 5,
+      "trial_number": 71
+    },
+    "sac": {
+      "agent": "sac_discrete",
+      "config": {
+        "alpha": 0.013268918812005082,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 128,
+        "learning_starts": 1000,
+        "lr": 0.00015047792717528454,
+        "n_envs": 16,
+        "obs": "sqrt",
+        "return_scale": 20.0,
+        "seed": null,
+        "target_entropy_ratio": 0.49969706052497553,
+        "tau": 0.003048864797383012,
+        "total_steps": 300000,
+        "train_freq": 1
+      },
+      "config_id": "sac_t24",
+      "exact": {
+        "average_actions": 59.85468000000001,
+        "average_actions_sd": 9.111971511807969,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 32.99366594152049,
+        "mean_pulses_successful_sd": 2.68433088217332,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.42928,
+        "success_fraction_sd": 0.18960425100719655,
+        "unfinished_fraction": 0.57072,
+        "unfinished_fraction_sd": 0.18960425100719655
+      },
+      "fno": {
+        "average_actions": 59.494719999999994,
+        "average_actions_sd": 8.526063627020385,
+        "cvar10_actions": 80.0,
+        "cvar10_actions_sd": 0.0,
+        "mean_pulses_successful": 33.462074712691596,
+        "mean_pulses_successful_sd": 2.757402060113082,
+        "p85_actions": 80.0,
+        "p85_actions_sd": 0.0,
+        "success_fraction": 0.43411999999999995,
+        "success_fraction_sd": 0.16683876048448693,
+        "unfinished_fraction": 0.56588,
+        "unfinished_fraction_sd": 0.16683876048448693
+      },
+      "improvement_vs_locked_baseline": {
+        "exact_average_actions": 6.218759999999996,
+        "exact_failure_percentage_points": 12.336000000000002,
+        "fno_average_actions": 8.532440000000001,
+        "fno_failure_percentage_points": 15.639999999999986
+      },
+      "training_seeds": 5,
+      "trial_number": 24
+    }
+  },
+  "rows": [
+    {
+      "agent": "ppo",
+      "architecture": {
+        "context_len": 8,
+        "d_model": 128,
+        "dropout": 0.0,
+        "encoder": "gru",
+        "ff_dim": 256,
+        "id": "gru_k8",
+        "n_heads": 4,
+        "sequence_layers": 2
+      },
+      "candidate": "gru_k8",
+      "delta_vs_mlp": {
+        "exact_average_actions": 19.59525,
+        "exact_failure_percentage_points": 46.25
+      },
+      "exact": {
+        "average_actions": 62.5075,
+        "average_actions_sd": 2.0371746365984436,
+        "mean_pulses_successful": 12.916432070578326,
+        "mean_pulses_successful_sd": 4.260321099620747,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.73775,
+        "unfinished_fraction_sd": 0.04702260094890542
+      },
+      "fno": {
+        "average_actions": 65.25874999999999,
+        "average_actions_sd": 0.8000913229125803,
+        "mean_pulses_successful": 11.388978311059084,
+        "mean_pulses_successful_sd": 2.706598188378456,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.78475,
+        "unfinished_fraction_sd": 0.020152543263816585
+      },
+      "parameter_count": 206521,
+      "wall_clock_s_mean": 368.2129473686218
+    },
+    {
+      "agent": "ppo",
+      "architecture": {
+        "context_len": 1,
+        "encoder": "mlp",
+        "id": "mlp"
+      },
+      "candidate": "mlp",
+      "delta_vs_mlp": {
+        "exact_average_actions": 0.0,
+        "exact_failure_percentage_points": 0.0
+      },
+      "exact": {
+        "average_actions": 42.91225,
+        "average_actions_sd": 0.28319626586520796,
+        "mean_pulses_successful": 28.810213687501903,
+        "mean_pulses_successful_sd": 1.5144819303470305,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.27525,
+        "unfinished_fraction_sd": 0.015909902576697294
+      },
+      "fno": {
+        "average_actions": 42.89125,
+        "average_actions_sd": 0.5214912511250768,
+        "mean_pulses_successful": 30.190078877348427,
+        "mean_pulses_successful_sd": 1.6685949380034275,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.25475000000000003,
+        "unfinished_fraction_sd": 0.014495689014324197
+      },
+      "parameter_count": 259385,
+      "wall_clock_s_mean": 340.0423434972763
+    },
+    {
+      "agent": "ppo",
+      "architecture": {
+        "context_len": 8,
+        "d_model": 128,
+        "dropout": 0.0,
+        "encoder": "transformer",
+        "ff_dim": 256,
+        "history_action": false,
+        "history_outcome": false,
+        "history_physics": false,
+        "id": "transformer_k8_state_only",
+        "n_heads": 4,
+        "sequence_layers": 2
+      },
+      "candidate": "transformer_k8_state_only",
+      "delta_vs_mlp": {
+        "exact_average_actions": 32.00274999999999,
+        "exact_failure_percentage_points": 62.975
+      },
+      "exact": {
+        "average_actions": 74.91499999999999,
+        "average_actions_sd": 7.016620589714103,
+        "mean_pulses_successful": 32.554367201426025,
+        "mean_pulses_successful_sd": 8.879799061424649,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.905,
+        "unfinished_fraction_sd": 0.13010764773832478
+      },
+      "fno": {
+        "average_actions": 75.419,
+        "average_actions_sd": 6.162435598040764,
+        "mean_pulses_successful": 34.61262886597938,
+        "mean_pulses_successful_sd": 0.9720895801157291,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.9005000000000001,
+        "unfinished_fraction_sd": 0.13364318164425745
+      },
+      "parameter_count": 372409,
+      "wall_clock_s_mean": 397.47276961803436
+    },
+    {
+      "agent": "ppo",
+      "architecture": {
+        "context_len": 8,
+        "d_model": 128,
+        "dropout": 0.0,
+        "encoder": "transformer",
+        "ff_dim": 256,
+        "history_action": false,
+        "history_outcome": false,
+        "history_physics": false,
+        "history_token_norm": true,
+        "id": "transformer_ln_k8_state_only",
+        "n_heads": 4,
+        "sequence_layers": 2
+      },
+      "candidate": "transformer_ln_k8_state_only",
+      "delta_vs_mlp": {
+        "exact_average_actions": 30.158749999999998,
+        "exact_failure_percentage_points": 61.824999999999996
+      },
+      "exact": {
+        "average_actions": 73.071,
+        "average_actions_sd": 6.03586348420837,
+        "mean_pulses_successful": 14.693075684380032,
+        "mean_pulses_successful_sd": 0.5611307918981174,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.8935,
+        "unfinished_fraction_sd": 0.09333809511662428
+      },
+      "fno": {
+        "average_actions": 73.436,
+        "average_actions_sd": 7.143899810327686,
+        "mean_pulses_successful": 11.885293731969577,
+        "mean_pulses_successful_sd": 8.01262509085299,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.89675,
+        "unfinished_fraction_sd": 0.1170261722863736
+      },
+      "parameter_count": 372665,
+      "wall_clock_s_mean": 408.0105947256088
+    },
+    {
+      "agent": "sac",
+      "architecture": {
+        "context_len": 1,
+        "encoder": "mlp",
+        "id": "mlp"
+      },
+      "candidate": "mlp",
+      "delta_vs_mlp": {
+        "exact_average_actions": 0.0,
+        "exact_failure_percentage_points": 0.0
+      },
+      "exact": {
+        "average_actions": 52.46,
+        "average_actions_sd": 1.2183449839844207,
+        "mean_pulses_successful": 30.499988278622794,
+        "mean_pulses_successful_sd": 0.6486310688322429,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.44375,
+        "unfinished_fraction_sd": 0.01732411613907039
+      },
+      "fno": {
+        "average_actions": 52.177499999999995,
+        "average_actions_sd": 0.8075159441150394,
+        "mean_pulses_successful": 30.956951437451437,
+        "mean_pulses_successful_sd": 0.8427828261488999,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.43275,
+        "unfinished_fraction_sd": 0.006717514421272168
+      },
+      "parameter_count": 194857,
+      "wall_clock_s_mean": 651.6724338531494
+    },
+    {
+      "agent": "sac",
+      "architecture": {
+        "context_len": 4,
+        "d_model": 128,
+        "dropout": 0.0,
+        "encoder": "stack",
+        "ff_dim": 256,
+        "id": "stack_k4",
+        "n_heads": 4,
+        "sequence_layers": 2
+      },
+      "candidate": "stack_k4",
+      "delta_vs_mlp": {
+        "exact_average_actions": 6.707000000000001,
+        "exact_failure_percentage_points": 14.02500000000001
+      },
+      "exact": {
+        "average_actions": 59.167,
+        "average_actions_sd": 0.6696301217836624,
+        "mean_pulses_successful": 29.9096485101916,
+        "mean_pulses_successful_sd": 0.5188715348025721,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.5840000000000001,
+        "unfinished_fraction_sd": 0.017677669529663705
+      },
+      "fno": {
+        "average_actions": 64.11975000000001,
+        "average_actions_sd": 0.02934493141924116,
+        "mean_pulses_successful": 36.21426155366373,
+        "mean_pulses_successful_sd": 0.8152931512466984,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.6372500000000001,
+        "unfinished_fraction_sd": 0.007424621202458795
+      },
+      "parameter_count": 517417,
+      "wall_clock_s_mean": 671.3150073289871
+    },
+    {
+      "agent": "sac",
+      "architecture": {
+        "context_len": 8,
+        "d_model": 128,
+        "dropout": 0.0,
+        "encoder": "transformer",
+        "ff_dim": 256,
+        "history_action": false,
+        "history_outcome": false,
+        "history_physics": false,
+        "id": "transformer_k8_state_only",
+        "n_heads": 4,
+        "sequence_layers": 2
+      },
+      "candidate": "transformer_k8_state_only",
+      "delta_vs_mlp": {
+        "exact_average_actions": 4.5319999999999965,
+        "exact_failure_percentage_points": 11.475000000000001
+      },
+      "exact": {
+        "average_actions": 56.992,
+        "average_actions_sd": 0.5006316010800745,
+        "mean_pulses_successful": 27.87987086310257,
+        "mean_pulses_successful_sd": 0.45210382140720184,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.5585,
+        "unfinished_fraction_sd": 0.013435028842544494
+      },
+      "fno": {
+        "average_actions": 59.626000000000005,
+        "average_actions_sd": 2.402041735690701,
+        "mean_pulses_successful": 30.604640290001505,
+        "mean_pulses_successful_sd": 2.9071836047180106,
+        "training_seeds": 2,
+        "unfinished_fraction": 0.5882499999999999,
+        "unfinished_fraction_sd": 0.024395183950935873
+      },
+      "parameter_count": 1116841,
+      "wall_clock_s_mean": 748.2176587581635
+    }
+  ],
+  "screen_rows": [
+    {
+      "agent": "ppo",
+      "candidate": "gru_k4",
+      "exact": {
+        "average_actions": 63.296,
+        "mean_pulses_successful": 22.4,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.71
+      },
+      "fno": {
+        "average_actions": 66.888,
+        "mean_pulses_successful": 24.440677966101696,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.764
+      },
+      "parameter_count": 206009,
+      "selection_score_fno": 0.780722,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "gru_k8",
+      "exact": {
+        "average_actions": 64.128,
+        "mean_pulses_successful": 20.776119402985074,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.732
+      },
+      "fno": {
+        "average_actions": 66.94,
+        "mean_pulses_successful": 31.26865671641791,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.732
+      },
+      "parameter_count": 206521,
+      "selection_score_fno": 0.7487349999999999,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "mlp",
+      "exact": {
+        "average_actions": 50.016,
+        "mean_pulses_successful": 31.638709677419357,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.38
+      },
+      "fno": {
+        "average_actions": 52.254,
+        "mean_pulses_successful": 32.9728813559322,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.41000000000000003
+      },
+      "parameter_count": 259385,
+      "selection_score_fno": 0.42306350000000004,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "stack_k4",
+      "exact": {
+        "average_actions": 66.556,
+        "mean_pulses_successful": 31.28985507246377,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.724
+      },
+      "fno": {
+        "average_actions": 69.466,
+        "mean_pulses_successful": 40.69402985074627,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.732
+      },
+      "parameter_count": 172601,
+      "selection_score_fno": 0.7493664999999999,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "stack_k8",
+      "exact": {
+        "average_actions": 67.598,
+        "mean_pulses_successful": 29.172131147540984,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.756
+      },
+      "fno": {
+        "average_actions": 70.322,
+        "mean_pulses_successful": 38.28448275862069,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.768
+      },
+      "parameter_count": 238649,
+      "selection_score_fno": 0.7855805,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "transformer_k1",
+      "exact": {
+        "average_actions": 66.262,
+        "mean_pulses_successful": 19.212389380530972,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.774
+      },
+      "fno": {
+        "average_actions": 68.266,
+        "mean_pulses_successful": 16.913978494623656,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.8140000000000001
+      },
+      "parameter_count": 371513,
+      "selection_score_fno": 0.8310665,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "transformer_k4",
+      "exact": {
+        "average_actions": 70.498,
+        "mean_pulses_successful": 15.797297297297296,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.852
+      },
+      "fno": {
+        "average_actions": 70.372,
+        "mean_pulses_successful": 18.28205128205128,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.844
+      },
+      "parameter_count": 371897,
+      "selection_score_fno": 0.8615929999999999,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "transformer_k8_no_position",
+      "exact": {
+        "average_actions": 67.982,
+        "mean_pulses_successful": 20.504950495049506,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.798
+      },
+      "fno": {
+        "average_actions": 70.024,
+        "mean_pulses_successful": 20.61904761904762,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.832
+      },
+      "parameter_count": 372409,
+      "selection_score_fno": 0.849506,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "transformer_k8",
+      "exact": {
+        "average_actions": 68.89,
+        "mean_pulses_successful": 15.406976744186046,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.8280000000000001
+      },
+      "fno": {
+        "average_actions": 71.02,
+        "mean_pulses_successful": 26.547619047619047,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.832
+      },
+      "parameter_count": 372409,
+      "selection_score_fno": 0.8497549999999999,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "transformer_k8_state_only",
+      "exact": {
+        "average_actions": 55.69,
+        "mean_pulses_successful": 27.152173913043477,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.54
+      },
+      "fno": {
+        "average_actions": 55.084,
+        "mean_pulses_successful": 29.967871485943775,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.502
+      },
+      "parameter_count": 372409,
+      "selection_score_fno": 0.515771,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "transformer_ln_k1",
+      "exact": {
+        "average_actions": 68.496,
+        "mean_pulses_successful": 23.607843137254903,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.796
+      },
+      "fno": {
+        "average_actions": 68.894,
+        "mean_pulses_successful": 23.90909090909091,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.802
+      },
+      "parameter_count": 371769,
+      "selection_score_fno": 0.8192235000000001,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "transformer_ln_k4",
+      "exact": {
+        "average_actions": 69.804,
+        "mean_pulses_successful": 22.068181818181817,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.8240000000000001
+      },
+      "fno": {
+        "average_actions": 70.804,
+        "mean_pulses_successful": 23.926829268292682,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.836
+      },
+      "parameter_count": 372153,
+      "selection_score_fno": 0.8537009999999999,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "transformer_ln_k8_no_position",
+      "exact": {
+        "average_actions": 67.412,
+        "mean_pulses_successful": 19.48076923076923,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.792
+      },
+      "fno": {
+        "average_actions": 70.91,
+        "mean_pulses_successful": 25.892857142857142,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.832
+      },
+      "parameter_count": 372665,
+      "selection_score_fno": 0.8497275,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "transformer_ln_k8",
+      "exact": {
+        "average_actions": 66.67,
+        "mean_pulses_successful": 21.535087719298247,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.772
+      },
+      "fno": {
+        "average_actions": 68.454,
+        "mean_pulses_successful": 23.401960784313726,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.796
+      },
+      "parameter_count": 372665,
+      "selection_score_fno": 0.8131135,
+      "steps": 100000
+    },
+    {
+      "agent": "ppo",
+      "candidate": "transformer_ln_k8_state_only",
+      "exact": {
+        "average_actions": 65.576,
+        "mean_pulses_successful": 38.3121387283237,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.654
+      },
+      "fno": {
+        "average_actions": 67.144,
+        "mean_pulses_successful": 44.48618784530387,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.638
+      },
+      "parameter_count": 372665,
+      "selection_score_fno": 0.654786,
+      "steps": 100000
+    },
+    {
+      "agent": "sac",
+      "candidate": "gru_k4",
+      "exact": {
+        "average_actions": 60.896,
+        "mean_pulses_successful": 29.726315789473684,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.62
+      },
+      "fno": {
+        "average_actions": 66.16,
+        "mean_pulses_successful": 40.229885057471265,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.652
+      },
+      "parameter_count": 617641,
+      "selection_score_fno": 0.66854,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "gru_k8",
+      "exact": {
+        "average_actions": 60.69,
+        "mean_pulses_successful": 28.643617021276597,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.624
+      },
+      "fno": {
+        "average_actions": 65.908,
+        "mean_pulses_successful": 38.55294117647059,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.6599999999999999
+      },
+      "parameter_count": 619177,
+      "selection_score_fno": 0.6764769999999999,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "mlp",
+      "exact": {
+        "average_actions": 60.32,
+        "mean_pulses_successful": 29.015544041450777,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.614
+      },
+      "fno": {
+        "average_actions": 64.26,
+        "mean_pulses_successful": 38.578947368421055,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.62
+      },
+      "parameter_count": 194857,
+      "selection_score_fno": 0.636065,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "stack_k4",
+      "exact": {
+        "average_actions": 60.458,
+        "mean_pulses_successful": 31.628712871287128,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.596
+      },
+      "fno": {
+        "average_actions": 66.036,
+        "mean_pulses_successful": 41.637362637362635,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.636
+      },
+      "parameter_count": 517417,
+      "selection_score_fno": 0.652509,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "stack_k8",
+      "exact": {
+        "average_actions": 61.64,
+        "mean_pulses_successful": 31.93717277486911,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.618
+      },
+      "fno": {
+        "average_actions": 66.39,
+        "mean_pulses_successful": 41.114285714285714,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.65
+      },
+      "parameter_count": 715561,
+      "selection_score_fno": 0.6665975000000001,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "transformer_k1",
+      "exact": {
+        "average_actions": 79.714,
+        "mean_pulses_successful": 8.5,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.996
+      },
+      "fno": {
+        "average_actions": 79.722,
+        "mean_pulses_successful": 10.5,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.996
+      },
+      "parameter_count": 1114153,
+      "selection_score_fno": 1.0159305,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "transformer_k4",
+      "exact": {
+        "average_actions": 79.734,
+        "mean_pulses_successful": 13.5,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.996
+      },
+      "fno": {
+        "average_actions": 79.722,
+        "mean_pulses_successful": 56.833333333333336,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.988
+      },
+      "parameter_count": 1115305,
+      "selection_score_fno": 1.0079305,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "transformer_k8_no_position",
+      "exact": {
+        "average_actions": 78.95,
+        "mean_pulses_successful": 5.0,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.986
+      },
+      "fno": {
+        "average_actions": 80.0,
+        "mean_pulses_successful": null,
+        "n_rollouts": 500,
+        "unfinished_fraction": 1.0
+      },
+      "parameter_count": 1116841,
+      "selection_score_fno": 1.02,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "transformer_k8",
+      "exact": {
+        "average_actions": 79.832,
+        "mean_pulses_successful": 38.0,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.996
+      },
+      "fno": {
+        "average_actions": 79.938,
+        "mean_pulses_successful": 49.0,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.998
+      },
+      "parameter_count": 1116841,
+      "selection_score_fno": 1.0179845,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "transformer_k8_state_only",
+      "exact": {
+        "average_actions": 60.932,
+        "mean_pulses_successful": 27.033333333333335,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.64
+      },
+      "fno": {
+        "average_actions": 64.89,
+        "mean_pulses_successful": 37.31638418079096,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.646
+      },
+      "parameter_count": 1116841,
+      "selection_score_fno": 0.6622225,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "transformer_ln_k1",
+      "exact": {
+        "average_actions": 79.21,
+        "mean_pulses_successful": 1.0,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.99
+      },
+      "fno": {
+        "average_actions": 79.21,
+        "mean_pulses_successful": 1.0,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.99
+      },
+      "parameter_count": 1114921,
+      "selection_score_fno": 1.0098025,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "transformer_ln_k4",
+      "exact": {
+        "average_actions": 79.724,
+        "mean_pulses_successful": 11.0,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.996
+      },
+      "fno": {
+        "average_actions": 79.72,
+        "mean_pulses_successful": 33.333333333333336,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.994
+      },
+      "parameter_count": 1116073,
+      "selection_score_fno": 1.01393,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "transformer_ln_k8_no_position",
+      "exact": {
+        "average_actions": 80.0,
+        "mean_pulses_successful": null,
+        "n_rollouts": 500,
+        "unfinished_fraction": 1.0
+      },
+      "fno": {
+        "average_actions": 80.0,
+        "mean_pulses_successful": null,
+        "n_rollouts": 500,
+        "unfinished_fraction": 1.0
+      },
+      "parameter_count": 1117609,
+      "selection_score_fno": 1.02,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "transformer_ln_k8",
+      "exact": {
+        "average_actions": 80.0,
+        "mean_pulses_successful": null,
+        "n_rollouts": 500,
+        "unfinished_fraction": 1.0
+      },
+      "fno": {
+        "average_actions": 80.0,
+        "mean_pulses_successful": null,
+        "n_rollouts": 500,
+        "unfinished_fraction": 1.0
+      },
+      "parameter_count": 1117609,
+      "selection_score_fno": 1.02,
+      "steps": 40000
+    },
+    {
+      "agent": "sac",
+      "candidate": "transformer_ln_k8_state_only",
+      "exact": {
+        "average_actions": 60.234,
+        "mean_pulses_successful": 26.865591397849464,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.628
+      },
+      "fno": {
+        "average_actions": 66.672,
+        "mean_pulses_successful": 40.56804733727811,
+        "n_rollouts": 500,
+        "unfinished_fraction": 0.6619999999999999
+      },
+      "parameter_count": 1117609,
+      "selection_score_fno": 0.6786679999999999,
+      "steps": 40000
+    }
+  ],
+  "status": "complete"
+}

@@ -13,3 +13,8 @@ results/**/completed_at.txt
 results/**/promotion_jobs.json
 results/**/final_jobs.json
 *.pt
+
+# Sequence study raw checkpoints, logs, and verbose per-run traces stay on Tara.
+results/thf_sequence_rl_mix/models/
+results/thf_sequence_rl_mix/runs/
+results/thf_sequence_rl_mix/*.log
