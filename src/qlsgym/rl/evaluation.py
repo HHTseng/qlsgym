@@ -60,9 +60,19 @@ def evaluate_policy(environment, policy, episodes, seed, batch_size=128):
                         actions[row] = int(pick) if isinstance(pick, (int, np.integer)) else env.library.encode(pick)
             if not alive.any():
                 break
+            alive_before = alive.copy()
             transition = env.step(actions)
             state = transition.belief
             next_beliefs = state.detach().cpu().numpy()
+            outcomes = transition.outcome.detach().cpu().numpy()
+            if row_policies is not None:
+                for row in np.flatnonzero(alive_before):
+                    if hasattr(row_policies[row], "observe"):
+                        row_policies[row].observe(
+                            next_beliefs[row], int(actions[row]), int(outcomes[row]), t + 1
+                        )
+            elif hasattr(policy, "observe_batch"):
+                policy.observe_batch(next_beliefs, actions, outcomes, t + 1, alive_before)
             live_beliefs = next_beliefs[alive]
             if (not np.isfinite(live_beliefs).all() or (live_beliefs < -1e-10).any()
                     or (np.abs(live_beliefs.sum(1) - 1) > 1e-6).any()):

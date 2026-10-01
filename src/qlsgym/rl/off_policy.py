@@ -21,6 +21,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from .sequence import (SEQUENCE_ENCODERS, RollingHistory, SequenceHead,
+                       action_features, branch_histories)
+
 
 def transform_belief(belief: torch.Tensor, mode: str = "sqrt") -> torch.Tensor:
     """Map simplex beliefs to raw or variance-stabilised network inputs."""
@@ -136,6 +139,72 @@ class BranchReplayBuffer:
         }
 
 
+class SequenceBranchReplayBuffer:
+    """CPU replay with an episode-safe causal history for each S18 tuple."""
+
+    def __init__(self, capacity: int, context_len: int, n_states: int):
+        self.capacity = int(capacity)
+        self.history_state = np.empty(
+            (capacity, context_len, n_states), dtype=np.float32
+        )
+        self.previous_action = np.empty((capacity, context_len), dtype=np.int32)
+        self.previous_outcome = np.empty((capacity, context_len), dtype=np.int8)
+        self.budget = np.empty((capacity, context_len, 1), dtype=np.float32)
+        self.valid = np.empty((capacity, context_len), dtype=bool)
+        self.action = np.empty(capacity, dtype=np.int64)
+        self.next_state = np.empty((capacity, 2, n_states), dtype=np.float32)
+        self.next_budget = np.empty(capacity, dtype=np.float32)
+        self.probability = np.empty((capacity, 2), dtype=np.float32)
+        self.reward = np.empty((capacity, 2), dtype=np.float32)
+        self.continue_mask = np.empty((capacity, 2), dtype=np.float32)
+        self.size = 0
+        self.position = 0
+
+    def add(self, history, action, transition, at_horizon, next_budget) -> None:
+        action_np = action.detach().cpu().numpy().astype(np.int64, copy=False)
+        next_np = torch.stack((transition.s0, transition.s1), dim=1).detach().cpu().numpy()
+        prob_np = torch.stack((transition.pi0, transition.pi1), dim=1).detach().cpu().numpy()
+        reward_np = torch.stack((transition.r0, transition.r1), dim=1).detach().cpu().numpy()
+        done = torch.stack((transition.done0, transition.done1), dim=1)
+        at_horizon = torch.as_tensor(at_horizon, device=done.device, dtype=torch.bool)
+        cont_np = ((~done) & (~at_horizon[:, None])).detach().cpu().numpy()
+        n = len(action_np)
+        indices = (self.position + np.arange(n)) % self.capacity
+        self.history_state[indices] = history["state"].detach().cpu().numpy()
+        self.previous_action[indices] = history["previous_action"].detach().cpu().numpy()
+        self.previous_outcome[indices] = history["previous_outcome"].detach().cpu().numpy()
+        self.budget[indices] = history["budget"].detach().cpu().numpy()
+        self.valid[indices] = history["valid"].detach().cpu().numpy()
+        self.action[indices] = action_np
+        self.next_state[indices] = next_np
+        self.next_budget[indices] = next_budget.detach().cpu().numpy()
+        self.probability[indices] = prob_np
+        self.reward[indices] = reward_np
+        self.continue_mask[indices] = cont_np
+        self.position = int((self.position + n) % self.capacity)
+        self.size = min(self.size + n, self.capacity)
+
+    def sample(self, batch_size: int, rng: np.random.Generator,
+               device: torch.device) -> dict[str, torch.Tensor | dict]:
+        indices = rng.integers(self.size, size=batch_size)
+        tensor = lambda value: torch.as_tensor(value[indices], device=device)
+        return {
+            "history": {
+                "state": tensor(self.history_state),
+                "previous_action": tensor(self.previous_action).to(torch.long),
+                "previous_outcome": tensor(self.previous_outcome).to(torch.long),
+                "budget": tensor(self.budget),
+                "valid": tensor(self.valid),
+            },
+            "action": tensor(self.action),
+            "next_state": tensor(self.next_state),
+            "next_budget": tensor(self.next_budget),
+            "probability": tensor(self.probability),
+            "reward": tensor(self.reward),
+            "continue_mask": tensor(self.continue_mask),
+        }
+
+
 @dataclass
 class AgentStats:
     env_steps: int = 0
@@ -189,6 +258,18 @@ class SACConfig:
     obs: str = "sqrt"
     hidden: int = 256
     depth: int = 2
+    encoder: str = "mlp"
+    context_len: int = 8
+    d_model: int = 128
+    sequence_layers: int = 2
+    n_heads: int = 4
+    ff_dim: int = 256
+    dropout: float = 0.0
+    history_action: bool = True
+    history_outcome: bool = True
+    history_budget: bool = True
+    history_physics: bool = True
+    history_position: bool = True
     seed: int = 0
 
 
@@ -325,13 +406,32 @@ class DDQNAgent(_OffPolicyAgent):
 
 
 class DiscreteSACNetwork(nn.Module):
-    def __init__(self, n_states: int, n_actions: int, hidden: int, depth: int,
-                 alpha: float):
+    def __init__(self, n_states: int, n_actions: int, cfg: SACConfig,
+                 physical_features=None):
         super().__init__()
-        self.actor = build_mlp(n_states, n_actions, hidden, depth, output_gain=0.01)
-        self.q1 = build_mlp(n_states, n_actions, hidden, depth)
-        self.q2 = build_mlp(n_states, n_actions, hidden, depth)
-        self.log_alpha = nn.Parameter(torch.tensor(math.log(alpha), dtype=torch.float32))
+        if cfg.encoder == "mlp":
+            self.actor = build_mlp(
+                n_states, n_actions, cfg.hidden, cfg.depth, output_gain=0.01
+            )
+            self.q1 = build_mlp(n_states, n_actions, cfg.hidden, cfg.depth)
+            self.q2 = build_mlp(n_states, n_actions, cfg.hidden, cfg.depth)
+        else:
+            arguments = (
+                n_states, n_actions, cfg.context_len, cfg.encoder, cfg.d_model,
+                cfg.sequence_layers, cfg.n_heads, cfg.ff_dim, cfg.dropout,
+                cfg.obs, physical_features,
+            )
+            flags = {
+                "use_action": cfg.history_action,
+                "use_outcome": cfg.history_outcome,
+                "use_budget": cfg.history_budget,
+                "use_physics": cfg.history_physics,
+                "use_position": cfg.history_position,
+            }
+            self.actor = SequenceHead(*arguments, output_gain=0.01, **flags)
+            self.q1 = SequenceHead(*arguments, **flags)
+            self.q2 = SequenceHead(*arguments, **flags)
+        self.log_alpha = nn.Parameter(torch.tensor(math.log(cfg.alpha), dtype=torch.float32))
 
 
 class DiscreteSACAgent(_OffPolicyAgent):
@@ -346,10 +446,21 @@ class DiscreteSACAgent(_OffPolicyAgent):
             raise ValueError("return_scale must be positive")
         if cfg.obs not in ("p", "sqrt"):
             raise ValueError("obs must be 'p' or 'sqrt'")
+        if cfg.encoder not in ("mlp", *SEQUENCE_ENCODERS):
+            raise ValueError(f"unknown encoder {cfg.encoder!r}")
+        if cfg.context_len < 1:
+            raise ValueError("context_len must be positive")
         torch.manual_seed(cfg.seed)
         super().__init__(env, cfg.n_envs, cfg.buffer_size, cfg.seed)
+        self.sequence = cfg.encoder != "mlp"
+        features = action_features(self.env.library) if self.sequence else None
+        if self.sequence:
+            del self.buffer
+            self.buffer = SequenceBranchReplayBuffer(
+                cfg.buffer_size, cfg.context_len, self.n_states
+            )
         self.network = DiscreteSACNetwork(
-            self.n_states, self.n_actions, cfg.hidden, cfg.depth, cfg.alpha
+            self.n_states, self.n_actions, cfg, features
         ).to(self.device)
         self.target_q1 = copy.deepcopy(self.network.q1).eval()
         self.target_q2 = copy.deepcopy(self.network.q2).eval()
@@ -359,23 +470,29 @@ class DiscreteSACAgent(_OffPolicyAgent):
         self.alpha_optimizer = torch.optim.Adam([self.network.log_alpha], lr=cfg.lr)
         self.target_entropy = cfg.target_entropy_ratio * math.log(self.n_actions)
 
-    def _act(self, state: torch.Tensor) -> torch.Tensor:
+    def _act(self, state) -> torch.Tensor:
         with torch.no_grad():
-            probability = torch.softmax(
-                self.network.actor(transform_belief(state, self.config.obs)), dim=-1
-            )
+            observation = (state if self.sequence
+                           else transform_belief(state, self.config.obs))
+            probability = torch.softmax(self.network.actor(observation), dim=-1)
             return torch.multinomial(probability, 1, generator=self.generator).squeeze(-1)
 
     def _update(self) -> dict:
         cfg = self.config
         batch = self.buffer.sample(cfg.batch_size, self.rng, self.device)
-        state = transform_belief(batch["state"], cfg.obs)
+        state = (batch["history"] if self.sequence
+                 else transform_belief(batch["state"], cfg.obs))
         action = batch["action"]
         with torch.no_grad():
             shape = batch["next_state"].shape
-            next_state = transform_belief(
-                batch["next_state"].reshape(-1, self.n_states), cfg.obs
-            )
+            if self.sequence:
+                next_state = branch_histories(
+                    batch["history"], batch["next_state"], action, batch["next_budget"]
+                )
+            else:
+                next_state = transform_belief(
+                    batch["next_state"].reshape(-1, self.n_states), cfg.obs
+                )
             next_logits = self.network.actor(next_state).reshape(
                 shape[0], 2, self.n_actions
             )
@@ -440,15 +557,41 @@ class DiscreteSACAgent(_OffPolicyAgent):
     def train(self, log_points: int = 8, on_log=None) -> AgentStats:
         cfg = self.config
         state = self.env.reset(seed=cfg.seed, batch=cfg.n_envs)
+        history = (RollingHistory(
+            state, cfg.context_len, self.n_actions, self.env.cfg.max_pulses
+        ) if self.sequence else None)
         iterations = max(1, math.ceil(cfg.total_steps / cfg.n_envs))
         log_every = max(1, iterations // max(log_points, 1))
         last: dict = {}
         start = time.perf_counter()
         for iteration in range(iterations):
             before = state.clone()
-            action = self._act(before)
+            history_before = history.snapshot() if self.sequence else None
+            action = self._act(history.view() if self.sequence else before)
             transition = self.env.step(action)
-            self._record_transition(before, action, transition)
+            if self.sequence:
+                at_horizon = self.env.steps >= self.env.cfg.max_pulses
+                next_budget = (
+                    1.0 - self.env.steps.to(torch.float32) / self.env.cfg.max_pulses
+                ).clamp(0.0, 1.0)
+                self.buffer.add(
+                    history_before, action, transition, at_horizon, next_budget
+                )
+                history.append(
+                    transition.belief, action, transition.outcome, self.env.steps
+                )
+                ended = transition.done | transition.truncated
+                n_ended = int(ended.sum())
+                if n_ended:
+                    self.stats.episode_lengths.extend(
+                        int(x) for x in self.env.steps[ended].detach().cpu().tolist()
+                    )
+                    self.stats.episodes += n_ended
+                    self.stats.successes += int(transition.done.sum())
+                    self.env.reset_rows(ended)
+                    history.reset_rows(ended, self.env.state)
+            else:
+                self._record_transition(before, action, transition)
             state = self.env.state
             self.stats.env_steps += cfg.n_envs
             if (self.stats.env_steps >= cfg.learning_starts
@@ -495,11 +638,74 @@ class TorchPolicy:
         return int(self.act_batch(np.asarray(belief)[None], t, rng)[0])
 
 
+class SequenceTorchPolicy:
+    """Batched adapter with one causal history per environment row."""
+
+    stateful = False
+    batched_stateful = True
+
+    def __init__(self, network: nn.Module, device: torch.device | str,
+                 config: SACConfig, max_pulses: int, stochastic: bool):
+        self.network = network.eval()
+        self.device = torch.device(device)
+        self.config = config
+        self.max_pulses = int(max_pulses)
+        self.stochastic = bool(stochastic)
+        self.history = None
+
+    def reset(self):
+        self.history = None
+
+    def act_batch(self, beliefs, t, rng):
+        beliefs = np.asarray(beliefs)
+        if beliefs.ndim == 1:
+            beliefs = beliefs[None]
+        if self.history is None:
+            state = torch.as_tensor(beliefs, device=self.device)
+            self.history = RollingHistory(
+                state, self.config.context_len,
+                self.network.head.out_features, self.max_pulses,
+            )
+        with torch.no_grad():
+            logits = self.network(self.history.view()).detach().cpu().numpy()
+        if not self.stochastic:
+            return logits.argmax(axis=1).astype(np.int64)
+        probability = np.exp(logits - logits.max(axis=1, keepdims=True))
+        probability /= probability.sum(axis=1, keepdims=True)
+        uniforms = rng.random(len(probability))
+        action = (probability.cumsum(axis=1) < uniforms[:, None]).sum(axis=1)
+        return np.minimum(action, probability.shape[1] - 1).astype(np.int64)
+
+    def act(self, belief, t, rng):
+        return int(self.act_batch(np.asarray(belief)[None], t, rng)[0])
+
+    def observe(self, belief, action: int, outcome: int, t: int):
+        self.observe_batch(
+            np.asarray(belief)[None], np.asarray([action]),
+            np.asarray([outcome]), t, np.asarray([True]),
+        )
+
+    def observe_batch(self, beliefs, actions, outcomes, t: int, alive=None):
+        if self.history is None:
+            raise RuntimeError("act must be called before observe")
+        self.history.append(
+            torch.as_tensor(np.asarray(beliefs), device=self.device),
+            torch.as_tensor(np.asarray(actions), device=self.device),
+            torch.as_tensor(np.asarray(outcomes), device=self.device),
+            torch.full((len(np.asarray(actions)),), t, device=self.device),
+        )
+
+
 def ddqn_policy(agent: DDQNAgent) -> TorchPolicy:
     return TorchPolicy(agent.online, agent.device, stochastic=False, seed=agent.config.seed)
 
 
 def sac_policy(agent: DiscreteSACAgent, stochastic: bool = True) -> TorchPolicy:
+    if agent.sequence:
+        return SequenceTorchPolicy(
+            agent.network.actor, agent.device, agent.config,
+            agent.env.cfg.max_pulses, stochastic,
+        )
     return TorchPolicy(
         agent.network.actor, agent.device, stochastic=stochastic,
         seed=agent.config.seed, obs=agent.config.obs,

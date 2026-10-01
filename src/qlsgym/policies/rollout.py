@@ -132,6 +132,8 @@ def _rollout_engine(engine: TauBatchedEngine, policy, library: ActionLibrary, n_
             else:
                 p = p0 / m0
                 out = 0
+            if hasattr(policy, "observe"):
+                policy.observe(p, int(library.encode(act)), out, k + 1)
             if record:
                 steps.append((act, out))
             k += 1
@@ -213,6 +215,12 @@ def _rollout_env(env: PurificationEnv, policy, n_rollouts, seed, max_pulses, p_t
             state = tr.belief
             done = tr.done.cpu().numpy()
             out = tr.outcome.cpu().numpy()
+            beliefs_next = state.detach().cpu().numpy()
+            if hasattr(policy, "observe_batch"):
+                policy.observe_batch(beliefs_next, acts, out, t + 1, alive.copy())
+            elif hasattr(policy, "observe"):
+                for b in np.where(alive)[0]:
+                    policy.observe(beliefs_next[b], int(acts[b]), int(out[b]), t + 1)
             just = done & alive
             length[just] = t + 1
             if just.any():

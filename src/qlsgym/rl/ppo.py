@@ -12,6 +12,8 @@ import numpy as np
 
 from ..env.env import PurificationEnv, Transition
 from ..policies.rollout import RolloutResult, rollout
+from .sequence import (SEQUENCE_ENCODERS, HistoryEncoder, RollingHistory,
+                       action_features, branch_histories)
 
 # seed of the in-training snapshot evaluations; the caller's final evaluation
 # must use a different one so the reported number is not the selection number
@@ -39,6 +41,18 @@ class PPOConfig:
     n_hidden_layers: int = 2
     obs: str = "sqrt"               # OBS_TRANSFORMS
     value_target: str = "gae"       # VALUE_TARGETS
+    encoder: str = "mlp"            # mlp, stack, gru, transformer
+    context_len: int = 8
+    d_model: int = 128
+    sequence_layers: int = 2
+    n_heads: int = 4
+    ff_dim: int = 256
+    dropout: float = 0.0
+    history_action: bool = True
+    history_outcome: bool = True
+    history_budget: bool = True
+    history_physics: bool = True
+    history_position: bool = True
     # rewards are multiplied by this before learning; None -> 1 / max_pulses
     reward_scale: float | None = None
     eval_every: int = 25            # updates between snapshot evaluations
@@ -56,6 +70,10 @@ class PPOConfig:
             raise ValueError(f"obs must be one of {OBS_TRANSFORMS}, got {self.obs!r}")
         if self.value_target not in VALUE_TARGETS:
             raise ValueError(f"value_target must be one of {VALUE_TARGETS}, got {self.value_target!r}")
+        if self.encoder not in ("mlp", *SEQUENCE_ENCODERS):
+            raise ValueError(f"unknown encoder {self.encoder!r}")
+        if self.context_len < 1:
+            raise ValueError("context_len must be positive")
         if self.n_envs < 1 or self.n_steps < 1 or self.minibatches < 1 or self.epochs < 1:
             raise ValueError("n_envs, n_steps, minibatches and epochs must be >= 1")
 
@@ -116,6 +134,46 @@ def _build_actor_critic():
 ActorCritic = _build_actor_critic()
 
 
+class SequenceActorCritic(_torch().nn.Module):
+    """Shared causal history encoder with policy and value heads."""
+
+    def __init__(self, n_in: int, n_actions: int, cfg: PPOConfig,
+                 physical_features=None, max_pulses: int = 80):
+        super().__init__()
+        torch = _torch()
+        self.encoder = HistoryEncoder(
+            n_in, n_actions, cfg.context_len, cfg.encoder, cfg.d_model,
+            cfg.sequence_layers, cfg.n_heads, cfg.ff_dim, cfg.dropout, cfg.obs,
+            physical_features, cfg.history_action, cfg.history_outcome,
+            cfg.history_budget, cfg.history_physics,
+            cfg.history_position,
+        )
+        self.pi = torch.nn.Linear(cfg.d_model, n_actions)
+        self.v = torch.nn.Linear(cfg.d_model, 1)
+        torch.nn.init.orthogonal_(self.pi.weight, gain=0.01)
+        torch.nn.init.zeros_(self.pi.bias)
+        torch.nn.init.orthogonal_(self.v.weight, gain=1.0)
+        torch.nn.init.zeros_(self.v.bias)
+        self.n_in = int(n_in)
+        self.n_actions = int(n_actions)
+        self.max_pulses = int(max_pulses)
+
+    def forward(self, history):
+        encoded = self.encoder(history)
+        return self.pi(encoded), self.v(encoded).squeeze(-1)
+
+
+def _network(n_in: int, n_actions: int, cfg: PPOConfig, library=None,
+             max_pulses: int = 80, state_dict: dict | None = None):
+    if cfg.encoder == "mlp":
+        return ActorCritic(n_in, n_actions, cfg.hidden, cfg.n_hidden_layers)
+    features = action_features(library) if library is not None else None
+    if features is None and state_dict is not None:
+        key = "encoder.action_features"
+        features = state_dict[key].detach().cpu() if key in state_dict else None
+    return SequenceActorCritic(n_in, n_actions, cfg, features, max_pulses)
+
+
 class ActorPolicy:
     """A trained ActorCritic as a Policy."""
 
@@ -159,25 +217,94 @@ class ActorPolicy:
         return f"ActorPolicy(n_actions={self.n_actions}, obs={self.obs!r}, greedy={self.greedy})"
 
 
+class SequenceActorPolicy:
+    """Batched policy adapter with one causal history per environment row."""
+
+    stateful = False
+    batched_stateful = True
+
+    def __init__(self, net, cfg: PPOConfig, device: str = "cpu", greedy: bool = True):
+        torch = _torch()
+        self.net = net.to(device).eval()
+        self.config = cfg
+        self.device = torch.device(device)
+        self.greedy = bool(greedy)
+        self.n_actions = int(net.n_actions)
+        self.history = None
+
+    def reset(self):
+        self.history = None
+
+    def act_batch(self, beliefs, t, rng):
+        torch = _torch()
+        beliefs = np.asarray(beliefs)
+        if beliefs.ndim == 1:
+            beliefs = beliefs[None]
+        if self.history is None:
+            state = torch.as_tensor(beliefs, device=self.device)
+            self.history = RollingHistory(
+                state, self.config.context_len, self.n_actions, self.net.max_pulses
+            )
+        with torch.no_grad():
+            logits, _ = self.net(self.history.view())
+        logits = logits.detach().cpu().numpy()
+        if self.greedy:
+            return np.argmax(logits, axis=1).astype(np.int64)
+        probability = np.exp(logits - logits.max(axis=1, keepdims=True))
+        probability /= probability.sum(axis=1, keepdims=True)
+        uniforms = rng.random(len(probability))
+        action = (probability.cumsum(axis=1) < uniforms[:, None]).sum(axis=1)
+        return np.minimum(action, probability.shape[1] - 1).astype(np.int64)
+
+    def act(self, belief, t, rng):
+        return int(self.act_batch(np.asarray(belief)[None], t, rng)[0])
+
+    def observe(self, belief, action: int, outcome: int, t: int):
+        self.observe_batch(
+            np.asarray(belief)[None], np.asarray([action]),
+            np.asarray([outcome]), t, np.asarray([True]),
+        )
+
+    def observe_batch(self, beliefs, actions, outcomes, t: int, alive=None):
+        torch = _torch()
+        if self.history is None:
+            raise RuntimeError("act must be called before observe")
+        self.history.append(
+            torch.as_tensor(np.asarray(beliefs), device=self.device),
+            torch.as_tensor(np.asarray(actions), device=self.device),
+            torch.as_tensor(np.asarray(outcomes), device=self.device),
+            torch.full((len(np.asarray(actions)),), t, device=self.device),
+        )
+
+    def __repr__(self) -> str:
+        return (f"SequenceActorPolicy(encoder={self.config.encoder!r}, "
+                f"context_len={self.config.context_len}, greedy={self.greedy})")
+
+
 def save_policy(net, cfg: PPOConfig, path: str, meta: dict | None = None) -> str:
     torch = _torch()
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     torch.save({"state_dict": {k: v.detach().cpu() for k, v in net.state_dict().items()},
                 "n_in": net.n_in, "n_actions": net.n_actions, "ppo_config": cfg.as_dict(),
+                "max_pulses": getattr(net, "max_pulses", None),
                 "meta": meta or {}}, path)
     return path
 
 
-def load_policy(path: str, device: str = "cpu", greedy: bool = True) -> ActorPolicy:
+def load_policy(path: str, device: str = "cpu", greedy: bool = True):
     """The saved actor as an ActorPolicy; .meta carries what save_policy was given (library tag,
     fingerprint, ...).
     """
     torch = _torch()
     ck = torch.load(path, map_location="cpu", weights_only=False)
     cfg = PPOConfig(**ck["ppo_config"])
-    net = ActorCritic(ck["n_in"], ck["n_actions"], cfg.hidden, cfg.n_hidden_layers)
+    net = _network(
+        ck["n_in"], ck["n_actions"], cfg,
+        max_pulses=ck.get("max_pulses") or 80, state_dict=ck["state_dict"],
+    )
     net.load_state_dict(ck["state_dict"])
-    pol = ActorPolicy(net, cfg.obs, device, greedy)
+    pol = (ActorPolicy(net, cfg.obs, device, greedy) if cfg.encoder == "mlp"
+           else SequenceActorPolicy(net, cfg, device, greedy))
     pol.meta = ck.get("meta", {})
     pol.config = cfg
     return pol
@@ -209,7 +336,9 @@ class TrainResult:
 def _evaluate(net, cfg: PPOConfig, env_eval: PurificationEnv, device) -> RolloutResult:
     # a private view: the rollout resizes and reseeds the env it is given, and
     # env_eval may be the training env itself
-    pol = ActorPolicy(net, cfg.obs, device, greedy=cfg.eval_greedy)
+    pol = (ActorPolicy(net, cfg.obs, device, greedy=cfg.eval_greedy)
+           if cfg.encoder == "mlp"
+           else SequenceActorPolicy(net, cfg, device, greedy=cfg.eval_greedy))
     res = rollout(env_eval.clone(cfg.eval_rollouts), pol, n_rollouts=cfg.eval_rollouts, seed=SNAPSHOT_SEED)
     net.train()
     return res
@@ -262,13 +391,26 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
         raise ValueError("env_eval must share the molecule and the action library with env")
     torch.manual_seed(cfg.seed)
     gen = torch.Generator(device=device); gen.manual_seed(cfg.seed + 1)
-    net = ActorCritic(env.n_states, env.n_actions, cfg.hidden, cfg.n_hidden_layers).to(device)
+    net = _network(
+        env.n_states, env.n_actions, cfg, env.library, env.cfg.max_pulses
+    ).to(device)
     opt = torch.optim.Adam(net.parameters(), lr=cfg.lr, eps=1e-5)
     r_scale = (1.0 / env.cfg.max_pulses) if cfg.reward_scale is None else float(cfg.reward_scale)
 
     B, T = cfg.n_envs, cfg.n_steps
     state = env.reset(seed=cfg.seed, batch=B)
-    obs_buf = torch.zeros((T, B, env.n_states), dtype=torch.float32, device=device)
+    sequence = cfg.encoder != "mlp"
+    if sequence:
+        rolling = RollingHistory(state, cfg.context_len, env.n_actions, env.cfg.max_pulses)
+        history_buf = {
+            key: torch.empty((T, *value.shape), dtype=value.dtype, device=device)
+            for key, value in rolling.view().items()
+        }
+        obs_buf = None
+    else:
+        rolling = None
+        history_buf = None
+        obs_buf = torch.zeros((T, B, env.n_states), dtype=torch.float32, device=device)
     act_buf = torch.zeros((T, B), dtype=torch.long, device=device)
     logp_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
     val_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
@@ -285,31 +427,50 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
         net.eval()
         with torch.no_grad():
             for t in range(T):
-                x = transform_obs(state, cfg.obs)
+                x = rolling.view() if sequence else transform_obs(state, cfg.obs)
                 logits, value = net(x)
                 probs = torch.softmax(logits, -1)
                 a = torch.multinomial(probs, 1, generator=gen).squeeze(-1)
                 logp = torch.log_softmax(logits, -1).gather(1, a[:, None]).squeeze(-1)
                 tr: Transition = env.step(a)
                 ended = tr.done | tr.truncated
-                obs_buf[t], act_buf[t], logp_buf[t], val_buf[t] = x, a, logp, value
+                if sequence:
+                    for key, value in x.items():
+                        history_buf[key][t] = value
+                else:
+                    obs_buf[t] = x
+                act_buf[t], logp_buf[t], val_buf[t] = a, logp, value
                 rew_buf[t] = tr.reward.to(torch.float32) * r_scale
                 term_buf[t] = ended.to(torch.float32)
                 if cfg.value_target in ("qmdp", "qmdp_gae"):
-                    _, v0 = net(transform_obs(tr.s0, cfg.obs))
-                    _, v1 = net(transform_obs(tr.s1, cfg.obs))
+                    if sequence:
+                        next_budget = (
+                            1.0 - env.steps.to(torch.float32) / env.cfg.max_pulses
+                        ).clamp(0.0, 1.0)
+                        branches = branch_histories(
+                            x, torch.stack((tr.s0, tr.s1), dim=1), a, next_budget
+                        )
+                        _, branch_value = net(branches)
+                        v0, v1 = branch_value.reshape(B, 2).unbind(1)
+                    else:
+                        _, v0 = net(transform_obs(tr.s0, cfg.obs))
+                        _, v1 = net(transform_obs(tr.s1, cfg.obs))
                     trunc_next = (env.steps >= env.cfg.max_pulses).to(torch.float32)
                     c0 = (1.0 - tr.done0.to(torch.float32)) * (1.0 - trunc_next)
                     c1 = (1.0 - tr.done1.to(torch.float32)) * (1.0 - trunc_next)
                     q_buf[t] = (tr.pi0.to(torch.float32) * (tr.r0.to(torch.float32) * r_scale + cfg.gamma * c0 * v0)
                                 + tr.pi1.to(torch.float32) * (tr.r1.to(torch.float32) * r_scale + cfg.gamma * c1 * v1))
+                if sequence:
+                    rolling.append(tr.belief, a, tr.outcome, env.steps)
                 # episode bookkeeping, then reset the finished rows
                 n_end = int(ended.sum())
                 if n_end:
                     ep_len_sum += float(env.steps[ended].sum()); ep_n += n_end; ep_succ += int(tr.done.sum())
                     env.reset_rows(ended)
+                    if sequence:
+                        rolling.reset_rows(ended, env.state)
                 state = env.state
-            _, last_value = net(transform_obs(state, cfg.obs))
+            _, last_value = net(rolling.view() if sequence else transform_obs(state, cfg.obs))
         env_steps += B * T
         net.train()
 
@@ -320,7 +481,9 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
         # PPO update
         n = B * T
         flat = lambda z: z.reshape(n, *z.shape[2:])
-        f_obs, f_act, f_logp, f_adv, f_ret = flat(obs_buf), flat(act_buf), flat(logp_buf), flat(adv), flat(ret)
+        f_obs = ({key: flat(value) for key, value in history_buf.items()}
+                 if sequence else flat(obs_buf))
+        f_act, f_logp, f_adv, f_ret = flat(act_buf), flat(logp_buf), flat(adv), flat(ret)
         f_adv = (f_adv - f_adv.mean()) / (f_adv.std() + 1e-8)
         mb = max(1, n // cfg.minibatches)
         stats = {"loss_pi": 0.0, "loss_v": 0.0, "entropy": 0.0, "clip_frac": 0.0, "approx_kl": 0.0}
@@ -329,7 +492,9 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
             perm = torch.randperm(n, generator=gen, device=device)
             for lo in range(0, n, mb):
                 idx = perm[lo:lo + mb]
-                logits, value = net(f_obs[idx])
+                batch_obs = ({key: value[idx] for key, value in f_obs.items()}
+                             if sequence else f_obs[idx])
+                logits, value = net(batch_obs)
                 logp_all = torch.log_softmax(logits, -1)
                 logp = logp_all.gather(1, f_act[idx][:, None]).squeeze(-1)
                 ratio = torch.exp(logp - f_logp[idx])
@@ -380,7 +545,9 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
 
 
 def policy_from_state_dict(sd: dict, n_in: int, n_actions: int, cfg: PPOConfig, device="cpu",
-                           greedy: bool = True) -> ActorPolicy:
-    net = ActorCritic(n_in, n_actions, cfg.hidden, cfg.n_hidden_layers)
+                           greedy: bool = True, max_pulses: int = 80):
+    net = _network(n_in, n_actions, cfg, max_pulses=max_pulses, state_dict=sd)
     net.load_state_dict(sd)
-    return ActorPolicy(net, cfg.obs, device, greedy)
+    if cfg.encoder == "mlp":
+        return ActorPolicy(net, cfg.obs, device, greedy)
+    return SequenceActorPolicy(net, cfg, device, greedy)
