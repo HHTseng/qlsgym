@@ -1,0 +1,1307 @@
+{
+  "status": "complete",
+  "branch": "seqFNO_RL",
+  "base_branch": "FNO_RL_optuna",
+  "gpu_indices": [
+    0,
+    2
+  ],
+  "pilot_pairs": [
+    "0,+",
+    "0,-",
+    "1,+",
+    "1,-",
+    "9,+",
+    "11,+"
+  ],
+  "models_trained": 48,
+  "estimated_training_gpu_hours": 1.9699977431032392,
+  "training": [
+    {
+      "label": "column_retrained",
+      "tag": "seqfno_column_pilot",
+      "models": 6,
+      "architecture": [
+        "transfer_columns_v1"
+      ],
+      "parameters_median": 857714,
+      "best_validation_loss_median": 0.7265235210458437,
+      "best_validation_infidelity_median": 0.002778412815435634,
+      "epoch_seconds_median": 1.4729560613632202,
+      "epochs": [
+        80
+      ],
+      "estimated_gpu_hours": 0.19410621325174968,
+      "attention_gate_median": null,
+      "attention_gate_range": null
+    },
+    {
+      "label": "temporal_1layer",
+      "tag": "seqfno_temporal1_pilot",
+      "models": 6,
+      "architecture": [
+        "temporal_column_fno_v1"
+      ],
+      "parameters_median": 815219,
+      "best_validation_loss_median": 0.7725237576911848,
+      "best_validation_infidelity_median": 0.003569727690774016,
+      "epoch_seconds_median": 1.635039746761322,
+      "epochs": [
+        80
+      ],
+      "estimated_gpu_hours": 0.2172664006551107,
+      "attention_gate_median": 0.0805363766849041,
+      "attention_gate_range": [
+        0.07504002749919891,
+        0.08107777684926987
+      ]
+    },
+    {
+      "label": "temporal_2layer",
+      "tag": "seqfno_temporal2_pilot",
+      "models": 6,
+      "architecture": [
+        "temporal_column_fno_v1"
+      ],
+      "parameters_median": 947699,
+      "best_validation_loss_median": 0.7223523271580538,
+      "best_validation_infidelity_median": 0.002771704798457601,
+      "epoch_seconds_median": 1.7028470635414124,
+      "epochs": [
+        80
+      ],
+      "estimated_gpu_hours": 0.22623143990834554,
+      "attention_gate_median": 0.07837668061256409,
+      "attention_gate_range": [
+        0.0749630331993103,
+        0.07900664210319519
+      ]
+    },
+    {
+      "label": "temporal_2layer_d1",
+      "tag": "seqfno_temporal2_d1_pilot",
+      "models": 6,
+      "architecture": [
+        "temporal_column_fno_v1"
+      ],
+      "parameters_median": 947699,
+      "best_validation_loss_median": 0.7195178748418887,
+      "best_validation_infidelity_median": 0.0027998011743572233,
+      "epoch_seconds_median": 1.6985313296318054,
+      "epochs": [
+        80
+      ],
+      "estimated_gpu_hours": 0.2260791858037313,
+      "attention_gate_median": 0.07844473049044609,
+      "attention_gate_range": [
+        0.07496307790279388,
+        0.07995079457759857
+      ]
+    },
+    {
+      "label": "temporal_2layer_d1spec",
+      "tag": "seqfno_temporal2_d1spec_pilot",
+      "models": 6,
+      "architecture": [
+        "temporal_column_fno_v1"
+      ],
+      "parameters_median": 947699,
+      "best_validation_loss_median": 0.7252180787424246,
+      "best_validation_infidelity_median": 0.002798081967436398,
+      "epoch_seconds_median": 1.737352967262268,
+      "epochs": [
+        80
+      ],
+      "estimated_gpu_hours": 0.23323273658752441,
+      "attention_gate_median": 0.07835927978157997,
+      "attention_gate_range": [
+        0.07496301829814911,
+        0.07955648750066757
+      ]
+    },
+    {
+      "label": "shuffled_time",
+      "tag": "seqfno_shuffled_pilot",
+      "models": 6,
+      "architecture": [
+        "temporal_column_fno_v1"
+      ],
+      "parameters_median": 815219,
+      "best_validation_loss_median": 0.7526398270080487,
+      "best_validation_infidelity_median": 0.0034162197165035955,
+      "epoch_seconds_median": 1.5768198370933533,
+      "epochs": [
+        80
+      ],
+      "estimated_gpu_hours": 0.2075162967046102,
+      "attention_gate_median": 0.0790250115096569,
+      "attention_gate_range": [
+        0.07586118578910828,
+        0.08040905743837357
+      ]
+    },
+    {
+      "label": "pure_transformer",
+      "tag": "seqfno_transformer_pilot",
+      "models": 6,
+      "architecture": [
+        "temporal_transformer_columns_v1"
+      ],
+      "parameters_median": 463305,
+      "best_validation_loss_median": 1.1264689589540164,
+      "best_validation_infidelity_median": 0.01067819785384927,
+      "epoch_seconds_median": 1.1695175170898438,
+      "epochs": [
+        80
+      ],
+      "estimated_gpu_hours": 0.15889548195732964,
+      "attention_gate_median": 0.08275279775261879,
+      "attention_gate_range": [
+        0.07729561626911163,
+        0.08366411924362183
+      ]
+    },
+    {
+      "label": "temporal_2layer_long",
+      "tag": "seqfno_temporal2_long_pilot",
+      "models": 6,
+      "architecture": [
+        "temporal_column_fno_v1"
+      ],
+      "parameters_median": 1191809,
+      "best_validation_loss_median": 0.5900733799984058,
+      "best_validation_infidelity_median": 0.0009680033999757143,
+      "epoch_seconds_median": 2.961847960948944,
+      "epochs": [
+        100
+      ],
+      "estimated_gpu_hours": 0.5066699882348379,
+      "attention_gate_median": 0.07746874541044235,
+      "attention_gate_range": [
+        0.07466182857751846,
+        0.07865022867918015
+      ]
+    }
+  ],
+  "initial_comparison": {
+    "status": "complete",
+    "pilot_pairs": [
+      "0,+",
+      "0,-",
+      "1,+",
+      "1,-",
+      "9,+",
+      "11,+"
+    ],
+    "studies": [
+      {
+        "name": "downloaded_mix",
+        "audit": "/home/htseng/qlsgym_FNO_RL_optuna/results/thf_mix_structural_audit",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.11096527327353309,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "-",
+            "passes": false
+          },
+          "input_linearity_tv_p95": {
+            "value": 0.07655998844922184,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": false
+          },
+          "off_joint_tv_p95": {
+            "value": 0.06716082718555312,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": false
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.016593138202121428,
+            "threshold": 0.005,
+            "block": 1,
+            "sigma": "-",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.12558418293471046,
+            "threshold": 0.05,
+            "block": 1,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.21490523206757925,
+            "threshold": 0.1,
+            "block": 1,
+            "sigma": "-",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.048384505844720885,
+            "threshold": 0.005,
+            "block": 9,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": null,
+        "median_spectral_relative": null
+      },
+      {
+        "name": "column_v2",
+        "audit": "/home/htseng/qlsgym_FNO_RL_optuna/results/thf_column_fno_v2_full_audit",
+        "pairs": 6,
+        "pairs_passing_all": 2,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.442193898565522e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 0.0009448857899902835,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.0725426282591216,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.27775450822883463,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6890241217089825,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.10705425653406646,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": null,
+        "median_spectral_relative": null
+      },
+      {
+        "name": "column_retrained",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_pilot/seqfno_column_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.591592548989466e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 2.3520143033724857e-05,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.10061807206363348,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.45036792806532233,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6844203140402482,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.11683607466272408,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.0031896609689207817,
+        "median_spectral_relative": 0.000524184259954327
+      },
+      {
+        "name": "temporal_1layer",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_pilot/seqfno_temporal1_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.615543059805087e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 2.3520143033680025e-05,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.09590308436570348,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.4107193293207333,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6816658418750441,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.11690999815191278,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.0035399269139931282,
+        "median_spectral_relative": 0.0009642752066080243
+      },
+      {
+        "name": "temporal_2layer",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_pilot/seqfno_temporal2_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.633312227363615e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 2.3520143033603264e-05,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.09564279938389651,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.4134431448398277,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6841126063114987,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.11681204952873776,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.0034244455851019286,
+        "median_spectral_relative": 0.0007258599173872587
+      }
+    ],
+    "candidate_names": [
+      "temporal_1layer",
+      "temporal_2layer"
+    ],
+    "promotion_rule": "all six hard-pilot pairs pass every preregistered column_v2 gate",
+    "promoted": false,
+    "selected_candidate": null
+  },
+  "ablation_comparison": {
+    "status": "complete",
+    "pilot_pairs": [
+      "0,+",
+      "0,-",
+      "1,+",
+      "1,-",
+      "9,+",
+      "11,+"
+    ],
+    "studies": [
+      {
+        "name": "column_retrained",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_pilot/seqfno_column_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.591592548989466e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 2.3520143033724857e-05,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.10061807206363348,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.45036792806532233,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6844203140402482,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.11683607466272408,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.0031896609689207817,
+        "median_spectral_relative": 0.000524184259954327
+      },
+      {
+        "name": "temporal_1layer",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_pilot/seqfno_temporal1_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.615543059805087e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 2.3520143033680025e-05,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.09590308436570348,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.4107193293207333,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6816658418750441,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.11690999815191278,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.0035399269139931282,
+        "median_spectral_relative": 0.0009642752066080243
+      },
+      {
+        "name": "temporal_2layer",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_pilot/seqfno_temporal2_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.633312227363615e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 2.3520143033603264e-05,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.09564279938389651,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.4134431448398277,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6841126063114987,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.11681204952873776,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.0034244455851019286,
+        "median_spectral_relative": 0.0007258599173872587
+      },
+      {
+        "name": "temporal_2layer_d1",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_refinement/seqfno_temporal2_d1_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.563900954072e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 2.3520143033603264e-05,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.09566362570419885,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.4129866563595923,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6841395262652926,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.1168379227499538,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.003227590712048383,
+        "median_spectral_relative": 0.0005296862537444532
+      },
+      {
+        "name": "temporal_2layer_d1spec",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_refinement/seqfno_temporal2_d1spec_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.652788243997626e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 2.3520143033848365e-05,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.09565179000230775,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.41298835014996926,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6841479559000294,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.1168379227499538,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.003386166245811904,
+        "median_spectral_relative": 0.000656941586422666
+      },
+      {
+        "name": "shuffled_time",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_refinement/seqfno_shuffled_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.621874056195288e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 2.3520143033680025e-05,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.04000401011885962,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.10507384386489942,
+            "threshold": 0.05,
+            "block": 0,
+            "sigma": "-",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.1220368959740007,
+            "threshold": 0.1,
+            "block": 0,
+            "sigma": "-",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.030728146368508593,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.004893310359897756,
+        "median_spectral_relative": 0.0010847334622299605
+      },
+      {
+        "name": "pure_transformer",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_refinement/seqfno_transformer_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.612889112460582e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 2.352014303345613e-05,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.047802459340047246,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.20998607589673696,
+            "threshold": 0.05,
+            "block": 0,
+            "sigma": "-",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.23181393450470872,
+            "threshold": 0.1,
+            "block": 1,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.028055832502492523,
+            "threshold": 0.005,
+            "block": 9,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.008972599262666917,
+        "median_spectral_relative": 0.007112296099957826
+      }
+    ],
+    "candidate_names": [
+      "temporal_1layer",
+      "temporal_2layer",
+      "temporal_2layer_d1",
+      "temporal_2layer_d1spec"
+    ],
+    "promotion_rule": "all six hard-pilot pairs pass every preregistered column_v2 gate",
+    "promoted": false,
+    "selected_candidate": null
+  },
+  "matched_budget_comparison": {
+    "status": "complete",
+    "pilot_pairs": [
+      "0,+",
+      "0,-",
+      "1,+",
+      "1,-",
+      "9,+",
+      "11,+"
+    ],
+    "studies": [
+      {
+        "name": "downloaded_mix",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_baseline_audit/downloaded_mix",
+        "pairs": 6,
+        "pairs_passing_all": 0,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.11096527327353309,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "-",
+            "passes": false
+          },
+          "input_linearity_tv_p95": {
+            "value": 0.07655998844922184,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": false
+          },
+          "off_joint_tv_p95": {
+            "value": 0.06716082718555354,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": false
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.01659313820099827,
+            "threshold": 0.005,
+            "block": 1,
+            "sigma": "-",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.1255841829348034,
+            "threshold": 0.05,
+            "block": 1,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.2149052320681283,
+            "threshold": 0.1,
+            "block": 1,
+            "sigma": "-",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.048384505844720885,
+            "threshold": 0.005,
+            "block": 9,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.002066559017370292,
+        "median_spectral_relative": 0.00019936590448668288
+      },
+      {
+        "name": "column_v2",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_baseline_audit/column_v2",
+        "pairs": 6,
+        "pairs_passing_all": 2,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.442193898565522e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 0.0009448857899902638,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.0725426282591216,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.27775450822883463,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6890241217089825,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.10705425653406646,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.0023404696665207843,
+        "median_spectral_relative": 0.0002587256773621281
+      },
+      {
+        "name": "temporal_2layer_long",
+        "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_long_pilot/seqfno_temporal2_long_pilot",
+        "pairs": 6,
+        "pairs_passing_all": 4,
+        "all_pass": false,
+        "worst_by_gate": {
+          "tau0_identity_tv_max": {
+            "value": 0.0,
+            "threshold": 0.001,
+            "block": 0,
+            "sigma": "+",
+            "passes": true
+          },
+          "input_linearity_tv_p95": {
+            "value": 8.483550512250587e-17,
+            "threshold": 0.001,
+            "block": 1,
+            "sigma": "-",
+            "passes": true
+          },
+          "off_joint_tv_p95": {
+            "value": 0.0009448857899938681,
+            "threshold": 0.005,
+            "block": 0,
+            "sigma": "-",
+            "passes": true
+          },
+          "branch_mass_abs_error_p95": {
+            "value": 0.07532468158703354,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-2_p95": {
+            "value": 0.32936728533329224,
+            "threshold": 0.05,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "conditional_tv_mass_ge_1e-3_p95": {
+            "value": 0.6811013131141523,
+            "threshold": 0.1,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          },
+          "block_local_termination_error": {
+            "value": 0.10697098890772877,
+            "threshold": 0.005,
+            "block": 11,
+            "sigma": "+",
+            "passes": false
+          }
+        },
+        "median_derivative_l1": 0.0023415729271442317,
+        "median_spectral_relative": 0.00017200677047977844
+      }
+    ],
+    "candidate_names": [
+      "temporal_2layer_long"
+    ],
+    "promotion_rule": "all six hard-pilot pairs pass every preregistered column_v2 gate",
+    "promoted": false,
+    "selected_candidate": null
+  },
+  "pair_comparison": [
+    {
+      "block": 0,
+      "sigma": "+",
+      "column_v2_passes_all": false,
+      "temporal_passes_all": true,
+      "column_v2": {
+        "branch_mass_abs_error_p95": 0.005327720139636106,
+        "conditional_tv_mass_ge_1e-2_p95": 0.04711795756849905,
+        "conditional_tv_mass_ge_1e-3_p95": 0.06547425655678242,
+        "block_local_termination_error": 0.00433215158186999
+      },
+      "temporal": {
+        "branch_mass_abs_error_p95": 0.004532643857507752,
+        "conditional_tv_mass_ge_1e-2_p95": 0.04467405651243242,
+        "conditional_tv_mass_ge_1e-3_p95": 0.06152866409008416,
+        "block_local_termination_error": 0.004406371252697315
+      },
+      "temporal_minus_column_v2": {
+        "branch_mass_abs_error_p95": -0.0007950762821283541,
+        "conditional_tv_mass_ge_1e-2_p95": -0.002443901056066629,
+        "conditional_tv_mass_ge_1e-3_p95": -0.003945592466698261,
+        "block_local_termination_error": 7.421967082732548e-05
+      }
+    },
+    {
+      "block": 0,
+      "sigma": "-",
+      "column_v2_passes_all": false,
+      "temporal_passes_all": true,
+      "column_v2": {
+        "branch_mass_abs_error_p95": 0.005379788136129495,
+        "conditional_tv_mass_ge_1e-2_p95": 0.04332069392720553,
+        "conditional_tv_mass_ge_1e-3_p95": 0.06252694871354682,
+        "block_local_termination_error": 0.005039653396209609
+      },
+      "temporal": {
+        "branch_mass_abs_error_p95": 0.004532584547310718,
+        "conditional_tv_mass_ge_1e-2_p95": 0.03907117263895708,
+        "conditional_tv_mass_ge_1e-3_p95": 0.056324205702147696,
+        "block_local_termination_error": 0.004824118407276259
+      },
+      "temporal_minus_column_v2": {
+        "branch_mass_abs_error_p95": -0.0008472035888187771,
+        "conditional_tv_mass_ge_1e-2_p95": -0.004249521288248445,
+        "conditional_tv_mass_ge_1e-3_p95": -0.006202743011399121,
+        "block_local_termination_error": -0.00021553498893335
+      }
+    },
+    {
+      "block": 1,
+      "sigma": "+",
+      "column_v2_passes_all": true,
+      "temporal_passes_all": true,
+      "column_v2": {
+        "branch_mass_abs_error_p95": 0.004695791224365669,
+        "conditional_tv_mass_ge_1e-2_p95": 0.04097702805669206,
+        "conditional_tv_mass_ge_1e-3_p95": 0.057699339701183155,
+        "block_local_termination_error": 0.003865700760268504
+      },
+      "temporal": {
+        "branch_mass_abs_error_p95": 0.003694469985742329,
+        "conditional_tv_mass_ge_1e-2_p95": 0.037031156970220955,
+        "conditional_tv_mass_ge_1e-3_p95": 0.05319896750219307,
+        "block_local_termination_error": 0.003853502139806286
+      },
+      "temporal_minus_column_v2": {
+        "branch_mass_abs_error_p95": -0.0010013212386233397,
+        "conditional_tv_mass_ge_1e-2_p95": -0.003945871086471105,
+        "conditional_tv_mass_ge_1e-3_p95": -0.004500372198990084,
+        "block_local_termination_error": -1.2198620462218219e-05
+      }
+    },
+    {
+      "block": 1,
+      "sigma": "-",
+      "column_v2_passes_all": true,
+      "temporal_passes_all": true,
+      "column_v2": {
+        "branch_mass_abs_error_p95": 0.004643010603838435,
+        "conditional_tv_mass_ge_1e-2_p95": 0.03770923240470126,
+        "conditional_tv_mass_ge_1e-3_p95": 0.059137017823850925,
+        "block_local_termination_error": 0.004739389454392844
+      },
+      "temporal": {
+        "branch_mass_abs_error_p95": 0.0037799626282295174,
+        "conditional_tv_mass_ge_1e-2_p95": 0.03246963182158005,
+        "conditional_tv_mass_ge_1e-3_p95": 0.05065896943863178,
+        "block_local_termination_error": 0.004813474749330956
+      },
+      "temporal_minus_column_v2": {
+        "branch_mass_abs_error_p95": -0.0008630479756089179,
+        "conditional_tv_mass_ge_1e-2_p95": -0.005239600583121208,
+        "conditional_tv_mass_ge_1e-3_p95": -0.008478048385219143,
+        "block_local_termination_error": 7.40852949381119e-05
+      }
+    },
+    {
+      "block": 9,
+      "sigma": "+",
+      "column_v2_passes_all": false,
+      "temporal_passes_all": false,
+      "column_v2": {
+        "branch_mass_abs_error_p95": 0.0022021497289526058,
+        "conditional_tv_mass_ge_1e-2_p95": 0.006622350231894952,
+        "conditional_tv_mass_ge_1e-3_p95": 0.02460986914534461,
+        "block_local_termination_error": 0.012652362526997302
+      },
+      "temporal": {
+        "branch_mass_abs_error_p95": 0.002226030235152323,
+        "conditional_tv_mass_ge_1e-2_p95": 0.007416758883421403,
+        "conditional_tv_mass_ge_1e-3_p95": 0.026557816079396186,
+        "block_local_termination_error": 0.014778661712089407
+      },
+      "temporal_minus_column_v2": {
+        "branch_mass_abs_error_p95": 2.388050619971712e-05,
+        "conditional_tv_mass_ge_1e-2_p95": 0.0007944086515264508,
+        "conditional_tv_mass_ge_1e-3_p95": 0.0019479469340515747,
+        "block_local_termination_error": 0.0021262991850921047
+      }
+    },
+    {
+      "block": 11,
+      "sigma": "+",
+      "column_v2_passes_all": false,
+      "temporal_passes_all": false,
+      "column_v2": {
+        "branch_mass_abs_error_p95": 0.0725426282591216,
+        "conditional_tv_mass_ge_1e-2_p95": 0.27775450822883463,
+        "conditional_tv_mass_ge_1e-3_p95": 0.6890241217089825,
+        "block_local_termination_error": 0.10705425653406646
+      },
+      "temporal": {
+        "branch_mass_abs_error_p95": 0.07532468158703354,
+        "conditional_tv_mass_ge_1e-2_p95": 0.32936728533329224,
+        "conditional_tv_mass_ge_1e-3_p95": 0.6811013131141523,
+        "block_local_termination_error": 0.10697098890772877
+      },
+      "temporal_minus_column_v2": {
+        "branch_mass_abs_error_p95": 0.0027820533279119403,
+        "conditional_tv_mass_ge_1e-2_p95": 0.05161277710445761,
+        "conditional_tv_mass_ge_1e-3_p95": -0.007922808594830189,
+        "block_local_termination_error": -8.326762633768803e-05
+      }
+    }
+  ],
+  "promotion": {
+    "passed": false,
+    "decision": "stop_before_full_24_pair_and_rl_training",
+    "reason": "The matched-budget temporal model passed 4/6 pilot pairs, but block 9/+ failed the termination gate and block 11/+ failed branch-aware gates."
+  },
+  "rl_reference": {
+    "optimized_ppo_exact_failure": 0.4178,
+    "optimized_ppo_exact_average_actions": 51.37,
+    "refined_sac_exact_failure": 0.5707,
+    "refined_sac_exact_average_actions": 59.85,
+    "physics_elimination_exact_failure": 0.2936,
+    "physics_elimination_exact_average_actions": 51.49,
+    "new_temporal_fno_rl_runs": 0
+  }
+}

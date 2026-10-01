@@ -2,6 +2,38 @@
 
 This branch studies **ThF⁺ state purification** using a Fourier neural operator (FNO) transition surrogate and PPO, categorical SAC and Double DQN. It adapts accuracy, timing and finished-episode metrics from [arXiv:2608.03702](https://arxiv.org/pdf/2608.03702), not that paper's molecule or hardware.
 
+## Temporal FNO result — completed 1 October 2026
+
+Branch `seqFNO_RL` tests attention over the 200-point physical pulse-time grid.
+It keeps the state-to-branch map linear, enforces stochastic transfer columns
+and exact zero-time identity, and trains only against exact transfer columns.
+The sequence variable is intra-pulse time `tau`; it is not RL decision history.
+
+The six-pair hard pilot trained 48 models across the architecture, loss,
+shuffled-time, pure-Transformer, and matched-budget comparisons. It used Tara
+GPUs 0 and 2 for an estimated 1.97 GPU-hours.
+
+| model | pairs passing every gate | worst branch-mass P95 | worst conditional TV P95 | on-resonance spectral error |
+|---|---:|---:|---:|---:|
+| downloaded `mix` | 0/6 | **0.01659** | **0.12558** | 0.000199 |
+| structured `column_v2` | 2/6 | 0.07254 | 0.27775 | 0.000259 |
+| temporal FNO, matched budget | **4/6** | 0.07532 | 0.32937 | **0.000172** |
+
+Attention improves blocks 0 and 1, but block 9/+ still fails the termination
+gate and block 11/+ still fails branch-mass and conditional-posterior gates.
+The six-pair promotion rule therefore failed. Full 24-pair training and new
+PPO/SAC training were stopped; the valid RL comparison remains the optimized
+downloaded-`mix` result below. This prevents a failed surrogate from producing
+an uninterpretable policy score.
+
+See the [complete temporal-FNO protocol and interpretation](docs/THF_TEMPORAL_FNO_STUDY.md),
+the [machine-readable final summary](results/thf_temporal_fno_study/summary.json),
+and the [controlled-ablation summary](results/thf_temporal_fno_refinement/comparison/summary.md).
+
+![Temporal FNO gate comparison](results/thf_temporal_baseline_audit/comparison/pilot_gate_comparison.png)
+
+![Hard-pair temporal error](results/thf_temporal_baseline_audit/comparison/hard_pair_temporal_error.png)
+
 Optimization branch **FNO_RL_optuna** extends native qlsgym branch **FNO_RL_agents**, based on main commit 2a7ee186f09c54b78d5987bcd0a6bb2399749e28. Experiment code and historical FNO results were selectively transferred from [the earlier RL branch](https://github.com/HHTseng/rl_qls_paper_replication/tree/FNO_RL_agents), commit d306d34; unrelated experiments were not merged. The underlying library remains intact.
 
 ## Optuna optimization — completed 19 September 2026

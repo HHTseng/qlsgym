@@ -1,0 +1,199 @@
+{
+  "status": "complete",
+  "pilot_pairs": [
+    "0,+",
+    "0,-",
+    "1,+",
+    "1,-",
+    "9,+",
+    "11,+"
+  ],
+  "studies": [
+    {
+      "name": "downloaded_mix",
+      "audit": "/home/htseng/qlsgym_FNO_RL_optuna/results/thf_mix_structural_audit",
+      "pairs": 6,
+      "pairs_passing_all": 0,
+      "all_pass": false,
+      "worst_by_gate": {
+        "tau0_identity_tv_max": {
+          "value": 0.11096527327353309,
+          "threshold": 0.001,
+          "block": 0,
+          "sigma": "-",
+          "passes": false
+        },
+        "input_linearity_tv_p95": {
+          "value": 0.07655998844922184,
+          "threshold": 0.001,
+          "block": 1,
+          "sigma": "-",
+          "passes": false
+        },
+        "off_joint_tv_p95": {
+          "value": 0.06716082718555312,
+          "threshold": 0.005,
+          "block": 0,
+          "sigma": "-",
+          "passes": false
+        },
+        "branch_mass_abs_error_p95": {
+          "value": 0.016593138202121428,
+          "threshold": 0.005,
+          "block": 1,
+          "sigma": "-",
+          "passes": false
+        },
+        "conditional_tv_mass_ge_1e-2_p95": {
+          "value": 0.12558418293471046,
+          "threshold": 0.05,
+          "block": 1,
+          "sigma": "+",
+          "passes": false
+        },
+        "conditional_tv_mass_ge_1e-3_p95": {
+          "value": 0.21490523206757925,
+          "threshold": 0.1,
+          "block": 1,
+          "sigma": "-",
+          "passes": false
+        },
+        "block_local_termination_error": {
+          "value": 0.048384505844720885,
+          "threshold": 0.005,
+          "block": 9,
+          "sigma": "+",
+          "passes": false
+        }
+      },
+      "median_derivative_l1": null,
+      "median_spectral_relative": null
+    },
+    {
+      "name": "column_v2",
+      "audit": "/home/htseng/qlsgym_FNO_RL_optuna/results/thf_column_fno_v2_full_audit",
+      "pairs": 6,
+      "pairs_passing_all": 2,
+      "all_pass": false,
+      "worst_by_gate": {
+        "tau0_identity_tv_max": {
+          "value": 0.0,
+          "threshold": 0.001,
+          "block": 0,
+          "sigma": "+",
+          "passes": true
+        },
+        "input_linearity_tv_p95": {
+          "value": 8.442193898565522e-17,
+          "threshold": 0.001,
+          "block": 1,
+          "sigma": "-",
+          "passes": true
+        },
+        "off_joint_tv_p95": {
+          "value": 0.0009448857899902835,
+          "threshold": 0.005,
+          "block": 0,
+          "sigma": "-",
+          "passes": true
+        },
+        "branch_mass_abs_error_p95": {
+          "value": 0.0725426282591216,
+          "threshold": 0.005,
+          "block": 11,
+          "sigma": "+",
+          "passes": false
+        },
+        "conditional_tv_mass_ge_1e-2_p95": {
+          "value": 0.27775450822883463,
+          "threshold": 0.05,
+          "block": 11,
+          "sigma": "+",
+          "passes": false
+        },
+        "conditional_tv_mass_ge_1e-3_p95": {
+          "value": 0.6890241217089825,
+          "threshold": 0.1,
+          "block": 11,
+          "sigma": "+",
+          "passes": false
+        },
+        "block_local_termination_error": {
+          "value": 0.10705425653406646,
+          "threshold": 0.005,
+          "block": 11,
+          "sigma": "+",
+          "passes": false
+        }
+      },
+      "median_derivative_l1": null,
+      "median_spectral_relative": null
+    },
+    {
+      "name": "temporal_2layer_long",
+      "audit": "/home/htseng/qlsgym_seqFNO_RL/results/thf_temporal_fno_long_pilot/seqfno_temporal2_long_pilot",
+      "pairs": 6,
+      "pairs_passing_all": 4,
+      "all_pass": false,
+      "worst_by_gate": {
+        "tau0_identity_tv_max": {
+          "value": 0.0,
+          "threshold": 0.001,
+          "block": 0,
+          "sigma": "+",
+          "passes": true
+        },
+        "input_linearity_tv_p95": {
+          "value": 8.483550512250587e-17,
+          "threshold": 0.001,
+          "block": 1,
+          "sigma": "-",
+          "passes": true
+        },
+        "off_joint_tv_p95": {
+          "value": 0.0009448857899938681,
+          "threshold": 0.005,
+          "block": 0,
+          "sigma": "-",
+          "passes": true
+        },
+        "branch_mass_abs_error_p95": {
+          "value": 0.07532468158703354,
+          "threshold": 0.005,
+          "block": 11,
+          "sigma": "+",
+          "passes": false
+        },
+        "conditional_tv_mass_ge_1e-2_p95": {
+          "value": 0.32936728533329224,
+          "threshold": 0.05,
+          "block": 11,
+          "sigma": "+",
+          "passes": false
+        },
+        "conditional_tv_mass_ge_1e-3_p95": {
+          "value": 0.6811013131141523,
+          "threshold": 0.1,
+          "block": 11,
+          "sigma": "+",
+          "passes": false
+        },
+        "block_local_termination_error": {
+          "value": 0.10697098890772877,
+          "threshold": 0.005,
+          "block": 11,
+          "sigma": "+",
+          "passes": false
+        }
+      },
+      "median_derivative_l1": 0.0023415729271442317,
+      "median_spectral_relative": 0.00017200677047977844
+    }
+  ],
+  "candidate_names": [
+    "temporal_2layer_long"
+  ],
+  "promotion_rule": "all six hard-pilot pairs pass every preregistered column_v2 gate",
+  "promoted": false,
+  "selected_candidate": null
+}

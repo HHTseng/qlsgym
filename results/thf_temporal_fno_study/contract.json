@@ -1,0 +1,35 @@
+{
+  "status": "complete",
+  "branch": "seqFNO_RL",
+  "base_branch": "FNO_RL_optuna",
+  "base_commit": "a86b54e",
+  "molecule": "thf",
+  "manifest_fingerprint": "d7deb43457d3",
+  "downloaded_manifest": "$QLSGYM_WORK/checkpoints/thf/mix.json",
+  "downloaded_manifest_entries": 24,
+  "target_source": "exact effective-Hamiltonian transfer columns",
+  "pilot_pairs": [
+    "0,+",
+    "0,-",
+    "1,+",
+    "1,-",
+    "9,+",
+    "11,+"
+  ],
+  "train_seed": 1234,
+  "validation_seed": 20260922,
+  "audit_seed": 20260921,
+  "gpu_indices": [0, 2],
+  "maximum_concurrent_gpu_processes": 2,
+  "models_trained": 48,
+  "estimated_training_gpu_hours": 1.97,
+  "promotion_rule": "all six hard-pilot pairs pass all seven branch-aware structural gates",
+  "promotion_passed": false,
+  "full_24_pair_training_run": false,
+  "new_rl_training_run": false,
+  "test_result": {
+    "passed": 177,
+    "skipped": 17,
+    "deselected": 3
+  }
+}

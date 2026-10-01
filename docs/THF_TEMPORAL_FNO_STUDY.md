@@ -152,3 +152,62 @@ GPU0=0 GPU1=2 bash scripts/run_thf_temporal_fno_refinement.sh
 Both launchers use only GPUs 0 and 2 and run at most one process on each GPU.
 The full launcher `scripts/run_thf_temporal_fno_full.sh` requires an explicitly
 promoted attention depth.
+
+## Result: 1 October 2026
+
+The study trained 48 models and consumed an estimated 1.97 GPU-hours on Tara.
+All repository tests passed: 177 passed, 17 skipped, and three slow tests were
+deselected.  The initial 512-frequency, 80-epoch screen was followed by four
+controlled ablations and a matched-budget 768-frequency, 100-epoch check.
+
+| model | pilot pairs passing all gates | worst branch-mass P95 | worst conditional TV P95, branch mass at least 0.01 | on-resonance derivative error | on-resonance spectral error |
+|---|---:|---:|---:|---:|---:|
+| downloaded `mix` | 0/6 | 0.01659 | 0.12558 | 0.002067 | 0.000199 |
+| `column_v2` | 2/6 | 0.07254 | 0.27775 | 0.002340 | 0.000259 |
+| temporal FNO, matched budget | **4/6** | 0.07532 | 0.32937 | 0.002342 | **0.000172** |
+
+The temporal FNO improves all four block-0 and block-1 pairs enough to pass the
+complete gate set.  The pairwise comparison is:
+
+| pair | `column_v2` passes | temporal passes | branch-mass P95: column / temporal | conditional TV P95: column / temporal | termination error: column / temporal |
+|---|:---:|:---:|---:|---:|---:|
+| `(0,+)` | no | yes | 0.00533 / **0.00453** | 0.04712 / **0.04467** | **0.00433** / 0.00441 |
+| `(0,-)` | no | yes | 0.00538 / **0.00453** | 0.04332 / **0.03907** | 0.00504 / **0.00482** |
+| `(1,+)` | yes | yes | 0.00470 / **0.00369** | 0.04098 / **0.03703** | 0.00387 / **0.00385** |
+| `(1,-)` | yes | yes | 0.00464 / **0.00378** | 0.03771 / **0.03247** | **0.00474** / 0.00481 |
+| `(9,+)` | no | no | **0.00220** / 0.00223 | **0.00662** / 0.00742 | **0.01265** / 0.01478 |
+| `(11,+)` | no | no | **0.07254** / 0.07532 | **0.27775** / 0.32937 | 0.10705 / **0.10697** |
+
+Thus attention helps the easy and moderate blocks but does not repair the two
+failure modes that matter for closed-loop control: block 9 termination decisions
+and block 11/+ branch inference.  The learned attention gate remains small—the
+matched-budget median is 0.0775 from an initialization of 0.075—so the trained
+network uses attention as a correction rather than replacing the spectral
+trajectory.
+
+Derivative loss lowers derivative error but leaves the branch and termination
+gates unchanged.  The spectral term is also neutral.  The pure Transformer has
+substantially worse validation and temporal errors.  A shuffled-time negative
+control improves some fixed-grid branch metrics while worsening temporal
+derivative and spectral errors; therefore that improvement is evidence of
+grid-position memorization, not physical temporal ordering.
+
+![Worst pilot gate divided by its threshold](../results/thf_temporal_baseline_audit/comparison/pilot_gate_comparison.png)
+
+![Block 11/+ transfer-column error versus pulse time](../results/thf_temporal_baseline_audit/comparison/hard_pair_temporal_error.png)
+
+The six-pair promotion rule failed.  Full 24-pair training and new RL training
+were therefore stopped.  This is a scientific gate, not a compute failure.  The
+valid RL references remain the downloaded-`mix` results from `FNO_RL_optuna`:
+
+| controller | exact failure | exact average actions |
+|---|---:|---:|
+| optimized PPO | 41.78% | 51.37 |
+| refined SAC | 57.07% | 59.85 |
+| physics elimination | **29.36%** | 51.49 |
+
+No temporal-FNO RL score is reported because training a controller on a
+surrogate that failed the declared branch-aware gates would not be an interpretable
+comparison.  The next useful model change should target block-conditioned
+branch mass and posterior accuracy directly, rather than add more attention
+layers.
