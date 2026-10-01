@@ -435,8 +435,8 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
                 tr: Transition = env.step(a)
                 ended = tr.done | tr.truncated
                 if sequence:
-                    for key, value in x.items():
-                        history_buf[key][t] = value
+                    for key, tensor in x.items():
+                        history_buf[key][t] = tensor
                 else:
                     obs_buf[t] = x
                 act_buf[t], logp_buf[t], val_buf[t] = a, logp, value
