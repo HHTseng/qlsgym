@@ -296,6 +296,17 @@ def aggregate(records: list[dict], dynamics: str) -> dict:
     return result
 
 
+def compact_metrics(metrics: dict) -> dict:
+    """Keep the policy-level quantities needed for architecture comparison."""
+    return {
+        key: metrics.get(key)
+        for key in (
+            "n_rollouts", "unfinished_fraction", "average_actions",
+            "mean_pulses_successful",
+        )
+    }
+
+
 def summarize(args) -> None:
     output = Path(args.output)
     records = [json.loads(path.read_text()) for path in sorted((output / "runs").glob("*.json"))]
@@ -340,8 +351,8 @@ def summarize(args) -> None:
             screen_rows.append({
                 "agent": record["agent"], "candidate": record["candidate"]["id"],
                 "steps": record["steps"], "parameter_count": record["parameter_count"],
-                "fno": record["evaluation"]["fno"],
-                "exact": record["evaluation"]["exact"],
+                "fno": compact_metrics(record["evaluation"]["fno"]),
+                "exact": compact_metrics(record["evaluation"]["exact"]),
                 "selection_score_fno": record["selection_score_fno"],
             })
     budgets = {}
@@ -384,16 +395,31 @@ def summarize(args) -> None:
 def make_outputs(output: Path, summary: dict) -> None:
     import matplotlib.pyplot as plt
 
-    rows = summary["rows"]
-    labels = [f"{row['agent']}\n{row['candidate']}" for row in rows]
+    rows = sorted(
+        summary["rows"],
+        key=lambda row: (
+            row["agent"], row["candidate"] != "mlp",
+            row["exact"]["unfinished_fraction"],
+        ),
+    )
+    short = {
+        "mlp": "MLP", "gru_k8": "GRU K=8", "stack_k4": "stack K=4",
+        "transformer_k8_state_only": "Transformer K=8\nstate only",
+        "transformer_ln_k8_state_only": "Transformer+LN K=8\nstate only",
+    }
+    labels = [f"{row['agent'].upper()}\n{short.get(row['candidate'], row['candidate'])}"
+              for row in rows]
     x = np.arange(len(rows))
     width = 0.36
     fig, axes = plt.subplots(2, 1, figsize=(max(9, 1.3 * len(rows)), 8), sharex=True)
     axes[0].bar(x - width / 2, [row["fno"]["unfinished_fraction"] for row in rows], width,
-                label="mix FNO")
+                yerr=[row["fno"]["unfinished_fraction_sd"] for row in rows],
+                capsize=3, label="mix FNO")
     axes[0].bar(x + width / 2, [row["exact"]["unfinished_fraction"] for row in rows], width,
-                label="exact")
+                yerr=[row["exact"]["unfinished_fraction_sd"] for row in rows],
+                capsize=3, label="exact")
     axes[0].set_ylabel("unfinished fraction")
+    axes[0].set_title("Two-seed confirmation after fixed-mix-FNO training")
     axes[0].legend()
     axes[1].bar(x - width / 2, [row["fno"]["average_actions"] for row in rows], width)
     axes[1].bar(x + width / 2, [row["exact"]["average_actions"] for row in rows], width)
@@ -403,18 +429,43 @@ def make_outputs(output: Path, summary: dict) -> None:
     fig.savefig(output / "sequence_vs_mlp.png", dpi=180)
     plt.close(fig)
 
+    fig, axes = plt.subplots(1, 2, figsize=(14, 8), sharex=True)
+    for axis, agent in zip(axes, ("ppo", "sac")):
+        screen = sorted(
+            (row for row in summary["screen_rows"] if row["agent"] == agent),
+            key=lambda row: row["fno"]["unfinished_fraction"],
+        )
+        y = np.arange(len(screen))
+        axis.barh(y + 0.18, [row["exact"]["unfinished_fraction"] for row in screen],
+                  0.36, label="exact")
+        axis.barh(y - 0.18, [row["fno"]["unfinished_fraction"] for row in screen],
+                  0.36, label="mix FNO")
+        axis.set_yticks(y, [row["candidate"] for row in screen], fontsize=8)
+        axis.invert_yaxis()
+        axis.set_title(agent.upper())
+        axis.set_xlabel("unfinished fraction")
+        axis.set_xlim(0, 1.02)
+    axes[0].legend()
+    fig.suptitle("Single-seed architecture screen (selection used mix FNO)")
+    fig.tight_layout()
+    fig.savefig(output / "sequence_screen.png", dpi=180)
+    plt.close(fig)
+
     lines = [
         "# ThF+ sequence-aware PPO/SAC study", "",
         "Training dynamics: fixed downloaded `mix` FNO. Candidate selection uses FNO validation; "
         "exact cached dynamics are a held-out transfer audit.", "",
-        "| agent | encoder | exact unfinished | exact actions | FNO unfinished | FNO actions | parameters |",
-        "|---|---|---:|---:|---:|---:|---:|",
+        "| agent | encoder | exact unfinished | exact actions | delta failure vs MLP | delta actions vs MLP | FNO unfinished | parameters |",
+        "|---|---|---:|---:|---:|---:|---:|---:|",
     ]
     for row in rows:
+        delta = row["delta_vs_mlp"]
         lines.append(
             f"| {row['agent']} | {row['candidate']} | "
             f"{row['exact']['unfinished_fraction']:.3f} | {row['exact']['average_actions']:.2f} | "
-            f"{row['fno']['unfinished_fraction']:.3f} | {row['fno']['average_actions']:.2f} | "
+            f"{delta['exact_failure_percentage_points']:+.2f} pp | "
+            f"{delta['exact_average_actions']:+.2f} | "
+            f"{row['fno']['unfinished_fraction']:.3f} | "
             f"{row['parameter_count']:,} |"
         )
     (output / "summary.md").write_text("\n".join(lines) + "\n")
