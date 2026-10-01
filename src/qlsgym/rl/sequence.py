@@ -183,7 +183,7 @@ class HistoryEncoder(nn.Module):
                  physical_features: np.ndarray | torch.Tensor | None = None,
                  use_action: bool = True, use_outcome: bool = True,
                  use_budget: bool = True, use_physics: bool = True,
-                 use_position: bool = True):
+                 use_position: bool = True, token_norm: bool = False):
         super().__init__()
         if encoder not in SEQUENCE_ENCODERS:
             raise ValueError(f"encoder must be one of {SEQUENCE_ENCODERS}")
@@ -199,6 +199,7 @@ class HistoryEncoder(nn.Module):
         self.use_budget = bool(use_budget)
         self.use_physics = bool(use_physics)
         self.use_position = bool(use_position)
+        self.token_norm = nn.LayerNorm(d_model) if token_norm else nn.Identity()
         self.state_projection = nn.Linear(n_states, d_model)
         self.action_embedding = nn.Embedding(n_actions + 1, d_model)
         self.outcome_embedding = nn.Embedding(3, d_model)
@@ -243,6 +244,7 @@ class HistoryEncoder(nn.Module):
             token = token + self.physics_projection(self.action_features[action])
         if self.use_position:
             token = token + self.position[None]
+        token = self.token_norm(token)
         return token * history["valid"].to(token.dtype).unsqueeze(-1)
 
     def forward(self, history: dict[str, torch.Tensor]) -> torch.Tensor:
@@ -285,13 +287,13 @@ class SequenceHead(nn.Module):
                  physical_features=None, output_gain: float = 1.0,
                  use_action: bool = True, use_outcome: bool = True,
                  use_budget: bool = True, use_physics: bool = True,
-                 use_position: bool = True):
+                 use_position: bool = True, token_norm: bool = False):
         super().__init__()
         self.encoder = HistoryEncoder(
             n_states, n_actions, context_len, encoder, d_model, n_layers,
             n_heads, ff_dim, dropout, obs, physical_features,
             use_action, use_outcome, use_budget, use_physics,
-            use_position,
+            use_position, token_norm,
         )
         self.head = nn.Linear(d_model, n_actions)
         nn.init.orthogonal_(self.head.weight, output_gain)

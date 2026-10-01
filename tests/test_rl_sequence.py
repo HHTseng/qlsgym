@@ -67,6 +67,20 @@ def test_causal_transformer_is_finite_with_leading_padding():
     assert torch.isfinite(encoder(history.view())).all()
 
 
+def test_token_layer_norm_is_optional_and_finite():
+    history = RollingHistory(
+        torch.tensor([[0.5, 0.5]]), context_len=4, n_actions=3, max_pulses=8
+    )
+    encoder = HistoryEncoder(
+        n_states=2, n_actions=3, context_len=4, encoder="transformer",
+        d_model=8, n_layers=1, n_heads=2, ff_dim=16, dropout=0.0,
+        obs="sqrt", token_norm=True,
+    )
+    encoded = encoder(history.view())
+    assert encoded.shape == (1, 8)
+    assert torch.isfinite(encoded).all()
+
+
 @pytest.mark.parametrize("encoder", ["stack", "gru", "transformer"])
 def test_sequence_ppo_runs_with_s18_targets(sequence_env, encoder):
     env = sequence_env.clone(4)

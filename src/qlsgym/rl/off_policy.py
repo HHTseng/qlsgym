@@ -270,6 +270,7 @@ class SACConfig:
     history_budget: bool = True
     history_physics: bool = True
     history_position: bool = True
+    history_token_norm: bool = False
     seed: int = 0
 
 
@@ -427,6 +428,7 @@ class DiscreteSACNetwork(nn.Module):
                 "use_budget": cfg.history_budget,
                 "use_physics": cfg.history_physics,
                 "use_position": cfg.history_position,
+                "token_norm": cfg.history_token_norm,
             }
             self.actor = SequenceHead(*arguments, output_gain=0.01, **flags)
             self.q1 = SequenceHead(*arguments, **flags)

@@ -57,6 +57,29 @@ def candidates() -> list[dict]:
             "id": "transformer_k8_no_position", "encoder": "transformer",
             "context_len": 8, "history_position": False, **common,
         },
+        {
+            "id": "transformer_ln_k1", "encoder": "transformer", "context_len": 1,
+            "history_token_norm": True, **common,
+        },
+        {
+            "id": "transformer_ln_k4", "encoder": "transformer", "context_len": 4,
+            "history_token_norm": True, **common,
+        },
+        {
+            "id": "transformer_ln_k8", "encoder": "transformer", "context_len": 8,
+            "history_token_norm": True, **common,
+        },
+        {
+            "id": "transformer_ln_k8_state_only", "encoder": "transformer",
+            "context_len": 8, "history_action": False,
+            "history_outcome": False, "history_physics": False,
+            "history_token_norm": True, **common,
+        },
+        {
+            "id": "transformer_ln_k8_no_position", "encoder": "transformer",
+            "context_len": 8, "history_position": False,
+            "history_token_norm": True, **common,
+        },
     ]
 
 

@@ -53,6 +53,7 @@ class PPOConfig:
     history_budget: bool = True
     history_physics: bool = True
     history_position: bool = True
+    history_token_norm: bool = False
     # rewards are multiplied by this before learning; None -> 1 / max_pulses
     reward_scale: float | None = None
     eval_every: int = 25            # updates between snapshot evaluations
@@ -146,7 +147,7 @@ class SequenceActorCritic(_torch().nn.Module):
             cfg.sequence_layers, cfg.n_heads, cfg.ff_dim, cfg.dropout, cfg.obs,
             physical_features, cfg.history_action, cfg.history_outcome,
             cfg.history_budget, cfg.history_physics,
-            cfg.history_position,
+            cfg.history_position, cfg.history_token_norm,
         )
         self.pi = torch.nn.Linear(cfg.d_model, n_actions)
         self.v = torch.nn.Linear(cfg.d_model, 1)
