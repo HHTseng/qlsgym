@@ -154,11 +154,12 @@ def audit_pair(args) -> dict:
         "n_init_per_ensemble": args.n_init,
         "ensembles": {},
     }
-    temporal_derivative = []
-    temporal_spectral = []
-    temporal_tv = []
     taus = embedding.taus
-    for omegas in frequency_sets.values():
+    temporal_strata = {}
+    for stratum, omegas in frequency_sets.items():
+        temporal_derivative = []
+        temporal_spectral = []
+        temporal_tv = []
         for omega in omegas:
             truth_columns = transfer_columns(
                 molecule,
@@ -175,10 +176,14 @@ def audit_pair(args) -> dict:
             temporal_derivative.append(derivative)
             temporal_spectral.append(spectral)
             temporal_tv.append(tv_by_tau)
+        temporal_strata[stratum] = {
+            "derivative_l1": quantiles(temporal_derivative),
+            "spectral_relative": quantiles(temporal_spectral),
+            "column_tv_by_tau_mean": np.mean(temporal_tv, axis=0).tolist(),
+        }
     result["temporal_metrics"] = {
-        "derivative_l1": quantiles(temporal_derivative),
-        "spectral_relative": quantiles(temporal_spectral),
-        "column_tv_by_tau_mean": np.mean(temporal_tv, axis=0).tolist(),
+        "primary_stratum": "on",
+        "strata": temporal_strata,
     }
     pooled = {
         "identity": [],

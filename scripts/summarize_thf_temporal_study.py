@@ -43,14 +43,14 @@ def aggregate(name: str, root: Path, pairs: list[dict]) -> dict:
             "sigma": pair["sigma"],
             "passes": value <= threshold,
         }
-    derivatives = [
-        pair.get("temporal_metrics", {}).get("derivative_l1", {}).get("median")
-        for pair in pairs
-    ]
-    spectra = [
-        pair.get("temporal_metrics", {}).get("spectral_relative", {}).get("median")
-        for pair in pairs
-    ]
+    def temporal_value(pair, metric):
+        temporal = pair.get("temporal_metrics", {})
+        if "strata" in temporal:
+            return temporal["strata"]["on"][metric].get("median")
+        return temporal.get(metric, {}).get("median")
+
+    derivatives = [temporal_value(pair, "derivative_l1") for pair in pairs]
+    spectra = [temporal_value(pair, "spectral_relative") for pair in pairs]
     return {
         "name": name,
         "audit": str(root.resolve()),
@@ -101,7 +101,11 @@ def plot_hard_pair(studies_with_pairs, destination: Path) -> None:
     figure, axis = plt.subplots(figsize=(8, 4.5))
     for name, _root, pairs in studies_with_pairs:
         pair = next(item for item in pairs if (item["block"], item["sigma"]) == (11, "+"))
-        values = pair.get("temporal_metrics", {}).get("column_tv_by_tau_mean")
+        temporal = pair.get("temporal_metrics", {})
+        if "strata" in temporal:
+            values = temporal["strata"]["on"].get("column_tv_by_tau_mean")
+        else:
+            values = temporal.get("column_tv_by_tau_mean")
         if values:
             axis.plot(np.linspace(0.0, 1.0, len(values)), values, label=name)
     axis.set_xlabel(r"normalized pulse time $\tau/\tau_{\max}$")
