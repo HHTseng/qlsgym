@@ -43,7 +43,30 @@ def test_config_validation():
         PPOConfig(obs="log")
     with pytest.raises(ValueError):
         PPOConfig(value_target="td")
+    with pytest.raises(ValueError):
+        PPOConfig(branch_aux_coef=-0.1)
     assert PPOConfig(n_envs=4, n_steps=4, total_steps=30).n_updates == 2
+
+
+def test_branch_auxiliary_critic_runs_with_sampled_gae(setup):
+    env = _env(setup)
+    cfg = PPOConfig(
+        n_envs=8,
+        n_steps=6,
+        total_steps=8 * 6 * 3,
+        minibatches=2,
+        epochs=2,
+        eval_every=3,
+        eval_rollouts=6,
+        value_target="gae",
+        branch_aux_coef=0.3,
+        hidden=16,
+        seed=4,
+    )
+    result = train_ppo(env, cfg)
+    losses = np.asarray([row["loss_branch_aux"] for row in result.history])
+    assert np.isfinite(losses).all()
+    assert (losses > 0).all()
 
 
 def test_actor_policy_protocol_and_reproducibility(setup):

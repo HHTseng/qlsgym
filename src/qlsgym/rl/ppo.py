@@ -34,6 +34,9 @@ class PPOConfig:
     clip: float = 0.2
     ent_coef: float = 0.01
     vf_coef: float = 0.5
+    # Auxiliary one-step branch-expectation regression.  The actor still uses
+    # the advantage selected by value_target; zero recovers ordinary PPO.
+    branch_aux_coef: float = 0.0
     max_grad_norm: float = 0.5
     hidden: int = 256
     n_hidden_layers: int = 2
@@ -58,6 +61,8 @@ class PPOConfig:
             raise ValueError(f"value_target must be one of {VALUE_TARGETS}, got {self.value_target!r}")
         if self.n_envs < 1 or self.n_steps < 1 or self.minibatches < 1 or self.epochs < 1:
             raise ValueError("n_envs, n_steps, minibatches and epochs must be >= 1")
+        if self.branch_aux_coef < 0:
+            raise ValueError("branch_aux_coef must be >= 0")
 
     @property
     def n_updates(self) -> int:
@@ -295,7 +300,7 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
                 obs_buf[t], act_buf[t], logp_buf[t], val_buf[t] = x, a, logp, value
                 rew_buf[t] = tr.reward.to(torch.float32) * r_scale
                 term_buf[t] = ended.to(torch.float32)
-                if cfg.value_target in ("qmdp", "qmdp_gae"):
+                if cfg.value_target in ("qmdp", "qmdp_gae") or cfg.branch_aux_coef > 0:
                     _, v0 = net(transform_obs(tr.s0, cfg.obs))
                     _, v1 = net(transform_obs(tr.s1, cfg.obs))
                     trunc_next = (env.steps >= env.cfg.max_pulses).to(torch.float32)
@@ -320,10 +325,18 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
         # PPO update
         n = B * T
         flat = lambda z: z.reshape(n, *z.shape[2:])
-        f_obs, f_act, f_logp, f_adv, f_ret = flat(obs_buf), flat(act_buf), flat(logp_buf), flat(adv), flat(ret)
+        f_obs, f_act, f_logp = flat(obs_buf), flat(act_buf), flat(logp_buf)
+        f_adv, f_ret, f_branch = flat(adv), flat(ret), flat(q_buf)
         f_adv = (f_adv - f_adv.mean()) / (f_adv.std() + 1e-8)
         mb = max(1, n // cfg.minibatches)
-        stats = {"loss_pi": 0.0, "loss_v": 0.0, "entropy": 0.0, "clip_frac": 0.0, "approx_kl": 0.0}
+        stats = {
+            "loss_pi": 0.0,
+            "loss_v": 0.0,
+            "loss_branch_aux": 0.0,
+            "entropy": 0.0,
+            "clip_frac": 0.0,
+            "approx_kl": 0.0,
+        }
         n_mb = 0
         for _ in range(cfg.epochs):
             perm = torch.randperm(n, generator=gen, device=device)
@@ -336,14 +349,25 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
                 a_ = f_adv[idx]
                 loss_pi = -torch.min(ratio * a_, ratio.clamp(1.0 - cfg.clip, 1.0 + cfg.clip) * a_).mean()
                 loss_v = 0.5 * (value - f_ret[idx]).pow(2).mean()
+                loss_branch_aux = (
+                    0.5 * (value - f_branch[idx]).pow(2).mean()
+                    if cfg.branch_aux_coef > 0 else value.new_zeros(())
+                )
                 ent = -(logp_all.exp() * logp_all).sum(-1).mean()
-                loss = loss_pi + cfg.vf_coef * loss_v - cfg.ent_coef * ent
+                loss = (
+                    loss_pi
+                    + cfg.vf_coef * (loss_v + cfg.branch_aux_coef * loss_branch_aux)
+                    - cfg.ent_coef * ent
+                )
                 opt.zero_grad(set_to_none=True)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(net.parameters(), cfg.max_grad_norm)
                 opt.step()
                 with torch.no_grad():
-                    stats["loss_pi"] += float(loss_pi); stats["loss_v"] += float(loss_v); stats["entropy"] += float(ent)
+                    stats["loss_pi"] += float(loss_pi)
+                    stats["loss_v"] += float(loss_v)
+                    stats["loss_branch_aux"] += float(loss_branch_aux)
+                    stats["entropy"] += float(ent)
                     stats["clip_frac"] += float(((ratio - 1.0).abs() > cfg.clip).float().mean())
                     stats["approx_kl"] += float((f_logp[idx] - logp).mean())
                 n_mb += 1

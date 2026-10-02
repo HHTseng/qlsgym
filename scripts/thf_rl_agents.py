@@ -86,7 +86,20 @@ PRESETS = {
     },
 }
 
-PPO_PROFILES = ("branch", "jose_matched", "jose_main", "jose_tuned")
+PPO_PROFILES = (
+    "branch",
+    "jose_matched",
+    "jose_main",
+    "jose_tuned",
+    "jose_qmdp",
+    "jose_aux_01",
+    "jose_aux_03",
+    "qmdp_tuned_250k",
+    "qmdp_tuned_1m",
+    "qmdp_tuned_2m",
+    "qmdp_lr10_1m",
+    "qmdp_lr17_1m",
+)
 
 
 def ppo_config(profile: str, preset: dict, seed: int):
@@ -94,8 +107,9 @@ def ppo_config(profile: str, preset: dict, seed: int):
 
     ``jose_main`` reproduces main's published PPO settings except that the
     environment contract remains the branch task (H=80, rho=0). The matched
-    profile changes only the value target. ``jose_tuned`` keeps Jose's standard
-    GAE and applies the strongest leak-free settings found on FNO validation.
+    profile changes only the value target. ``jose_tuned`` is the earlier GAE
+    interpretation of the Optuna settings. The qMDP profiles preserve the
+    branch-expectation target actually selected by that study.
     """
     from qlsgym.rl.ppo import PPOConfig
 
@@ -151,6 +165,20 @@ def ppo_config(profile: str, preset: dict, seed: int):
             value_target="gae",
             eval_every=25,
         )
+    if profile in ("jose_qmdp", "jose_aux_01", "jose_aux_03"):
+        return PPOConfig(
+            **common,
+            n_envs=256,
+            total_steps=2_000_000,
+            lr=1e-3,
+            value_target="qmdp" if profile == "jose_qmdp" else "gae",
+            branch_aux_coef={
+                "jose_qmdp": 0.0,
+                "jose_aux_01": 0.1,
+                "jose_aux_03": 0.3,
+            }[profile],
+            eval_every=25,
+        )
     if profile == "jose_tuned":
         tuned = dict(common)
         tuned.update(
@@ -169,6 +197,35 @@ def ppo_config(profile: str, preset: dict, seed: int):
             reward_scale=0.025,
             eval_every=15,
             eval_rollouts=min(256, preset["eval_episodes"]),
+        )
+        return PPOConfig(**tuned)
+    if profile.startswith("qmdp_"):
+        tuned = dict(common)
+        tuned.update(
+            n_envs=128,
+            epochs=8,
+            minibatches=16,
+            lr={
+                "qmdp_lr10_1m": 1e-3,
+                "qmdp_lr17_1m": 1.7e-3,
+            }.get(profile, 1.346363908197788e-3),
+            gae_lambda=0.98,
+            clip=0.1,
+            ent_coef=5.417800781171913e-4,
+            max_grad_norm=1.0,
+            hidden=512,
+            n_hidden_layers=1,
+            value_target="qmdp",
+            reward_scale=0.025,
+            eval_every=15,
+            eval_rollouts=min(256, preset["eval_episodes"]),
+            total_steps={
+                "qmdp_tuned_250k": 250_000,
+                "qmdp_tuned_1m": 1_000_000,
+                "qmdp_tuned_2m": 2_000_000,
+                "qmdp_lr10_1m": 1_000_000,
+                "qmdp_lr17_1m": 1_000_000,
+            }[profile],
         )
         return PPOConfig(**tuned)
     raise ValueError(f"unknown PPO profile: {profile}")
@@ -291,7 +348,7 @@ def build_environments(args, batch: int):
         "covered_block_polarizations": sorted([list(item) for item in engine.trained]),
         "manifest_pair_coverage": coverage,
         "train_dynamics": "FnoEnv: covered Raman blocks use FNO; primitives and uncovered blocks remain exact",
-        "evaluation_dynamics": "exact qlsgym action tables",
+        "evaluation_dynamics": args.evaluation_dynamics,
     }
     return molecule, library, fno, exact, engine, contract
 
@@ -407,12 +464,15 @@ def run(args) -> None:
     _, _, fno, exact, engine, contract = build_environments(args, batch)
     started = time.time()
     policy, training, model_path = train_agent(args, fno, exact)
-    exact_result = rollout_metrics(
-        exact, policy, preset["eval_episodes"], args.eval_seed, args.eval_batch
-    )
-    fno_result = rollout_metrics(
-        fno, policy, preset["eval_episodes"], args.eval_seed, args.eval_batch
-    )
+    evaluation = {}
+    if args.evaluation_dynamics in ("both", "exact"):
+        evaluation["exact"] = rollout_metrics(
+            exact, policy, preset["eval_episodes"], args.eval_seed, args.eval_batch
+        )
+    if args.evaluation_dynamics in ("both", "fno"):
+        evaluation["fno"] = rollout_metrics(
+            fno, policy, preset["eval_episodes"], args.eval_seed, args.eval_batch
+        )
     record = {
         "schema_version": 3,
         "job": {
@@ -424,10 +484,11 @@ def run(args) -> None:
             "eval_seed": args.eval_seed,
             "eval_episodes": preset["eval_episodes"],
             "evaluation_batch": args.eval_batch,
+            "evaluation_dynamics": args.evaluation_dynamics,
         },
         "contract": contract,
         "training": training,
-        "evaluation": {"exact": exact_result, "fno": fno_result},
+        "evaluation": evaluation,
         "surrogate_calls": dict(engine.calls),
         "surrogate_fraction": engine.surrogate_fraction(),
         "surrogate_fraction_scope": "engine calls only; FnoEnv exact primitives bypass this counter",
@@ -443,7 +504,8 @@ def run(args) -> None:
     }
     write_json(path, record)
     print(f"wrote {path}")
-    print(json.dumps(json_safe({key: value for key, value in exact_result.items()
+    reported = evaluation.get("exact", evaluation["fno"])
+    print(json.dumps(json_safe({key: value for key, value in reported.items()
                               if key not in ("lengths", "actual_lengths", "successes")}), indent=2))
 
 
@@ -559,6 +621,12 @@ def parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--seed", type=int, default=0)
     run_parser.add_argument("--eval-seed", type=int, default=20_001)
     run_parser.add_argument("--eval-batch", type=int, default=128)
+    run_parser.add_argument(
+        "--evaluation-dynamics",
+        default="both",
+        choices=("both", "fno", "exact"),
+        help="final evaluation environments; use fno for leak-free screening",
+    )
     run_parser.add_argument("--output", default=str(ROOT / "results" / "qlsgym_fno"))
     run_parser.add_argument("--p-target", type=float, default=0.98)
     run_parser.add_argument("--max-pulses", type=int, default=80)
