@@ -29,9 +29,17 @@ EXPECTED_SEEDS = {
 DISPLAY = {
     "branch": "Branch PPO",
     "jose_matched_fno": "Jose GAE\nmatched",
-    "jose_main_fno": "Jose main\nFNO-selected",
-    "jose_main_exact": "Jose main\nexact-selected",
-    "jose_tuned_fno": "Jose-tuned GAE\nFNO-selected",
+    "jose_main_fno": "Jose PPO\nFNO-selected",
+    "jose_main_exact": "Jose PPO\nexact-selected",
+    "jose_tuned_fno": "Jose-tuned PPO\nFNO-selected",
+}
+
+PLOT_LABELS = {
+    "branch": "Branch\nPPO",
+    "jose_matched_fno": "GAE-only\nmatched",
+    "jose_main_fno": "Jose PPO\nFNO selection",
+    "jose_main_exact": "Jose PPO\nexact selection",
+    "jose_tuned_fno": "Jose-tuned\nPPO",
 }
 
 
@@ -153,9 +161,9 @@ def plot(rows: list[dict], output: Path) -> None:
     import matplotlib.pyplot as plt
 
     x = np.arange(len(rows))
-    labels = [DISPLAY[row["id"]] for row in rows]
+    labels = [PLOT_LABELS[row["id"]] for row in rows]
     colors = ["#777777", "#56B4E9", "#0072B2", "#CC79A7", "#009E73"]
-    figure, axes = plt.subplots(1, 2, figsize=(12.0, 4.8))
+    figure, axes = plt.subplots(1, 2, figsize=(13.0, 4.8))
     axes[0].bar(
         x,
         [100 * row["exact_failure_mean"] for row in rows],
@@ -174,9 +182,10 @@ def plot(rows: list[dict], output: Path) -> None:
     axes[1].set_ylabel("Exact failure-penalized actions")
     for axis in axes:
         axis.set_xticks(x, labels)
+        axis.tick_params(axis="x", labelsize=9)
         axis.grid(axis="y", alpha=0.25)
         axis.set_axisbelow(True)
-    figure.suptitle("Jose PPO ablation on the same ThF+ FNO task")
+    figure.suptitle("PPO comparison on the locked ThF+ FNO task")
     figure.tight_layout()
     figure.savefig(output / "jose_ppo_comparison.png", dpi=180)
     plt.close(figure)
