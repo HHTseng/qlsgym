@@ -10,7 +10,7 @@ The molecular belief at time $t$ is
 
 $$
 s_t \in \Delta^{191}
-  = \left\{s \in \mathbb{R}_{\ge 0}^{192}: \sum_{i=1}^{192}s_i=1\right\}.
+  = \lbrace s \in \mathbb{R}_{\ge 0}^{192}: \sum_{i=1}^{192}s_i=1 \rbrace.
 $$
 
 The action set $\mathcal{A}$ has 312 controls: 288 Raman pulses and 24 primitive operations. For action $a_t\in\mathcal{A}$, the measurement outcome is $k\in\{0,1\}$. Its Born probability and normalized posterior are
@@ -28,7 +28,7 @@ Here $u_{t,k}$ is the unnormalized population vector for branch $k$. The environ
 An episode succeeds at
 
 $$
-T=\inf\left\{t:\lVert s_t\rVert_\infty\ge 0.98\right\}
+T=\inf\lbrace t:\lVert s_t\rVert_\infty\ge 0.98 \rbrace
 $$
 
 and is truncated after $H=80$ actions. All experiments use $\rho=0$ and the downloaded `munozariasjm/thf_qls_fno` `mix` manifest: 24 of 24 block-polarization checkpoints, fingerprint `d7deb43457d3`.
