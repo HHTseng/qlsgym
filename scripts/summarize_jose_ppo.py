@@ -18,6 +18,14 @@ ORDER = (
     "jose_tuned_fno",
 )
 
+EXPECTED_SEEDS = {
+    "branch": set(range(5)),
+    "jose_matched_fno": set(range(5)),
+    "jose_main_fno": set(range(5)),
+    "jose_main_exact": set(range(3)),
+    "jose_tuned_fno": set(range(5)),
+}
+
 DISPLAY = {
     "branch": "Branch PPO",
     "jose_matched_fno": "Jose GAE\nmatched",
@@ -90,6 +98,29 @@ def record_row(name: str, records: list[dict], baseline: dict[int, dict]) -> dic
         "paired_seed_wins": sum(a < 0 and b < 0 for a, b in paired),
         "paired_seed_count": len(paired),
         "wall_clock_hours": sum(item["wall_clock_s"] for item in records) / 3600.0,
+    }
+
+
+def paired_comparison(candidate: list[dict], reference: list[dict]) -> dict:
+    """Compare exact-holdout metrics on shared training seeds."""
+    candidate = {item["job"]["train_seed"]: item for item in candidate}
+    reference = {item["job"]["train_seed"]: item for item in reference}
+    seeds = sorted(candidate.keys() & reference.keys())
+    failure = []
+    actions = []
+    for seed in seeds:
+        c = candidate[seed]["evaluation"]["exact"]
+        r = reference[seed]["evaluation"]["exact"]
+        failure.append(c["unfinished_fraction"] - r["unfinished_fraction"])
+        actions.append(c["average_actions"] - r["average_actions"])
+    failure_mean, failure_sd = mean_std(failure)
+    actions_mean, actions_sd = mean_std(actions)
+    return {
+        "seeds": seeds,
+        "failure_delta_mean": failure_mean,
+        "failure_delta_sd": failure_sd,
+        "actions_delta_mean": actions_mean,
+        "actions_delta_sd": actions_sd,
     }
 
 
@@ -183,6 +214,12 @@ def main() -> None:
     missing = [name for name in ORDER if name not in groups]
     if missing:
         raise ValueError(f"missing comparison groups: {missing}")
+    for name, expected in EXPECTED_SEEDS.items():
+        observed = {item["job"]["train_seed"] for item in groups[name]}
+        if observed != expected:
+            raise ValueError(
+                f"{name} has seeds {sorted(observed)}, expected {sorted(expected)}"
+            )
     baseline = {item["job"]["train_seed"]: item for item in baseline_records}
     rows = [record_row(name, groups[name], baseline) for name in ORDER]
 
@@ -206,6 +243,20 @@ def main() -> None:
             "success": 0.99,
             "mean_pulses": 124.05,
             "training_steps": 2_000_000,
+        },
+        "paired_comparisons": {
+            "standard_gae_only_vs_branch": paired_comparison(
+                groups["jose_matched_fno"], groups["branch"]
+            ),
+            "full_jose_vs_gae_only": paired_comparison(
+                groups["jose_main_fno"], groups["jose_matched_fno"]
+            ),
+            "exact_vs_fno_snapshot_selection": paired_comparison(
+                groups["jose_main_exact"], groups["jose_main_fno"]
+            ),
+            "tuned_vs_full_jose": paired_comparison(
+                groups["jose_tuned_fno"], groups["jose_main_fno"]
+            ),
         },
         "rows": rows,
     }
