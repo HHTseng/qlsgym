@@ -5,4 +5,5 @@ __pycache__/
 _work/
 results/**/models/
 results/**/logs/
+results/thf_jose_ppo_comparison/runs/
 *.pt

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """Train PPO, categorical SAC, or Double DQN in a qlsgym FNO environment.
 
-Training uses the surrogate-backed ``FnoEnv``.  Model selection and the final
-reported score use the exact ThF+ table environment with a disjoint outcome
-seed. The compact 312-action ThF+ physics library is used throughout.
+Training uses the surrogate-backed ``FnoEnv``. PPO snapshot selection can use
+the FNO or exact environment; final reporting always includes both with a
+disjoint outcome seed. The compact 312-action ThF+ physics library is used
+throughout.
 
 Examples
 --------
@@ -84,6 +85,102 @@ PRESETS = {
         "eval_episodes": 5_000,
     },
 }
+
+PPO_PROFILES = ("branch", "jose_matched", "jose_main", "jose_tuned")
+
+
+def ppo_config(profile: str, preset: dict, seed: int):
+    """Return one explicit PPO contract for the Jose/branch comparison.
+
+    ``jose_main`` reproduces main's published PPO settings except that the
+    environment contract remains the branch task (H=80, rho=0). The matched
+    profile changes only the value target. ``jose_tuned`` keeps Jose's standard
+    GAE and applies the strongest leak-free settings found on FNO validation.
+    """
+    from qlsgym.rl.ppo import PPOConfig
+
+    common = dict(
+        n_steps=32,
+        epochs=4,
+        minibatches=8,
+        gamma=1.0,
+        gae_lambda=0.95,
+        clip=0.2,
+        ent_coef=0.01,
+        vf_coef=0.5,
+        max_grad_norm=0.5,
+        hidden=256,
+        n_hidden_layers=2,
+        obs="sqrt",
+        eval_rollouts=min(200, preset["eval_episodes"]),
+        eval_greedy=False,
+        seed=seed,
+    )
+    if profile == "branch":
+        is_final = (
+            preset["ppo_steps"] == 1_000_000
+            and preset["n_envs_ppo"] == 128
+        )
+        return PPOConfig(
+            **common,
+            n_envs=preset["n_envs_ppo"],
+            total_steps=preset["ppo_steps"],
+            lr=3e-4 if is_final else 1e-3,
+            value_target="qmdp_gae" if is_final else "qmdp",
+            eval_every=max(1, math.ceil(
+                preset["ppo_steps"] / (preset["n_envs_ppo"] * 32)
+            )),
+        )
+    if profile == "jose_matched":
+        return PPOConfig(
+            **common,
+            n_envs=preset["n_envs_ppo"],
+            total_steps=preset["ppo_steps"],
+            lr=3e-4,
+            value_target="gae",
+            eval_every=max(1, math.ceil(
+                preset["ppo_steps"] / (preset["n_envs_ppo"] * 32)
+            )),
+        )
+    if profile == "jose_main":
+        return PPOConfig(
+            **common,
+            n_envs=256,
+            total_steps=2_000_000,
+            lr=1e-3,
+            value_target="gae",
+            eval_every=25,
+        )
+    if profile == "jose_tuned":
+        tuned = dict(common)
+        tuned.update(
+            n_envs=128,
+            total_steps=1_000_000,
+            epochs=8,
+            minibatches=16,
+            lr=1.346363908197788e-3,
+            gae_lambda=0.98,
+            clip=0.1,
+            ent_coef=5.417800781171913e-4,
+            max_grad_norm=1.0,
+            hidden=512,
+            n_hidden_layers=1,
+            value_target="gae",
+            reward_scale=0.025,
+            eval_every=15,
+            eval_rollouts=min(256, preset["eval_episodes"]),
+        )
+        return PPOConfig(**tuned)
+    raise ValueError(f"unknown PPO profile: {profile}")
+
+
+def run_stem(args) -> str:
+    if args.agent != "ppo" or args.ppo_profile == "branch":
+        return f"{args.preset}_{args.agent}_s{args.seed}"
+    return (
+        f"{args.preset}_ppo_{args.ppo_profile}_"
+        f"{args.ppo_selection}_s{args.seed}"
+    )
 
 
 def json_safe(value):
@@ -212,7 +309,7 @@ def save_state(path: Path, state: dict) -> None:
 
 def train_agent(args, fno, exact):
     preset = PRESETS[args.preset]
-    model_path = Path(args.output) / "models" / f"{args.preset}_{args.agent}_s{args.seed}.pt"
+    model_path = Path(args.output) / "models" / f"{run_stem(args)}.pt"
     if model_path.exists() and args.agent in ("ppo", "sac_discrete", "ddqn"):
         raise FileExistsError(f"model exists: {model_path}; choose a new --output")
     if args.agent == "sweeping":
@@ -230,31 +327,11 @@ def train_agent(args, fno, exact):
         return policy, {"kind": "ThF+ physics-designed non-learning baseline"}, None
 
     if args.agent == "ppo":
-        from qlsgym.rl.ppo import PPOConfig, policy_from_state_dict, train_ppo
+        from qlsgym.rl.ppo import policy_from_state_dict, train_ppo
 
-        config = PPOConfig(
-            n_envs=preset["n_envs_ppo"],
-            n_steps=32,
-            total_steps=preset["ppo_steps"],
-            epochs=4,
-            minibatches=8,
-            lr=3e-4 if args.preset == "final" else 1e-3,
-            gamma=1.0,
-            gae_lambda=0.95,
-            clip=0.2,
-            ent_coef=0.01,
-            hidden=256,
-            n_hidden_layers=2,
-            obs="sqrt",
-            value_target="qmdp_gae" if args.preset == "final" else "qmdp",
-            eval_every=max(1, math.ceil(preset["ppo_steps"] / (
-                preset["n_envs_ppo"] * 32
-            ))),
-            eval_rollouts=min(200, preset["eval_episodes"]),
-            eval_greedy=False,
-            seed=args.seed,
-        )
-        result = train_ppo(fno, config, env_eval=exact, log=print)
+        config = ppo_config(args.ppo_profile, preset, args.seed)
+        selection_env = exact if args.ppo_selection == "exact" else fno
+        result = train_ppo(fno, config, env_eval=selection_env, log=print)
         state = result.best_state_dict or result.final_state_dict
         save_state(
             model_path,
@@ -321,12 +398,13 @@ def run(args) -> None:
     if args.agent not in AGENTS:
         raise ValueError(f"--agent must be one of {AGENTS}")
     preset = PRESETS[args.preset]
-    path = Path(args.output) / "runs" / f"{args.preset}_{args.agent}_s{args.seed}.json"
+    path = Path(args.output) / "runs" / f"{run_stem(args)}.json"
     if path.exists():
         raise FileExistsError(f"result exists: {path}; choose a new --output")
-    _, _, fno, exact, engine, contract = build_environments(
-        args, max(preset["n_envs_ppo"], preset["n_envs_offpolicy"])
-    )
+    batch = max(preset["n_envs_ppo"], preset["n_envs_offpolicy"])
+    if args.agent == "ppo":
+        batch = max(batch, ppo_config(args.ppo_profile, preset, args.seed).n_envs)
+    _, _, fno, exact, engine, contract = build_environments(args, batch)
     started = time.time()
     policy, training, model_path = train_agent(args, fno, exact)
     exact_result = rollout_metrics(
@@ -340,6 +418,8 @@ def run(args) -> None:
         "job": {
             "agent": args.agent,
             "preset": args.preset,
+            "ppo_profile": args.ppo_profile if args.agent == "ppo" else None,
+            "ppo_selection": args.ppo_selection if args.agent == "ppo" else None,
             "train_seed": args.seed,
             "eval_seed": args.eval_seed,
             "eval_episodes": preset["eval_episodes"],
@@ -471,6 +551,8 @@ def parser() -> argparse.ArgumentParser:
     run_parser = sub.add_parser("run")
     run_parser.add_argument("--agent", required=True, choices=AGENTS)
     run_parser.add_argument("--preset", default="smoke", choices=tuple(PRESETS))
+    run_parser.add_argument("--ppo-profile", default="branch", choices=PPO_PROFILES)
+    run_parser.add_argument("--ppo-selection", default="exact", choices=("fno", "exact"))
     run_parser.add_argument("--manifest", required=True)
     run_parser.add_argument("--fno-tag", default="rlpilot")
     run_parser.add_argument("--device", default="cuda:0")
