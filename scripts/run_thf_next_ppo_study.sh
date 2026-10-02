@@ -16,11 +16,9 @@ mkdir -p "$OUTPUT/screen/runs" "$OUTPUT/final/runs"
 if [[ "${1:-run}" == "status" ]]; then
   echo "screen $(find "$OUTPUT/screen/runs" -maxdepth 1 -name '*.json' 2>/dev/null | wc -l | tr -d ' ')/16"
   if [[ -f "$OUTPUT/selection.json" ]]; then
-    python - "$OUTPUT/selection.json" <<'PY'
-import json, sys
-data = json.load(open(sys.argv[1]))
-print("promoted", ",".join(data["promoted_profiles"]))
-PY
+    promoted_status=$(sed -n '/"promoted_profiles"/,/]/p' "$OUTPUT/selection.json" \
+      | sed '1d;$d;s/[", ]//g' | paste -sd, -)
+    echo "promoted $promoted_status"
   else
     echo "promoted pending"
   fi

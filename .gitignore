@@ -9,4 +9,7 @@ results/thf_jose_ppo_comparison/runs/
 results/thf_next_ppo/screen/
 results/thf_next_ppo/final/
 results/thf_next_ppo/pipeline.log
+results/thf_offpolicy_transfer/screen/
+results/thf_offpolicy_transfer/final/
+results/thf_offpolicy_transfer/pipeline.log
 *.pt

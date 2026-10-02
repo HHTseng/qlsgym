@@ -101,6 +101,16 @@ PPO_PROFILES = (
     "qmdp_lr17_1m",
 )
 
+OFFPOLICY_PROFILES = (
+    "branch",
+    "sac_refined_1m",
+    "sac_refined_2m",
+    "ddqn_optuna_1m",
+    "ddqn_optuna_2m",
+    "ddqn_scaled20_1m",
+    "ddqn_raw20_1m",
+)
+
 
 def ppo_config(profile: str, preset: dict, seed: int):
     """Return one explicit PPO contract for the Jose/branch comparison.
@@ -231,7 +241,97 @@ def ppo_config(profile: str, preset: dict, seed: int):
     raise ValueError(f"unknown PPO profile: {profile}")
 
 
+def offpolicy_config(
+    agent: str,
+    profile: str,
+    preset: dict,
+    seed: int,
+    sac_alpha_raw: float = 0.05,
+    max_pulses: int = 80,
+):
+    """Return a locked SAC or DDQN contract for the transfer study."""
+    if profile == "branch":
+        is_final = (
+            preset["offpolicy_steps"] == 1_000_000
+            and preset["n_envs_offpolicy"] == 128
+        )
+        if agent == "ddqn":
+            return DDQNConfig(
+                n_envs=preset["n_envs_offpolicy"],
+                total_steps=preset["offpolicy_steps"],
+                learning_starts=preset["learning_starts"],
+                buffer_size=max(20_000, preset["offpolicy_steps"] // 2),
+                eps_fraction=0.72 if is_final else 0.35,
+                gradient_steps=4 if is_final else 1,
+                seed=seed,
+            )
+        if agent == "sac_discrete":
+            return SACConfig(
+                n_envs=preset["n_envs_offpolicy"],
+                total_steps=preset["offpolicy_steps"],
+                learning_starts=preset["learning_starts"],
+                buffer_size=max(20_000, preset["offpolicy_steps"] // 2),
+                gradient_steps=4 if is_final else 1,
+                alpha=sac_alpha_raw / max_pulses,
+                seed=seed,
+            )
+    if profile.startswith("sac_"):
+        if agent != "sac_discrete":
+            raise ValueError(f"profile {profile} requires --agent sac_discrete")
+        steps = 2_000_000 if profile.endswith("_2m") else 1_000_000
+        return SACConfig(
+            n_envs=16,
+            total_steps=steps,
+            lr=1.5047792717528454e-4,
+            gamma=0.995,
+            tau=3.048864797383012e-3,
+            batch_size=512,
+            buffer_size=100_000,
+            learning_starts=1_000,
+            train_freq=1,
+            gradient_steps=1,
+            target_entropy_ratio=0.49969706052497553,
+            alpha=0.013268918812005082,
+            autotune_alpha=True,
+            return_scale=20.0,
+            obs="sqrt",
+            hidden=128,
+            depth=1,
+            seed=seed,
+        )
+    if profile.startswith("ddqn_"):
+        if agent != "ddqn":
+            raise ValueError(f"profile {profile} requires --agent ddqn")
+        steps = 2_000_000 if profile.endswith("_2m") else 1_000_000
+        return DDQNConfig(
+            n_envs=128,
+            total_steps=steps,
+            lr=3.863012590717139e-4,
+            gamma=0.99,
+            tau=4.19740649400854e-3,
+            batch_size=512,
+            buffer_size=max(125_000, steps // 2),
+            learning_starts=20_480,
+            train_freq=1,
+            gradient_steps=1,
+            eps_start=1.0,
+            eps_end=0.013933264600237711,
+            eps_fraction=0.5297244240558068,
+            return_scale=(20.0 if "scaled20" in profile or "raw20" in profile else None),
+            obs="p" if "raw20" in profile else "sqrt",
+            hidden=128,
+            depth=2,
+            seed=seed,
+        )
+    raise ValueError(f"profile {profile} is incompatible with {agent}")
+
+
 def run_stem(args) -> str:
+    if args.agent in ("sac_discrete", "ddqn") and args.offpolicy_profile != "branch":
+        return (
+            f"{args.preset}_{args.agent}_{args.offpolicy_profile}_"
+            f"{args.offpolicy_selection}_s{args.seed}"
+        )
     if args.agent != "ppo" or args.ppo_profile == "branch":
         return f"{args.preset}_{args.agent}_s{args.seed}"
     return (
@@ -364,6 +464,13 @@ def save_state(path: Path, state: dict) -> None:
     torch.save(state, path)
 
 
+def module_state(module) -> dict[str, torch.Tensor]:
+    return {
+        name: value.detach().cpu().clone()
+        for name, value in module.state_dict().items()
+    }
+
+
 def train_agent(args, fno, exact):
     preset = PRESETS[args.preset]
     model_path = Path(args.output) / "models" / f"{run_stem(args)}.pt"
@@ -400,39 +507,96 @@ def train_agent(args, fno, exact):
         return policy, result.as_dict(), model_path
 
     if args.agent == "ddqn":
-        config = DDQNConfig(
-            n_envs=preset["n_envs_offpolicy"],
-            total_steps=preset["offpolicy_steps"],
-            learning_starts=preset["learning_starts"],
-            buffer_size=max(20_000, preset["offpolicy_steps"] // 2),
-            eps_fraction=0.72 if args.preset == "final" else 0.35,
-            gradient_steps=4 if args.preset == "final" else 1,
-            seed=args.seed,
+        config = offpolicy_config(
+            args.agent, args.offpolicy_profile, preset, args.seed,
+            args.sac_alpha_raw, args.max_pulses,
         )
         agent = DDQNAgent(fno, config)
-        stats = agent.train()
+        snapshots = []
+        best = None
+        best_state = None
+
+        def select_snapshot(trained, log_record):
+            nonlocal best, best_state
+            metrics = rollout_metrics(
+                fno, ddqn_policy(trained), args.snapshot_eval_episodes,
+                args.snapshot_eval_seed, args.eval_batch,
+            )
+            snapshot = {
+                "env_steps": trained.stats.env_steps,
+                "success": metrics["success_fraction"],
+                "mean_pulses": metrics["average_actions"],
+                "n_rollouts": metrics["n_rollouts"],
+                "seed": metrics["seed"],
+                "training": dict(log_record),
+            }
+            snapshots.append(snapshot)
+            if (best is None or snapshot["success"] > best["success"]
+                    or (snapshot["success"] == best["success"]
+                        and snapshot["mean_pulses"] < best["mean_pulses"])):
+                best = snapshot
+                best_state = {
+                    "online": module_state(trained.online),
+                    "target": module_state(trained.target),
+                }
+
+        callback = select_snapshot if args.offpolicy_selection == "fno" else None
+        stats = agent.train(log_points=args.snapshot_count, on_log=callback)
+        if best_state is not None:
+            agent.online.load_state_dict(best_state["online"])
+            agent.target.load_state_dict(best_state["target"])
         save_state(
             model_path,
             {"agent": args.agent, "config": asdict(config), "state_dict": agent.online.state_dict()},
         )
         return ddqn_policy(agent), {
             **stats.as_dict(), "config": asdict(config),
-            "reward_scale": 1.0 / args.max_pulses,
+            "reward_scale": 1.0 / (config.return_scale or args.max_pulses),
+            "selection": args.offpolicy_selection,
+            "snapshots": snapshots,
+            "best": best,
         }, model_path
 
-    config = SACConfig(
-        n_envs=preset["n_envs_offpolicy"],
-        total_steps=preset["offpolicy_steps"],
-        learning_starts=preset["learning_starts"],
-        buffer_size=max(20_000, preset["offpolicy_steps"] // 2),
-        gradient_steps=4 if args.preset == "final" else 1,
-        # Critic rewards are divided by H. Scale temperature in the same units
-        # so this normalization does not amplify entropy regularization by H.
-        alpha=args.sac_alpha_raw / args.max_pulses,
-        seed=args.seed,
+    config = offpolicy_config(
+        args.agent, args.offpolicy_profile, preset, args.seed,
+        args.sac_alpha_raw, args.max_pulses,
     )
     agent = DiscreteSACAgent(fno, config)
-    stats = agent.train()
+    snapshots = []
+    best = None
+    best_state = None
+
+    def select_snapshot(trained, log_record):
+        nonlocal best, best_state
+        metrics = rollout_metrics(
+            fno, sac_policy(trained, stochastic=True), args.snapshot_eval_episodes,
+            args.snapshot_eval_seed, args.eval_batch,
+        )
+        snapshot = {
+            "env_steps": trained.stats.env_steps,
+            "success": metrics["success_fraction"],
+            "mean_pulses": metrics["average_actions"],
+            "n_rollouts": metrics["n_rollouts"],
+            "seed": metrics["seed"],
+            "training": dict(log_record),
+        }
+        snapshots.append(snapshot)
+        if (best is None or snapshot["success"] > best["success"]
+                or (snapshot["success"] == best["success"]
+                    and snapshot["mean_pulses"] < best["mean_pulses"])):
+            best = snapshot
+            best_state = {
+                "network": module_state(trained.network),
+                "target_q1": module_state(trained.target_q1),
+                "target_q2": module_state(trained.target_q2),
+            }
+
+    callback = select_snapshot if args.offpolicy_selection == "fno" else None
+    stats = agent.train(log_points=args.snapshot_count, on_log=callback)
+    if best_state is not None:
+        agent.network.load_state_dict(best_state["network"])
+        agent.target_q1.load_state_dict(best_state["target_q1"])
+        agent.target_q2.load_state_dict(best_state["target_q2"])
     save_state(
         model_path,
         {
@@ -446,8 +610,13 @@ def train_agent(args, fno, exact):
     )
     return sac_policy(agent, stochastic=True), {
         **stats.as_dict(), "config": asdict(config),
-        "reward_scale": 1.0 / args.max_pulses,
-        "initial_alpha_raw_reward_units": args.sac_alpha_raw,
+        "reward_scale": 1.0 / (config.return_scale or args.max_pulses),
+        "initial_alpha_raw_reward_units": (
+            config.alpha * (config.return_scale or args.max_pulses)
+        ),
+        "selection": args.offpolicy_selection,
+        "snapshots": snapshots,
+        "best": best,
     }, model_path
 
 
@@ -461,6 +630,14 @@ def run(args) -> None:
     batch = max(preset["n_envs_ppo"], preset["n_envs_offpolicy"])
     if args.agent == "ppo":
         batch = max(batch, ppo_config(args.ppo_profile, preset, args.seed).n_envs)
+    elif args.agent in ("sac_discrete", "ddqn"):
+        batch = max(
+            batch,
+            offpolicy_config(
+                args.agent, args.offpolicy_profile, preset, args.seed,
+                args.sac_alpha_raw, args.max_pulses,
+            ).n_envs,
+        )
     _, _, fno, exact, engine, contract = build_environments(args, batch)
     started = time.time()
     policy, training, model_path = train_agent(args, fno, exact)
@@ -480,6 +657,14 @@ def run(args) -> None:
             "preset": args.preset,
             "ppo_profile": args.ppo_profile if args.agent == "ppo" else None,
             "ppo_selection": args.ppo_selection if args.agent == "ppo" else None,
+            "offpolicy_profile": (
+                args.offpolicy_profile
+                if args.agent in ("sac_discrete", "ddqn") else None
+            ),
+            "offpolicy_selection": (
+                args.offpolicy_selection
+                if args.agent in ("sac_discrete", "ddqn") else None
+            ),
             "train_seed": args.seed,
             "eval_seed": args.eval_seed,
             "eval_episodes": preset["eval_episodes"],
@@ -615,6 +800,16 @@ def parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--preset", default="smoke", choices=tuple(PRESETS))
     run_parser.add_argument("--ppo-profile", default="branch", choices=PPO_PROFILES)
     run_parser.add_argument("--ppo-selection", default="exact", choices=("fno", "exact"))
+    run_parser.add_argument(
+        "--offpolicy-profile", default="branch", choices=OFFPOLICY_PROFILES,
+    )
+    run_parser.add_argument(
+        "--offpolicy-selection", default="final", choices=("final", "fno"),
+        help="select the final network or the best FNO validation snapshot",
+    )
+    run_parser.add_argument("--snapshot-count", type=int, default=8)
+    run_parser.add_argument("--snapshot-eval-episodes", type=int, default=256)
+    run_parser.add_argument("--snapshot-eval-seed", type=int, default=31_001)
     run_parser.add_argument("--manifest", required=True)
     run_parser.add_argument("--fno-tag", default="rlpilot")
     run_parser.add_argument("--device", default="cuda:0")
