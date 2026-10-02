@@ -22,24 +22,42 @@ run_one() {
 }
 
 worker() {
-  local parity=$1 gpu=$2
-  for seed in 0 1 2 3 4; do
-    if (( seed % 2 != parity )); then
-      continue
-    fi
-    run_one "$gpu" jose_matched fno "$seed"
-    run_one "$gpu" jose_main fno "$seed"
-    run_one "$gpu" jose_tuned fno "$seed"
-    if (( seed < 3 )); then
-      run_one "$gpu" jose_main exact "$seed"
-    fi
+  local gpu=$1
+  shift
+  local task
+  for task in "$@"; do
+    read -r profile selection seed <<<"$task"
+    run_one "$gpu" "$profile" "$selection" "$seed"
   done
 }
 
 mkdir -p "$OUTPUT/logs"
-worker 0 "$GPU0" >"$OUTPUT/logs/worker_gpu${GPU0}.log" 2>&1 &
+tasks0=(
+  "jose_matched fno 0"
+  "jose_main fno 0"
+  "jose_tuned fno 0"
+  "jose_main exact 0"
+  "jose_matched fno 2"
+  "jose_main fno 3"
+  "jose_tuned fno 3"
+  "jose_matched fno 4"
+  "jose_main fno 4"
+)
+tasks1=(
+  "jose_matched fno 1"
+  "jose_main fno 1"
+  "jose_tuned fno 1"
+  "jose_main exact 1"
+  "jose_main fno 2"
+  "jose_tuned fno 2"
+  "jose_main exact 2"
+  "jose_matched fno 3"
+  "jose_tuned fno 4"
+)
+
+worker "$GPU0" "${tasks0[@]}" >"$OUTPUT/logs/worker_gpu${GPU0}.log" 2>&1 &
 pid0=$!
-worker 1 "$GPU1" >"$OUTPUT/logs/worker_gpu${GPU1}.log" 2>&1 &
+worker "$GPU1" "${tasks1[@]}" >"$OUTPUT/logs/worker_gpu${GPU1}.log" 2>&1 &
 pid1=$!
 wait "$pid0"
 wait "$pid1"
