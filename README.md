@@ -23,7 +23,13 @@ s'_{t,k}=\frac{u_{t,k}}{\pi_{t,k}},
 \sum_{k=0}^{1}\pi_{t,k}=1.
 $$
 
-Here $u_{t,k}$ is the unnormalized population vector for branch $k$. The environment samples one posterior $s_{t+1}=s'_{t,K_t}$ with $K_t\sim\{\pi_{t,0},\pi_{t,1}\}$.
+Here $u_{t,k}$ is the unnormalized population vector for branch $k$. The environment samples outcome $K_t$ and sets the next posterior according to
+
+$$
+\Pr(K_t=k)=\pi_{t,k},
+\qquad
+s_{t+1}=s_{t,K_t}^{\prime}.
+$$
 
 An episode succeeds at
 
