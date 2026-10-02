@@ -28,10 +28,20 @@ s'_{t,k}=\frac{u_{t,k}}{\pi_{t,k}},
 \sum_{k=0}^{1}\pi_{t,k}=1.
 $$
 
-The environment samples $K_t\sim\pi_t$ and sets $s_{t+1}=s'_{t,K_t}$. An
-episode succeeds when $\lVert s_t\rVert_\infty\geq0.98$ and otherwise stops at
-$H=80$. All reported experiments use $\rho=0$ and the 24-checkpoint `mix`
-manifest with fingerprint `d7deb43457d3`.
+The environment samples an action and advances the molecular state according to
+
+$$
+K_t\sim\pi_t,\qquad s_{t+1}=s_{t,K_t}^{\prime}.
+$$
+
+An episode succeeds when
+
+$$
+\lVert s_t\rVert_\infty\geq 0.98,
+$$
+
+and otherwise stops at $H=80$. All reported experiments use $\rho=0$ and the
+24-checkpoint `mix` manifest with fingerprint `d7deb43457d3`.
 
 For episode $j$, let $T_j$ be the first successful time and define
 $L_j=\min(T_j,H)$, with $T_j=\infty$ on failure. The exact-dynamics metrics are
