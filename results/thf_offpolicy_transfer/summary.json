@@ -1,0 +1,321 @@
+{
+  "status": "complete",
+  "selection": {
+    "status": "selected",
+    "selection_dynamics": "downloaded mix FNO only",
+    "selection_rule": "lowest paired-seed FNO failure; actions break ties",
+    "screen_seeds": [
+      100,
+      101
+    ],
+    "selected_profiles": {
+      "sac_discrete": "sac_refined_2m",
+      "ddqn": "ddqn_raw20_1m"
+    },
+    "rows": [
+      {
+        "agent": "sac_discrete",
+        "profile": "sac_refined_1m",
+        "label": "SAC refined, 1M",
+        "seeds": [
+          100,
+          101
+        ],
+        "config": {
+          "alpha": 0.013268918812005082,
+          "autotune_alpha": true,
+          "batch_size": 512,
+          "buffer_size": 100000,
+          "depth": 1,
+          "gamma": 0.995,
+          "gradient_steps": 1,
+          "hidden": 128,
+          "learning_starts": 1000,
+          "lr": 0.00015047792717528454,
+          "n_envs": 16,
+          "obs": "sqrt",
+          "return_scale": 20.0,
+          "target_entropy_ratio": 0.49969706052497553,
+          "tau": 0.003048864797383012,
+          "total_steps": 1000000,
+          "train_freq": 1
+        },
+        "fno_failure_mean": 0.49290000000000006,
+        "fno_failure_sd": 0.11752114703320421,
+        "fno_actions_mean": 55.415800000000004,
+        "fno_actions_sd": 5.890199487283945,
+        "wall_clock_hours": 3.3773163122600978
+      },
+      {
+        "agent": "sac_discrete",
+        "profile": "sac_refined_2m",
+        "label": "SAC refined, 2M",
+        "seeds": [
+          100,
+          101
+        ],
+        "config": {
+          "alpha": 0.013268918812005082,
+          "autotune_alpha": true,
+          "batch_size": 512,
+          "buffer_size": 100000,
+          "depth": 1,
+          "gamma": 0.995,
+          "gradient_steps": 1,
+          "hidden": 128,
+          "learning_starts": 1000,
+          "lr": 0.00015047792717528454,
+          "n_envs": 16,
+          "obs": "sqrt",
+          "return_scale": 20.0,
+          "target_entropy_ratio": 0.49969706052497553,
+          "tau": 0.003048864797383012,
+          "total_steps": 2000000,
+          "train_freq": 1
+        },
+        "fno_failure_mean": 0.3566,
+        "fno_failure_sd": 0.09305525240414969,
+        "fno_actions_mean": 47.7248,
+        "fno_actions_sd": 5.955536153865579,
+        "wall_clock_hours": 6.492201135290993
+      },
+      {
+        "agent": "ddqn",
+        "profile": "ddqn_optuna_1m",
+        "label": "DDQN Optuna, 1M",
+        "seeds": [
+          100,
+          101
+        ],
+        "config": {
+          "batch_size": 512,
+          "buffer_size": 500000,
+          "depth": 2,
+          "eps_end": 0.013933264600237711,
+          "eps_fraction": 0.5297244240558068,
+          "eps_start": 1.0,
+          "gamma": 0.99,
+          "gradient_steps": 1,
+          "hidden": 128,
+          "learning_starts": 20480,
+          "lr": 0.0003863012590717139,
+          "n_envs": 128,
+          "obs": "sqrt",
+          "return_scale": null,
+          "tau": 0.00419740649400854,
+          "total_steps": 1000000,
+          "train_freq": 1
+        },
+        "fno_failure_mean": 0.9071,
+        "fno_failure_sd": 0.0015556349186103902,
+        "fno_actions_mean": 73.8707,
+        "fno_actions_sd": 0.9626551719073682,
+        "wall_clock_hours": 0.6672566784090466
+      },
+      {
+        "agent": "ddqn",
+        "profile": "ddqn_optuna_2m",
+        "label": "DDQN Optuna, 2M",
+        "seeds": [
+          100,
+          101
+        ],
+        "config": {
+          "batch_size": 512,
+          "buffer_size": 1000000,
+          "depth": 2,
+          "eps_end": 0.013933264600237711,
+          "eps_fraction": 0.5297244240558068,
+          "eps_start": 1.0,
+          "gamma": 0.99,
+          "gradient_steps": 1,
+          "hidden": 128,
+          "learning_starts": 20480,
+          "lr": 0.0003863012590717139,
+          "n_envs": 128,
+          "obs": "sqrt",
+          "return_scale": null,
+          "tau": 0.00419740649400854,
+          "total_steps": 2000000,
+          "train_freq": 1
+        },
+        "fno_failure_mean": 0.9427,
+        "fno_failure_sd": 0.015132085117392178,
+        "fno_actions_mean": 76.22659999999999,
+        "fno_actions_sd": 0.9551598400267931,
+        "wall_clock_hours": 1.099337014026112
+      },
+      {
+        "agent": "ddqn",
+        "profile": "ddqn_scaled20_1m",
+        "label": "DDQN scaled, 1M",
+        "seeds": [
+          100,
+          101
+        ],
+        "config": {
+          "batch_size": 512,
+          "buffer_size": 500000,
+          "depth": 2,
+          "eps_end": 0.013933264600237711,
+          "eps_fraction": 0.5297244240558068,
+          "eps_start": 1.0,
+          "gamma": 0.99,
+          "gradient_steps": 1,
+          "hidden": 128,
+          "learning_starts": 20480,
+          "lr": 0.0003863012590717139,
+          "n_envs": 128,
+          "obs": "sqrt",
+          "return_scale": 20.0,
+          "tau": 0.00419740649400854,
+          "total_steps": 1000000,
+          "train_freq": 1
+        },
+        "fno_failure_mean": 0.9647,
+        "fno_failure_sd": 0.0029698484809834867,
+        "fno_actions_mean": 77.99260000000001,
+        "fno_actions_sd": 1.1868080215434988,
+        "wall_clock_hours": 0.6951840219232771
+      },
+      {
+        "agent": "ddqn",
+        "profile": "ddqn_raw20_1m",
+        "label": "DDQN raw-belief scaled, 1M",
+        "seeds": [
+          100,
+          101
+        ],
+        "config": {
+          "batch_size": 512,
+          "buffer_size": 500000,
+          "depth": 2,
+          "eps_end": 0.013933264600237711,
+          "eps_fraction": 0.5297244240558068,
+          "eps_start": 1.0,
+          "gamma": 0.99,
+          "gradient_steps": 1,
+          "hidden": 128,
+          "learning_starts": 20480,
+          "lr": 0.0003863012590717139,
+          "n_envs": 128,
+          "obs": "p",
+          "return_scale": 20.0,
+          "tau": 0.00419740649400854,
+          "total_steps": 1000000,
+          "train_freq": 1
+        },
+        "fno_failure_mean": 0.8938999999999999,
+        "fno_failure_sd": 0.020788939366884484,
+        "fno_actions_mean": 72.1929,
+        "fno_actions_sd": 1.130946585829766,
+        "wall_clock_hours": 0.7053596858183543
+      }
+    ]
+  },
+  "physical_contract": {
+    "molecule": "ThF+",
+    "states": 192,
+    "actions": 312,
+    "p_target": 0.98,
+    "horizon": 80,
+    "rho": 0.0,
+    "manifest_fingerprint": "d7deb43457d3",
+    "manifest_sha256": "81ff309e7d4fb1663d384498ae46ce35c77146688e71db6045f168ebdb14d2ed",
+    "evaluation_episodes_per_dynamics_per_seed": 5000
+  },
+  "rows": [
+    {
+      "agent": "sac_discrete",
+      "profile": "sac_refined_2m",
+      "label": "SAC refined, 2M",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "config": {
+        "alpha": 0.013268918812005082,
+        "autotune_alpha": true,
+        "batch_size": 512,
+        "buffer_size": 100000,
+        "depth": 1,
+        "gamma": 0.995,
+        "gradient_steps": 1,
+        "hidden": 128,
+        "learning_starts": 1000,
+        "lr": 0.00015047792717528454,
+        "n_envs": 16,
+        "obs": "sqrt",
+        "return_scale": 20.0,
+        "target_entropy_ratio": 0.49969706052497553,
+        "tau": 0.003048864797383012,
+        "total_steps": 2000000,
+        "train_freq": 1
+      },
+      "fno_failure_mean": 0.32887999999999995,
+      "fno_failure_sd": 0.010598679162990052,
+      "fno_actions_mean": 46.24732,
+      "fno_actions_sd": 0.9999713455894607,
+      "wall_clock_hours": 16.631944444378217,
+      "exact_failure_mean": 0.33932,
+      "exact_failure_sd": 0.005550855789876011,
+      "exact_actions_mean": 46.69516,
+      "exact_actions_sd": 1.0421630812881464,
+      "exact_minus_fno_failure": 0.01044000000000006,
+      "paired_exact_failure_delta_mean": -0.35475999999999996,
+      "paired_exact_failure_delta_sd": 0.08782544050558472,
+      "paired_exact_actions_delta_mean": -19.37828,
+      "paired_exact_actions_delta_sd": 5.362281810199834,
+      "paired_seed_wins": 5
+    },
+    {
+      "agent": "ddqn",
+      "profile": "ddqn_raw20_1m",
+      "label": "DDQN raw-belief scaled, 1M",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "config": {
+        "batch_size": 512,
+        "buffer_size": 500000,
+        "depth": 2,
+        "eps_end": 0.013933264600237711,
+        "eps_fraction": 0.5297244240558068,
+        "eps_start": 1.0,
+        "gamma": 0.99,
+        "gradient_steps": 1,
+        "hidden": 128,
+        "learning_starts": 20480,
+        "lr": 0.0003863012590717139,
+        "n_envs": 128,
+        "obs": "p",
+        "return_scale": 20.0,
+        "tau": 0.00419740649400854,
+        "total_steps": 1000000,
+        "train_freq": 1
+      },
+      "fno_failure_mean": 0.9256399999999999,
+      "fno_failure_sd": 0.02921280541132603,
+      "fno_actions_mean": 74.76308,
+      "fno_actions_sd": 2.598669300238101,
+      "wall_clock_hours": 1.836366493900617,
+      "exact_failure_mean": 0.9245999999999999,
+      "exact_failure_sd": 0.039935447912850565,
+      "exact_actions_mean": 74.45664,
+      "exact_actions_sd": 3.370359572508551,
+      "exact_minus_fno_failure": -0.001040000000000041,
+      "paired_exact_failure_delta_mean": -0.06100000000000003,
+      "paired_exact_failure_delta_sd": 0.040544790047551134,
+      "paired_exact_actions_delta_mean": -4.41892,
+      "paired_exact_actions_delta_sd": 3.4197466999764767,
+      "paired_seed_wins": 5
+    }
+  ]
+}

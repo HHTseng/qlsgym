@@ -2,9 +2,9 @@
 
 This branch trains PPO, categorical SAC, and Double DQN for ThF⁺ state
 purification using the fixed `munozariasjm/thf_qls_fno` `mix` surrogate. The
-strongest completed learned controller is **qMDP PPO**: on exact dynamics it
-has **34.35% failure** and **47.28 failure-penalized actions**, compared with
-63.74% and 63.98 for Jose PPO.
+strongest completed learned controller is **refined SAC**: on exact dynamics it
+has **33.93% failure** and **46.70 failure-penalized actions**. The qMDP PPO is
+statistically close at 34.35% and 47.28, while Jose PPO gives 63.74% and 63.98.
 
 ## Control and evaluation contract
 
@@ -64,22 +64,29 @@ elimination is one fixed policy evaluated on 5,000 episodes.
 | Controller | Training | Exact failure $f_E$ ↓ | Exact actions $A_E$ ↓ | FNO failure ↓ |
 |---|---:|---:|---:|---:|
 | Physics elimination | none | **29.36%** | 51.49 | 63.14% |
-| **qMDP PPO** | 2M transitions | 34.35% ± 5.65% | **47.28 ± 2.69** | 31.10% |
+| **Refined SAC** | 2M transitions | 33.93% ± 0.56% | **46.70 ± 1.04** | 32.89% |
+| **qMDP PPO** | 2M transitions | 34.35% ± 5.65% | 47.28 ± 2.69 | 31.10% |
 | qMDP PPO, lower learning rate | 1M transitions | 37.78% ± 2.93% | 50.52 ± 1.64 | 35.52% |
 | Jose PPO | 2M transitions | 63.74% ± 3.64% | 63.98 ± 0.89 | 62.82% |
 | Original branch PPO | 1M transitions | 73.89% ± 2.37% | 68.15 ± 1.01 | 73.84% |
 | Refined SAC reference | 1M transitions | 57.07% ± 18.96% | 59.85 ± 9.11 | 56.59% |
 | Original SAC | 1M transitions | 69.41% | 66.07 | 72.23% |
+| Transferred DDQN | 1M transitions | 92.46% ± 3.99% | 74.46 ± 3.37 | 92.56% |
 | Original DDQN | 1M transitions | 98.56% | 78.88 | 98.97% |
+
+Refined SAC narrowly improves on qMDP PPO by 0.42 percentage points and 0.59
+actions. The seed variation is also smaller: 0.56 percentage points for SAC
+versus 5.65 for qMDP PPO. Relative to physics elimination, SAC uses 4.79 fewer
+penalized actions but fails 4.57 points more often, so neither controller
+dominates the other.
 
 qMDP PPO lowers exact failure by **29.40 percentage points** and $A_E$ by
 **16.70 actions** relative to Jose PPO, winning both metrics on all five paired
-seeds. Relative to physics elimination it uses 4.21 fewer penalized actions but
-fails 4.99 points more often, so neither controller dominates the other.
+seeds.
 
-The FNO underestimates qMDP PPO failure by 3.25 points. This policy-specific
-agreement does not validate the surrogate globally: physics elimination has a
-33.78-point exact-versus-FNO failure gap.
+The FNO underestimates refined SAC failure by 1.04 points and qMDP PPO failure
+by 3.25 points. This policy-specific agreement does not validate the surrogate
+globally: physics elimination has a 33.78-point exact-versus-FNO failure gap.
 
 ![Five-seed PPO comparison on exact dynamics](results/thf_next_ppo/next_ppo_comparison.png)
 
@@ -147,8 +154,27 @@ The leak-free two-seed FNO screen selected:
 
 For SAC, increasing the budget from 1M to 2M lowers screen failure from 49.29%
 to 35.66%. DDQN remains ineffective: its 2M profile worsens to 94.27% failure.
-Five-seed exact and FNO validation of the selected profiles is running on Tara;
-no exact result from that incomplete stage is reported here.
+The five-seed validation gives:
+
+| Agent | Exact failure ↓ | Exact actions ↓ | FNO failure ↓ | Exact−FNO failure |
+|---|---:|---:|---:|---:|
+| **Refined SAC** | **33.93% ± 0.56%** | **46.70 ± 1.04** | 32.89% | +1.04 pp |
+| Transferred DDQN | 92.46% ± 3.99% | 74.46 ± 3.37 | 92.56% | −0.10 pp |
+
+Relative to the original branch SAC, the transferred SAC lowers exact failure
+by 35.48 percentage points and $A_E$ by 19.38 actions, winning both metrics on
+all five paired seeds. It also improves on the `FNO_RL_optuna` refined-SAC
+reference by 23.14 points and 13.15 actions. Transferred DDQN improves on the
+original DDQN by 6.10 points and 4.42 actions but still fails 92.46% of exact
+episodes; the tested value-based formulation is therefore not competitive for
+this task.
+
+![Five-seed SAC and DDQN transfer comparison](results/thf_offpolicy_transfer/offpolicy_transfer_comparison.png)
+
+The numerical records are in the
+[off-policy summary](results/thf_offpolicy_transfer/summary.json),
+[screen selection](results/thf_offpolicy_transfer/selection.json), and
+[compact table](results/thf_offpolicy_transfer/summary.md).
 
 ## Reproduce
 
