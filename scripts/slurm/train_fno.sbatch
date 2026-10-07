@@ -1,7 +1,7 @@
 #!/bin/bash
-# Array-train one FNO surrogate per block: ThF has 12 blocks (0-11), H3O has 10 (0-9).
+# Array-train one FNO surrogate per block: ThF has 14 blocks (0-13), H3O has 10 (0-9).
 #
-#   sbatch --array=0-11 scripts/slurm/train_fno.sbatch
+#   sbatch --array=0-13 scripts/slurm/train_fno.sbatch
 #   MOLECULE=h3o SIGMA=+ TAG=mix ALPHA=-2 sbatch --array=0-9 scripts/slurm/train_fno.sbatch
 #
 #SBATCH --job-name=qlsgym_fno
@@ -12,7 +12,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=4:00:00
-#SBATCH --array=0-11
+#SBATCH --array=0-13
 #SBATCH --output=/dev/null
 #SBATCH --error=/dev/null
 

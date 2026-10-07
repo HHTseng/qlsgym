@@ -30,10 +30,10 @@ LIBRARIES = ("physics_subset", "rl_discrete")
 
 # Per-molecule benchmark defaults, measured 2026-09-16; the published runs used these.
 #   max_pulses: the benchmark horizon, long enough for one full sweep of the physics_subset
-#     library (h3o 167 actions, thf 312).  molecule.task.max_pulses is 80, the task budget,
+#     library (h3o 167 actions, thf 416; 312 when this was measured on the J <= 6 model).  molecule.task.max_pulses is 80, the task budget,
 #     and is far too short to be a benchmark horizon.
 #   eval_greedy: thf's actor is evaluated by sampling -- the argmax of a 312-action stochastic
-#     policy locks onto a single pulse (sampled 0.985 success, greedy 0.005).
+#     policy (J <= 6 model) locks onto a single pulse (sampled 0.985 success, greedy 0.005).
 MOLECULE_DEFAULTS = {"h3o": {"max_pulses": 400, "eval_greedy": True},
                      "thf": {"max_pulses": 800, "eval_greedy": False}}
 DEFAULTS_FALLBACK = {"max_pulses": None, "eval_greedy": True}

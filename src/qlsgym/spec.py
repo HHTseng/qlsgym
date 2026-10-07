@@ -76,7 +76,8 @@ class Window:
     tau_max_ms: float                         # pulse durations are the grid tau_grid()
     n_tau: int
     rwa_cutoff: float                         # rad/ms; couplings detuned by more than this anywhere in the window are dropped
-    omega_min_coupling: float                 # rad/ms; weaker sigma+ couplings are dropped from the block graph
+    omega_min_coupling: float                 # rad/ms; weaker couplings get no grid action or embedding channel
+                                              # (the dynamics keep them: only rwa_cutoff drops couplings)
     carrier_bands: tuple = ()                 # ((lo, hi), ...) rad/ms, masked out of the grid (ThF+ F5)
     # physics-informed embedding constants (paper Eqs. 11-16); surrogate only
     s_emb: float = 0.05

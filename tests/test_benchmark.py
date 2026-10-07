@@ -270,7 +270,7 @@ def test_benchmark_sbatch_passes_the_horizon_and_the_tag_through():
 
 
 def test_both_molecules_have_a_horizon_and_an_evaluation_mode():
-    for name, lib_actions in (("h3o", 167), ("thf", 312)):
+    for name, lib_actions in (("h3o", 167), ("thf", 416)):
         d = molecule_defaults(name)
         assert d["max_pulses"] > lib_actions      # one full sweep of the library must fit
         assert isinstance(d["eval_greedy"], bool)

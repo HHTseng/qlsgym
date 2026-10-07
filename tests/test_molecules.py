@@ -46,13 +46,13 @@ def test_h3o_structure(h3o):
 
 
 def test_thf_structure(thf):
-    assert thf.name == "thf" and thf.n_states == 192 and thf.system.n_blocks == 12
-    assert [b.n_states for b in thf.blocks] == [26, 26, 22, 22, 18, 18, 14, 14, 10, 10, 6, 6]
+    assert thf.name == "thf" and thf.n_states == 252 and thf.system.n_blocks == 14
+    assert [b.n_states for b in thf.blocks] == [30, 30, 26, 26, 22, 22, 18, 18, 14, 14, 10, 10, 6, 6]
     for b in thf.blocks:
         J, par = b.key
         assert b.n_states == 4 * J + 2 and par in "+-"
         assert all(thf.system.levels[s][0] == J and thf.system.levels[s][2] == par for s in b.states)
-    assert thf.trap.n_nu == 7 and abs(thf.trap.nu_f / (2 * np.pi) - 1112.7182) < 1e-9 and thf.trap.eta == 0.06776
+    assert thf.trap.n_nu == 8 and abs(thf.trap.nu_f / (2 * np.pi) - 1112.7182) < 1e-9 and thf.trap.eta == 0.06776
     assert abs((thf.window.omega_max - thf.window.omega_min) / (2 * np.pi) - 940.0) < 1e-9
     assert thf.window.tau_max_ms == 6.0 and thf.window.n_tau == 200 and thf.task.temperature_k == 4.0
     # the two J = 1, F = 1/2 sigma+ carriers inside the window (ThF finding F5);
@@ -67,7 +67,7 @@ def test_thf_structure(thf):
         assert thf.system.block_of_state[p.source] in p.blocks and thf.system.block_of_state[p.target] in p.blocks
         assert len(p.blocks) >= 2
     assert thf.provenance["coupling_model"] == "A"
-    assert thf.provenance["b_field_gauss"] == 20.0 and thf.provenance["j_max"] == 6
+    assert thf.provenance["b_field_gauss"] == 20.0 and thf.provenance["j_max"] == 7
     # D11 (hand-added Delta_g) is retired: the parity-dependent Zeeman effect
     # is now the G tensor's own G_Delta = (G_xx - G_yy) / 2.
     assert "delta_g" not in thf.provenance and "delta_g_j_scaling" not in thf.provenance
@@ -84,13 +84,13 @@ def test_thf_structure(thf):
 def test_thf_omega_doublet_ordering_and_g_tensor(thf):
     """heff 2026-09-14: e lies below f at every J, and G_Delta splits their g-factors at J = 1."""
     lv = thf.system.levels
-    for J in range(1, 7):
+    for J in range(1, 8):
         e_parity = "+" if J % 2 == 0 else "-"
         lo = {p: min(thf.system.energies[i] for i, l in enumerate(lv) if l[0] == J and l[2] == p)
               for p in "+-"}
         assert min(lo, key=lo.get) == e_parity, f"J={J}: lower doublet component is not e"
     # block order follows the table order, which follows energy
-    assert [b.key for b in thf.blocks] == [(6, "+"), (6, "-"), (5, "-"), (5, "+"), (4, "+"), (4, "-"),
+    assert [b.key for b in thf.blocks] == [(7, "-"), (7, "+"), (6, "+"), (6, "-"), (5, "-"), (5, "+"), (4, "+"), (4, "-"),
                                            (3, "-"), (3, "+"), (2, "+"), (2, "-"), (1, "-"), (1, "+")]
 
     def g_magnitude(J, F, parity):
@@ -128,7 +128,7 @@ def test_two_molecules_do_not_interfere(h3o, thf):
     b = et.branches_all_tau(pt, wt, "+")
     a2 = ExactEngine(h3o, idx).branches_all_tau(ph, wh, "+")
     b2 = ExactEngine(thf, idx).branches_all_tau(pt, wt, "+")
-    assert a[0].shape == (2, 444) and b[0].shape == (2, 192)
+    assert a[0].shape == (2, 444) and b[0].shape == (2, 252)
     assert np.array_equal(a[0], a2[0]) and np.array_equal(b[1], b2[1])
     with pytest.raises(ValueError):
         et.branches_all_tau(pt, wh, "+")      # the H3O+ window is off-window for ThF+

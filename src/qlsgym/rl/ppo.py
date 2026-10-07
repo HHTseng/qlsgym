@@ -46,7 +46,7 @@ class PPOConfig:
     # How the trained actor acts when evaluated.  A PPO actor IS a stochastic
     # policy; taking its argmax is a different policy, and on a large library it
     # is a much worse one -- it can lock onto one drive and repeat it forever.
-    # With 312 ThF+ actions the sampled policy finishes every episode while its
+    # With 312 ThF+ actions (J <= 6 model) the sampled policy finishes every episode while its
     # argmax finishes 0.5 %, so the eval mode has to be explicit, not assumed.
     eval_greedy: bool = True
     seed: int = 0

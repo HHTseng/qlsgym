@@ -1,5 +1,5 @@
-"""232Th19F+ / Ca+: 192 hyperfine-resolved states (X 3Delta1, v = 0, J = 1..6, Omega = +-1, F = J
-+- 1/2), 12 (J, parity) blocks.
+"""232Th19F+ / Ca+: 252 hyperfine-resolved states (X 3Delta1, v = 0, J = 1..7, Omega = +-1, F = J
++- 1/2), 14 (J, parity) blocks.
 """
 
 from __future__ import annotations
@@ -13,21 +13,26 @@ import numpy as np
 
 from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_PI
 
-# table tag; mirrors thffno.units.table_tag(J_MAX, B_FIELD_GAUSS, E_FIELD_V_PER_CM)
-# (kept as a literal so qlsgym stays importable without the source package, G10)
-_TAG = "Jmax_6_B_20G_E_0Vcm"
-LEVELS_FILE = f"ThF232_levels_{_TAG}.txt"
-RABI_FILE = f"ThF232_two_photon_sigma_plus_modelA_{_TAG}.txt"
-
-J_MAX = 6
+# settings the tables in data/thf were built at (qlsgym.molecules.thf_tables)
+J_MAX = 7
 B_FIELD_GAUSS = 20.0
 E_FIELD_V_PER_CM = 0.0
+
+
+def table_tag(j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS, e_v_per_cm: float = E_FIELD_V_PER_CM) -> str:
+    """The settings tag in both table filenames; the reader here and the writer in thf_tables share it."""
+    return f"Jmax_{j_max}_B_{b_gauss:g}G_E_{e_v_per_cm:g}Vcm"
+
+
+LEVELS_FILE = f"ThF232_levels_{table_tag()}.txt"
+RABI_FILE = f"ThF232_two_photon_sigma_plus_modelA_{table_tag()}.txt"
+
 # effective Zeeman tensor components read back out of the table header
 G_SYMBOLS = ("G_xx", "G_yy", "G_zz")
 REFERENCE_RABI_KHZ = 3.0
 NU_F_OVER_2PI_KHZ = 1112.7182
 ETA = 0.06776
-N_NU = 7
+N_NU = 8          # J = 7 needs 8: 0.67 worst transfer error at 7, 1.5e-3 at 8 (docs/thf_system.md)
 OMEGA_HALF_WIDTH_OVER_2PI_KHZ = 470.0
 TAU_MAX_MS, N_TAU = 6.0, 200
 T_INT_K = 4.0
@@ -46,7 +51,7 @@ _PARAM_RE = re.compile(r"^#\s{2,}(?P<symbol>[A-Za-z][A-Za-z0-9_]*)\s+(?P<value>[
 
 
 def read_table_header(filename) -> dict:
-    """Provenance carried in the # preamble thffno.molecule writes."""
+    """Provenance carried in the # preamble thf_tables.write_tables writes."""
     rev = spec_hash = None
     params: dict = {}
     with open(filename) as fh:
@@ -66,7 +71,7 @@ def read_table_header(filename) -> dict:
     return {"heff_git_rev": rev, "heff_spec_hash": spec_hash, "params": params}
 
 
-# Readers (byte-compatible with thffno.system)
+# Readers
 
 
 def read_energy_levels(filename):
