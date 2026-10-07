@@ -126,7 +126,7 @@ def main() -> None:
                    help="episode horizon; default per molecule (h3o 400, thf 800)")
     r.add_argument("--p-target", type=float, default=None)
     r.add_argument("--fno-tag", default=None,
-                   help="surrogate manifest tag; default 'mix' where it exists, else 'prod'")
+                   help="surrogate manifest tag; default 'mix'")
     r.add_argument("--device", default="cpu")
     r.add_argument("--engine", default="auto", choices=["auto", "cudaq", "exact"],
                    help="dynamics engine for the planner arms and the surrogate fallback")

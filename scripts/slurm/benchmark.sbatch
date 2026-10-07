@@ -29,11 +29,10 @@ set -euo pipefail
 : "${LIBRARY:=physics_subset}"
 : "${NPOOL:=16}"
 # FNO_TAG and MAXPULSES are deliberately unset by default: benchmark.py resolves both per
-# molecule (tag "mix" where its manifest exists else "prod"; horizon h3o 400, thf 800).
-# A fixed FNO_TAG=prod here used to crash ThF+ jobs, which have no prod manifest.
+# molecule (tag "mix"; horizon h3o 400, thf 800).
 : "${FNO_TAG:=}"
 # the published arms were measured with the exact engine; ENGINE=auto opts into CUDA-Q.
-# CUDA-Q costs ~6.5 h per ThF+ drive (3.6e7 RK steps at FNO_REPL's measured 0.65 ms/step)
+# CUDA-Q costs ~6.5 h per ThF+ drive (3.6e7 RK steps at a measured 0.65 ms/step on an A100)
 # against 0.5 s for the whole exact tau grid on one CPU core, hence the pin.
 : "${ENGINE:=${QLSGYM_ENGINE:-exact}}"
 export QLSGYM_ENGINE="$ENGINE"

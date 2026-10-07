@@ -18,7 +18,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--molecule", default="thf", choices=["thf", "h3o"])
     ap.add_argument("--tag", default="mix", help="checkpoint manifest tag "
-                    "(scripts/make_manifest.py); e.g. 'mix' or 'a1.0' for thf")
+                    "(scripts/make_manifest.py --tag)")
     ap.add_argument("--n-rollouts", type=int, default=200)
     ap.add_argument("--max-pulses", type=int, default=None, help="default: molecule.task.max_pulses")
     ap.add_argument("--seed", type=int, default=0)

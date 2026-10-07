@@ -1,6 +1,4 @@
-"""Eq. 25 score (qlsgym.policies.score): scalar/batched consistency and numeric parity against
-thffno.planner.score_batch on random inputs.
-"""
+"""Eq. 25 score (qlsgym.policies.score): scalar/batched consistency on random inputs."""
 import numpy as np
 import pytest
 
@@ -48,19 +46,3 @@ def test_unknown_br_mode_raises():
     p_in, p0, p1 = _random_branches(rng)
     with pytest.raises(ValueError):
         score_batch(p_in, p0, p1, ScoreConfig(br_mode="bogus"))
-
-
-@pytest.mark.parametrize("br_mode", ["expected", "best", "success", "progress"])
-def test_parity_with_thffno_planner_score_batch(br_mode):
-    """qlsgym.policies.score is a verbatim port of thffno.planner's Eq. 25."""
-    thf_planner = pytest.importorskip("thffno.planner")
-    rng = np.random.default_rng(3)
-    n = 40
-    ref_cfg = thf_planner.ScoreConfig(br_mode=br_mode)
-    cfg = ScoreConfig(br_mode=br_mode, p_target=ref_cfg.p_target,
-                      success_width=ref_cfg.success_width)
-    for _ in range(10):
-        p_in, p0, p1 = _random_branches(rng, n)
-        got = score_batch(p_in, p0, p1, cfg)
-        want = thf_planner.score_batch(p_in, p0, p1, ref_cfg)
-        assert float(got) == pytest.approx(float(want), abs=1e-10)

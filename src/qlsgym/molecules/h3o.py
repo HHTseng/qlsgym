@@ -12,7 +12,6 @@ from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_P
 
 LEVELS_FILE = "H3O_levels_Jmax_4_B_0.00036.txt"
 RABI_FILE = "two_photon_rabi_rates_sum_Jmax_4_p_q10_q21_B_0.00036.txt"
-SOURCE_REPO = "/n/home02/josemm/RESEARCH/PROJECTS/MOLESQLS/FNO_REPL"
 
 # Reference transition of paper Eq. 39, (J, K, parity, mF, xi) for the
 # initial and final state; its scaled Rabi rate is Omega/2pi = 2.000 kHz.
@@ -217,8 +216,7 @@ def build(n_families: int = 2, n_nu: int = N_NU, temperature_k: float = T_INT_K,
         "b_field_mt": 0.36, "j_max": 4,
         "reference_transition": REFERENCE_TRANSITION, "reference_rabi_khz": REFERENCE_RABI_KHZ,
         "delta_max": DELTA_MAX, "s_emb": 0.05, "beta_emb": 0.01,
-        "source_repo": SOURCE_REPO, "source_package": "fnorepl", "source_git_rev": None,
-        "primitives": f"fnorepl.planner.thz_primitives(n_families={n_families}), sigma+ at their pi-time",
+        "primitives": f"thz_primitives(n_families={n_families}), sigma+ at their pi-time",
         "paper": "arXiv:2410.11839",
     }
     from ..physics.spectrum import carrier_bands

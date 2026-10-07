@@ -282,11 +282,12 @@ def test_fno_tag_defaults_to_mix_where_its_manifest_exists(tmp_path, monkeypatch
     monkeypatch.setenv("QLSGYM_WORK", str(tmp_path))
     ck = tmp_path / "checkpoints" / "thf"
     ck.mkdir(parents=True)
-    (ck / "prod.json").write_text("{}")
-    assert resolve_fno_tag("thf", "planner-fno", log=lambda s: None) == "prod"
+    (ck / "other.json").write_text("{}")
+    with pytest.raises(FileNotFoundError, match="present: \\['other'\\]"):   # never picks another tag
+        resolve_fno_tag("thf", "planner-fno", log=lambda s: None)
     (ck / "mix.json").write_text("{}")
     assert resolve_fno_tag("thf", "planner-fno", log=lambda s: None) == "mix"
-    assert resolve_fno_tag("thf", "planner-fno", "a1.0", log=lambda s: None) == "a1.0"
+    assert resolve_fno_tag("thf", "planner-fno", "other", log=lambda s: None) == "other"
     # an arm that never touches the surrogate must not need a manifest at all
     assert resolve_fno_tag("h3o", "sweeping", log=lambda s: None) == BenchmarkConfig.fno_tag
     with pytest.raises(FileNotFoundError):

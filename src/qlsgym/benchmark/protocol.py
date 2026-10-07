@@ -38,7 +38,7 @@ MOLECULE_DEFAULTS = {"h3o": {"max_pulses": 400, "eval_greedy": True},
                      "thf": {"max_pulses": 800, "eval_greedy": False}}
 DEFAULTS_FALLBACK = {"max_pulses": None, "eval_greedy": True}
 # Surrogate tags tried, in order, when --fno-tag is not given.
-FNO_TAG_ORDER = ("mix", "prod")
+FNO_TAG_ORDER = ("mix",)
 
 
 @dataclass(frozen=True)
@@ -50,7 +50,7 @@ class BenchmarkConfig:
     max_pulses: int | None = None       # None -> molecule.task (80); MOLECULE_DEFAULTS for runs
     p_target: float | None = None
     # $QLSGYM_WORK/checkpoints/<molecule>/<fno_tag>.json; resolve_fno_tag picks it per molecule
-    fno_tag: str = "prod"
+    fno_tag: str = "mix"
     device: str = "cpu"
     engine: str = "auto"                # dynamics engine: auto | cudaq | exact
     # planner (arXiv:2608.03702 Sec. II.4): active pool of the top n_pool scores
@@ -189,8 +189,7 @@ def engine_provenance(engine) -> dict:
     d = {"kind": type(engine).__name__}
     m = getattr(engine, "manifest", None)
     if m is not None:
-        d.update(manifest_tag=m.tag, manifest_fingerprint=m.fingerprint, manifest_source=m.source,
-                 manifest_created=m.created,
+        d.update(manifest_tag=m.tag, manifest_fingerprint=m.fingerprint, manifest_created=m.created,
                  entries={k: {"path": e.path, "provenance": e.provenance} for k, e in sorted(m.entries.items())})
     for attr in ("selection", "settings", "stats"):
         v = getattr(engine, attr, None)

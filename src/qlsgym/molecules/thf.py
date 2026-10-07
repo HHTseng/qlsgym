@@ -7,7 +7,6 @@ from __future__ import annotations
 import dataclasses
 import os
 import re
-import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -19,7 +18,6 @@ from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_P
 _TAG = "Jmax_6_B_20G_E_0Vcm"
 LEVELS_FILE = f"ThF232_levels_{_TAG}.txt"
 RABI_FILE = f"ThF232_two_photon_sigma_plus_modelA_{_TAG}.txt"
-SOURCE_REPO = "/n/home02/josemm/RESEARCH/PROJECTS/MOLESQLS/FNO_NEW_MOLECULE/ThF_232_19"
 
 J_MAX = 6
 B_FIELD_GAUSS = 20.0
@@ -41,15 +39,6 @@ OMEGA_MIN_COUPLING = 1.0
 def data_dir() -> Path:
     root = os.environ.get("QLSGYM_DATA")
     return Path(root) / "thf" if root else Path(__file__).resolve().parents[3] / "data" / "thf"
-
-
-def _git_rev(repo: str):
-    try:
-        out = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"], capture_output=True,
-                             text=True, timeout=5)
-        return out.stdout.strip() if out.returncode == 0 else None
-    except Exception:
-        return None
 
 
 _GENERATED_RE = re.compile(r"\(heff @ (?P<rev>\S+?), spec_hash (?P<hash>\S+?)\)")
@@ -301,9 +290,7 @@ def build(n_primitives: int = 24, mode: str = "dark_state", n_nu: int = N_NU,
         "heff_git_rev": hdr["heff_git_rev"], "heff_spec_hash": hdr["heff_spec_hash"],
         "reference_rabi_khz": REFERENCE_RABI_KHZ,
         "delta_max": DELTA_MAX, "s_emb": 0.05, "beta_emb": 0.01,
-        "source_repo": SOURCE_REPO, "source_package": "thffno", "source_git_rev": _git_rev(SOURCE_REPO),
-        "primitives": f"thffno.planner.cross_j_primitives(mode={mode!r}, n_primitives={n_primitives})",
-        "max_pulses_in_source_results": 150,
+        "primitives": f"cross_j_primitives(mode={mode!r}, n_primitives={n_primitives})",
     }
     from ..physics.spectrum import carrier_bands
     mol = Molecule("thf", system, trap, window, task, (), provenance)

@@ -22,7 +22,6 @@ class FnoEngine:
         tau_indices: np.ndarray | None = None,
         device: torch.device | str | None = None,
         fallback: TauBatchedEngine | None = None,
-        legacy: bool | set = False,
         allow_mismatch: bool = False,
     ) -> None:
         self.molecule = molecule
@@ -43,8 +42,7 @@ class FnoEngine:
         for key, path in self.checkpoints.items():
             if not os.path.exists(path):
                 raise FileNotFoundError(path)
-            leg = legacy if isinstance(legacy, bool) else (key in legacy)
-            model = load_model(path, self.device, molecule=molecule, allow_mismatch=allow_mismatch, legacy=leg)
+            model = load_model(path, self.device, molecule=molecule, allow_mismatch=allow_mismatch)
             if (int(model.block_index), model.sigma) != key:
                 raise ValueError(f"{path} is for block {model.block_index} sigma{model.sigma}, registered as {key}")
             self._models[key] = model

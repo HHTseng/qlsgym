@@ -114,30 +114,6 @@ def test_physics_subset_synthetic(mol):
     assert pi_time_ms(mol, 2.0) == pytest.approx(np.pi / (mol.trap.eta * np.exp(-mol.trap.eta ** 2 / 2) * 2.0))
 
 
-@pytest.mark.integration
-def test_physics_subset_thf_matches_baseline_script():
-    """The ported action set equals baseline_protocol.build_actions on ThF+, in the SAME ORDER."""
-    pytest.importorskip("qlsgym.physics.engines")
-    thf_sys = pytest.importorskip("thffno.system")
-    import os, sys
-    root = os.environ.get("THFFNO_ROOT")
-    if not root:
-        pytest.skip("THFFNO_ROOT not set (source scripts/env.sh)")
-    sys.path.insert(0, os.path.join(root, "scripts"))
-    from baseline_protocol import build_actions
-    from thffno.units import tau_grid
-    mol = load_molecule("thf")
-    ref = build_actions(thf_sys.default_system(), tau_grid())
-    lib = ActionLibrary.physics_subset(mol)
-
-    assert np.allclose(mol.tau_grid(), tau_grid()), "tau grids diverged; port no longer comparable"
-    ref_ordered = [(a[0], round(a[1], 6), int(a[2])) for v in ref.values() for a in v]
-    got_ordered = [(str(s), round(float(w), 6), int(t))
-                   for s, w, t in zip(lib.sigmas, lib.omegas, lib.tau_indices)]
-    assert got_ordered == ref_ordered, (
-        f"action order/content diverged: {len(got_ordered)} got vs {len(ref_ordered)} ref")
-
-
 @pytest.mark.parametrize("name,d_omega_khz", [("synthetic", 1.0), ("synthetic", 100.0),
                                               ("h3o", 1.0), ("thf", 1.0)])
 def test_uniform_grid_stays_inside_the_window(name, d_omega_khz):

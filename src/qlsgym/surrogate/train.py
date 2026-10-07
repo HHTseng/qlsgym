@@ -220,7 +220,6 @@ def load_model(
     device: torch.device | str = "cpu",
     molecule: Molecule | None = None,
     allow_mismatch: bool = False,
-    legacy: bool = False,
 ) -> BlockFNO:
     """Load a best*.pt checkpoint into a BlockFNO."""
     ckpt = torch.load(path, map_location=device, weights_only=False)
@@ -228,12 +227,9 @@ def load_model(
     fp = meta.get("fingerprint")
     if molecule is not None:
         want = molecule.fingerprint()
-        if fp is None:
-            if not (legacy or allow_mismatch):
-                raise FingerprintMismatch(
-                    f"{path}: checkpoint has no qlsgym fingerprint (source-package checkpoint); "
-                    f"load it through a manifest with source='thffno'/'fnorepl' or pass legacy=True")
-        elif fp != want and not allow_mismatch:
+        if fp is None and not allow_mismatch:
+            raise FingerprintMismatch(f"{path}: checkpoint has no qlsgym fingerprint; retrain it")
+        elif fp is not None and fp != want and not allow_mismatch:
             raise FingerprintMismatch(
                 f"{path}: trained against fingerprint {fp} but molecule {molecule.name!r} is {want}")
         if meta.get("molecule") not in (None, molecule.name) and not allow_mismatch:

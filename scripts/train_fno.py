@@ -124,7 +124,7 @@ def main(argv=None) -> None:
 
     # Reload the checkpoint the run itself prefers (on-resonance selection when
     # available, else the paper's validation-loss selection) for the held-out
-    # test-set evaluation, exactly as thffno/fnorepl's train_fno.py does.
+    # test-set evaluation.
     ckpt_name = "best_onres.pt" if result["history"].get("best_onres_epoch", -1) >= 0 else "best.pt"
     model = load_model(os.path.join(out_dir, ckpt_name), device, molecule=molecule)
     selection = "on_resonance" if ckpt_name == "best_onres.pt" else "val_loss"
