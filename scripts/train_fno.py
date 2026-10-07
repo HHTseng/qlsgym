@@ -53,6 +53,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     a.add_argument("--activity-lambda", type=float, default=1.0)
     a.add_argument("--activity-eps", type=float, default=1e-8)
     a.add_argument("--reduction", default="sum", choices=["sum", "mean"])
+    a.add_argument("--loss", default="paper", choices=["paper", "wkl"],
+                   help="'paper': Eq. 21; 'wkl': activity-weighted generalised KL (unbiased under weights)")
     a.add_argument("--no-per-sample-sqrt", action="store_true",
                    help="deviation: drop Eq. 21's outer per-sample square root")
 
@@ -102,7 +104,7 @@ def main(argv=None) -> None:
     cfg = TrainConfig(batch_size=args.batch_size, epochs=args.epochs, lr=args.lr, weight_decay=args.weight_decay,
                       scheduler_step=args.scheduler_step, scheduler_gamma=args.scheduler_gamma,
                       activity_lambda=args.activity_lambda, activity_eps=args.activity_eps,
-                      reduction=args.reduction, per_sample_sqrt=not args.no_per_sample_sqrt,
+                      reduction=args.reduction, per_sample_sqrt=not args.no_per_sample_sqrt, loss=args.loss,
                       train_seed=args.train_seed, val_seed=args.val_seed,
                       sel_n_freq=args.sel_n_freq, sel_n_init=args.sel_n_init, fno=fno_cfg)
     train_data = DataConfig(n_freq=args.n_freq, n_init=args.n_init, n_pairs=args.n_pairs, pairing=args.pairing,

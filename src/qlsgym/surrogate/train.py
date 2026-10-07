@@ -42,6 +42,9 @@ class TrainConfig:
     reduction: str = "sum"
     # Eq. 21's per-sample outer square root (True is the paper).
     per_sample_sqrt: bool = True
+    # "paper": Eq. 21 (weighted RMS of the populations). "wkl": activity-weighted generalised KL
+    # divergence (weighted_kl_loss), which keeps cross entropy's (q - p) logit gradient.
+    loss: str = "paper"
     train_seed: int = 1234
     val_seed: int = 1
     # on-resonance checkpoint-selection set (0 disables best_onres.pt)
@@ -72,6 +75,46 @@ def weighted_loss(p_pred: Tensor, p_true: Tensor, weights: Tensor,
     raise ValueError(f"unknown reduction {reduction!r}")
 
 
+def weighted_kl_loss(logits: Tensor, p_true: Tensor, weights: Tensor, reduction: str = "sum") -> Tensor:
+    """Activity-weighted generalised KL divergence between the true and predicted populations.
+
+        per sample: mean over tau of  sum_b w_b [ p_b log(p_b / q_b) - p_b + q_b ],  q = softmax(logits)
+
+    logits and p_true are (B, P_tau, 2 M_f), weights (B, 2 M_f) from activity_weights (Eqs. 19-20).
+    Every bracket is >= 0 and vanishes at q_b = p_b by itself, so any positive weights leave the
+    minimum at q = p. (Weighting cross entropy term by term, -sum_b w_b p_b log q_b, would not: under
+    the softmax its minimum is q_b proportional to w_b p_b.) With w = 1 it equals cross entropy minus
+    the entropy of p, since sum_b q_b = sum_b p_b = 1. Its logit gradient
+    w_k (q_k - p_k) - q_k sum_b w_b (q_b - p_b) keeps cross entropy's (q - p) form, so an
+    underestimated population is not shielded by its own small q_k as it is under Eq. 21.
+    """
+    if logits.dtype not in (torch.float32, torch.float64):
+        logits = logits.float()
+    logq = torch.log_softmax(logits, dim=-1)
+    p = p_true.to(logq.dtype)
+    term = torch.xlogy(p, p) - p * logq - p + logq.exp()
+    per_sample = (term * weights[:, None, :]).sum(-1).mean(-1)
+    if reduction == "sum":
+        return per_sample.sum()
+    if reduction == "mean":
+        return per_sample.mean()
+    if reduction == "none":
+        return per_sample
+    raise ValueError(f"unknown reduction {reduction!r}")
+
+
+def batch_loss(model: nn.Module, xb: Tensor, yb: Tensor, wb: Tensor, cfg: TrainConfig,
+               reduction: str | None = None) -> Tensor:
+    """The training objective cfg.loss on one batch."""
+    reduction = cfg.reduction if reduction is None else reduction
+    if cfg.loss == "paper":
+        pred = model(xb).transpose(1, 2)
+        return weighted_loss(pred.float(), yb, wb, reduction, cfg.per_sample_sqrt)
+    if cfg.loss == "wkl":
+        return weighted_kl_loss(model.logits(xb).transpose(1, 2), yb, wb, reduction)
+    raise ValueError(f"unknown loss {cfg.loss!r}")
+
+
 @torch.no_grad()
 def evaluate_loss(model: nn.Module, split: BlockSplit, cfg: TrainConfig, device: torch.device) -> float:
     model.eval()
@@ -79,8 +122,7 @@ def evaluate_loss(model: nn.Module, split: BlockSplit, cfg: TrainConfig, device:
     for lo in range(0, n, cfg.batch_size):
         idx = torch.arange(lo, min(lo + cfg.batch_size, n))
         xb, yb, wb = split.batch(idx, device)
-        pred = model(xb).transpose(1, 2)
-        total += float(weighted_loss(pred.float(), yb, wb, "sum", cfg.per_sample_sqrt))
+        total += float(batch_loss(model, xb, yb, wb, cfg, "sum"))
     return total / n
 
 
@@ -171,8 +213,7 @@ def train(
             idx = perm[lo: lo + cfg.batch_size]
             xb, yb, wb = tr.batch(idx, device)
             opt.zero_grad(set_to_none=True)
-            pred = model(xb).transpose(1, 2)
-            loss = weighted_loss(pred.float(), yb, wb, cfg.reduction, cfg.per_sample_sqrt)
+            loss = batch_loss(model, xb, yb, wb, cfg)
             loss.backward()
             opt.step()
             running += float(loss) * (1.0 if cfg.reduction == "sum" else idx.numel())
