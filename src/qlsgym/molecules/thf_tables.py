@@ -1,49 +1,3 @@
-"""Generate the ThF+ level and sigma+ two-photon coupling tables in data/thf/ from heff.
-
-This is the only module that talks to heff (the effective-Hamiltonian package at $HEFF_ROOT, which
-scripts/env.sh puts on PYTHONPATH). It is a build-time dependency: scripts/build_thf_tables.py calls
-build_tables() once and writes two plain-text tables, and qlsgym.molecules.thf reads those files.
-Regenerate the tables whenever a setting here or heff's parameter set changes; their headers carry
-the heff git revision, its spec hash and the full parameter table. docs/thf_system.md explains
-every modelling choice below.
-
-1. Levels. heff builds H = sum_k c_k M_k in the Hund's case (c) basis |J, Omega = +-1, F, m_F>
-   (I = 1/2 for 19F), J = 1..J_max, at static collinear fields (E_z, B_z). Collinear fields conserve
-   signed m_F, so each m_F block is diagonalised separately. Every eigenstate is labelled by its
-   dominant ket (J, F, m_F), its exact parity <P> = +-1 (exact at E_z = 0), and an energy-ordered
-   index xi inside its (J, parity, m_F) class: the 5-tuple (J, F, parity, m_F, xi).
-
-2. Two-photon couplings, model A. No Raman rate inside X 3Delta1 has been measured, and the
-   candidate intermediate states disagree by a factor of two in energy between ab-initio papers, so
-   the simplest well-defined model is used:
-
-       T_eff = (d . eps2*) P_int (d . eps1) / Delta
-
-   with P_int the projector onto a single Omega = 1 electronic state, summed over all its
-   rotational and hyperfine sublevels |J'', Omega'' = Omega, F'', m''>, J'' <= J_max + 1, at a
-   common detuning Delta. Consequences (tests/test_thf_tables.py checks each):
-
-   * each E1 leg is Omega-diagonal (q = 0), so it is exactly heff.elements_c.dipole_geometry;
-   * the operator is parity-even with no Delta-Omega = +-2 part, so in the ket basis the
-     Omega-doublet components e and f see identical couplings. In the eigenbasis they differ at the
-     1e-3 level, because heff's Zeeman tensor term G_Delta = (G_xx - G_yy)/2 is itself a
-     Delta-Omega = +-2 operator that mixes Delta F = +-1 with opposite sign on e and f;
-   * the antisymmetric rank-1 part vanishes identically, which makes the sigma- channel the exact
-     reverse of the sigma+ channel (the property qlsgym.physics.hamiltonian relies on);
-   * the reduced dipole and Delta are one overall scale, fixed by setting REFERENCE_TRANSITION to
-     |Omega|/2pi = REFERENCE_RABI_KHZ.
-
-   It is an approximation on two counts: a real experiment resolves the intermediate rotational
-   ladder (B_int ~ 7 GHz against a few-GHz detuning), and Omega = 0 intermediates would add a
-   Delta-Omega = +-2 amplitude that makes e and f inequivalent in the coupling.
-
-3. Channel labelling. The sigma+ channel is the set of couplings with Delta m_F = +1. Which Jones
-   vector on the second beam realises that sign depends on whether photon 2 is emitted or absorbed,
-   so the channel is selected by Delta m_F and the Jones pair used is recorded in the table header.
-
-Units: heff works in MHz; the tables store level energies in MHz and couplings in rad/ms.
-"""
-
 from __future__ import annotations
 
 import datetime as _dt
@@ -61,36 +15,22 @@ __all__ = ["REFERENCE_TRANSITION", "JONES", "Levels", "Couplings", "build_levels
 
 
 def _heff():
-    """Import heff lazily so the rest of qlsgym never needs it."""
     try:
         import heff
-    except ModuleNotFoundError as exc:  # pragma: no cover - depends on the environment
+    except ModuleNotFoundError as exc:  # pragma: no cover
         raise ModuleNotFoundError("heff is not importable; `source scripts/env.sh` puts $HEFF_ROOT on "
                                   "PYTHONPATH (needed only to build the tables)") from exc
     return heff
 
 
-# (J, F, parity, m_F, xi) of the initial and final state whose sigma+ coupling is normalised to
-# |Omega|/2pi = REFERENCE_RABI_KHZ: the m_F = +1/2 -> +3/2 rung of the J = 1, F = 3/2 ladder on the
-# parity-+ doublet component, which at J = 1 is f, the upper one (heff puts e, parity +(-1)^J,
-# below f at every J). The e partner's same rung comes out at 3.0007 kHz.
 REFERENCE_TRANSITION = (
     (1, 1.5, "+", 0.5, 0),
     (1, 1.5, "+", 1.5, 0),
 )
 
 
-# Levels
-
-
 @dataclass(frozen=True)
 class Levels:
-    """Eigenstates of the field-dressed molecular Hamiltonian.
-
-    labels[n] = (J, F, parity, m_F, xi); energies_MHz ascending; vectors[:, n] is eigenstate n in
-    the global kets basis; ef[n] is the Brown-1975 e/f label, kept for the table only.
-    """
-
     kets: np.ndarray
     labels: list
     energies_MHz: np.ndarray
@@ -102,11 +42,6 @@ class Levels:
 
 def build_levels(j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS, e_v_per_cm: float = E_FIELD_V_PER_CM,
                  pset=None) -> Levels:
-    """Diagonalise heff's Hamiltonian at (E_z, B_z) and label the eigenstates.
-
-    pset replaces heff's thf_v1() parameter set (e.g. a control with G_xx = G_yy built with
-    ParamSet.with_). The shipped tables always use the default.
-    """
     heff = _heff()
     spec = heff.thf_spec(J_max=j_max)
     pset = heff.thf_v1() if pset is None else pset
@@ -127,8 +62,6 @@ def build_levels(j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS, e_v_per_cm:
         sub = kets[idx]
         tm = heff.build_term_matrices(sub, ctx)
         spec_hash = spec_hash or tm.manifest["spec_hash"]
-        # heff's term list carries the whole Zeeman tensor diag(G_xx, G_yy, G_zz), so the
-        # parity-dependent part G_Delta is already in here
         h = heff.hamiltonian(tm, pset, {"E_z": e_v_per_cm, "B_z": b_gauss})
         w, v = np.linalg.eigh(h)
         pop = heff.parity_operator(sub, ctx.S, ell=0.0, s=0.0)
@@ -149,7 +82,6 @@ def build_levels(j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS, e_v_per_cm:
     if np.max(np.abs(np.abs(parity) - 1.0)) > 1e-9:
         raise ValueError("parity is not exact; is E_z != 0? The block keys (J, parity) assume exact parity.")
 
-    # xi: energy-ordered index inside each (J, parity, m_F) class
     counters: dict = {}
     labels = []
     for k in range(n):
@@ -165,9 +97,6 @@ def build_levels(j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS, e_v_per_cm:
                   spec_hash=spec_hash, params_table=pset.table())
 
 
-# Two-photon amplitudes, coupling model A
-
-# Cartesian Jones vectors; sigma+ = -(x + i y)/sqrt2 is the Condon-Shortley e_{+1}, pi = z
 JONES = {
     "pi": np.array([0.0, 0.0, 1.0], dtype=complex),
     "sigma+": np.array([-1.0, -1.0j, 0.0]) / np.sqrt(2.0),
@@ -176,15 +105,11 @@ JONES = {
 
 
 def _leg_weights(eps: np.ndarray) -> dict:
-    """c[p] = (-1)^p eps_{-p} for d . eps = sum_p c[p] T^1_p(d)."""
     from heff.twophoton import _leg
     return _leg(eps)
 
 
 def _intermediate_kets(kets: np.ndarray, j_max_int: int) -> np.ndarray:
-    """|J'', Omega'' = +-1, F'', m''> for J'' = 1..j_max_int, in the X kets' dtype and phase convention
-    so dipole_geometry serves both legs. Omega'' = +-1 models an Omega = 1 electronic state.
-    """
     rows = []
     for J in range(1, j_max_int + 1):
         for Om in (-1.0, 1.0):
@@ -196,16 +121,10 @@ def _intermediate_kets(kets: np.ndarray, j_max_int: int) -> np.ndarray:
 
 def two_photon_amplitudes(kets: np.ndarray, I: float, eps1: np.ndarray, eps2: np.ndarray,
                           j_max_int: int) -> np.ndarray:
-    """A[a, b] = <a| (d.eps2*) P_int (d.eps1) |b> in the X ket basis.
-
-    Dimensionless: the intermediate reduced dipole and the common detuning are set to one. eps2 is
-    conjugated (Raman reading: photon 2 is emitted).
-    """
     from heff.elements_c import dipole_geometry
 
     ints = _intermediate_kets(kets, j_max_int)
     nx, ni = len(kets), len(ints)
-    # d_up[p][a, i] = <X_a| T^1_p |int_i>,  d_dn[p][i, b] = <int_i| T^1_p |X_b>
     d_up = {p: np.zeros((nx, ni)) for p in (-1, 0, 1)}
     d_dn = {p: np.zeros((ni, nx)) for p in (-1, 0, 1)}
     for p in (-1, 0, 1):
@@ -230,29 +149,23 @@ def two_photon_amplitudes(kets: np.ndarray, I: float, eps1: np.ndarray, eps2: np
 
 @dataclass(frozen=True)
 class Couplings:
-    """sigma+ couplings between eigenstates, i -> f with m_F(f) = m_F(i) + 1."""
-
     i_idx: np.ndarray
     f_idx: np.ndarray
-    omega: np.ndarray            # complex, rad/ms, reference-normalised
-    jones: tuple                 # (name of eps1, name of eps2) that gave Delta m_F = +1
-    raw_reference: float         # |A| of the reference transition before scaling
+    omega: np.ndarray
+    jones: tuple
+    raw_reference: float
 
 
 def sigma_plus_couplings(levels: Levels, j_max_int: int | None = None, reference: tuple = REFERENCE_TRANSITION,
                          reference_rabi_khz: float = REFERENCE_RABI_KHZ,
                          min_rel_amplitude: float = 1e-9) -> Couplings:
-    """The Delta m_F = +1 couplings above min_rel_amplitude of the largest, scaled so the reference
-    transition has |Omega|/2pi = reference_rabi_khz.
-    """
     heff = _heff()
     j_max = int(max(l[0] for l in levels.labels))
     I = heff.thf_spec(J_max=j_max).I
     j_max_int = j_max_int or j_max + 1
 
-    # try both Jones assignments for the second beam and keep the one realising Delta m_F = +1
     mfs = np.array([l[3] for l in levels.labels])
-    dm = mfs[:, None] - mfs[None, :]            # dm[f, i] = m_f - m_i
+    dm = mfs[:, None] - mfs[None, :]
     chosen = None
     for name2 in ("sigma+", "sigma-"):
         a_ket = two_photon_amplitudes(levels.kets, I, JONES["pi"], JONES[name2], j_max_int)
@@ -270,8 +183,6 @@ def sigma_plus_couplings(levels: Levels, j_max_int: int | None = None, reference
 
     f_idx, i_idx = np.nonzero(np.abs(a_eig) > min_rel_amplitude * np.max(np.abs(a_eig)))
     vals = a_eig[f_idx, i_idx]
-    # parity is exact at E_z = 0 and the operator is parity-even, so anything crossing parity is
-    # round-off (measured <= 6e-12 relative at J_max = 6)
     par = np.array([l[2] for l in levels.labels])
     cross = par[f_idx] != par[i_idx]
     if cross.any():
@@ -289,13 +200,10 @@ def sigma_plus_couplings(levels: Levels, j_max_int: int | None = None, reference
     if k.size != 1:
         raise ValueError("reference transition not uniquely present in the sigma+ channel")
     raw = float(abs(vals[k[0]]))
-    scale = reference_rabi_khz / raw * TWO_PI          # -> rad/ms
+    scale = reference_rabi_khz / raw * TWO_PI
     order = np.lexsort((f_idx, i_idx))
     return Couplings(i_idx=i_idx[order], f_idx=f_idx[order], omega=vals[order] * scale,
                      jones=jones, raw_reference=raw)
-
-
-# Tables
 
 
 def _git_hash(path: str) -> str:
@@ -314,7 +222,6 @@ def build_tables(j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS,
 
 def table_files(outdir, j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS,
                 e_v_per_cm: float = E_FIELD_V_PER_CM) -> tuple[str, str]:
-    """(levels_file, rabi_file) under outdir, named as qlsgym.molecules.thf expects."""
     tag = table_tag(j_max, b_gauss, e_v_per_cm)
     return (os.path.join(outdir, f"ThF232_levels_{tag}.txt"),
             os.path.join(outdir, f"ThF232_two_photon_sigma_plus_modelA_{tag}.txt"))
@@ -322,9 +229,6 @@ def table_files(outdir, j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS,
 
 def write_tables(levels: Levels, cpl: Couplings, levels_file: str, rabi_file: str, j_max: int = J_MAX,
                  b_gauss: float = B_FIELD_GAUSS, e_v_per_cm: float = E_FIELD_V_PER_CM) -> None:
-    """Write both tables. Line 1 (timestamp, heff revision, spec hash) is the only line that can
-    differ between two builds from the same heff revision.
-    """
     heff_root = os.environ.get("HEFF_ROOT", "?")
     stamp = _dt.datetime.now().isoformat(timespec="seconds")
     common = [

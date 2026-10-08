@@ -1,4 +1,3 @@
-"""BlockFNO forward shape, softmax normalisation, checkpoint meta and load_model checks."""
 import numpy as np
 import pytest
 import torch
@@ -47,18 +46,15 @@ def test_checkpoint_roundtrip_and_fingerprint_checks(mol, tmp_path):
     x = torch.randn(2, e.n_channels, mol.window.n_tau)
     torch.testing.assert_close(m(x), m2(x))
     assert m2.fingerprint == mol.fingerprint() and m2.sigma == "-" and m2.block_index == 1
-    # different physics -> refused
     other = load_molecule("synthetic", seed=1)
     assert other.fingerprint() != mol.fingerprint()
     with pytest.raises(FingerprintMismatch):
         load_model(str(p), "cpu", molecule=other)
-    load_model(str(p), "cpu", molecule=other, allow_mismatch=True)   # same geometry, explicit override
-    # wrong block geometry is always refused, even with allow_mismatch
+    load_model(str(p), "cpu", molecule=other, allow_mismatch=True)
     ck["meta"]["block_index"] = 0
     torch.save(ck, p)
     with pytest.raises(FingerprintMismatch):
         load_model(str(p), "cpu", molecule=mol, allow_mismatch=True)
-    # no fingerprint (not written by qlsgym's train) -> refused
     ck["meta"]["block_index"] = 1; ck["meta"].pop("fingerprint")
     torch.save(ck, p)
     with pytest.raises(FingerprintMismatch, match="no qlsgym fingerprint"):

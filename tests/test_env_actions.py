@@ -1,4 +1,3 @@
-"""Action library: grids, encode/decode bijection, stable ordering, physics subset."""
 import numpy as np
 import pytest
 
@@ -19,7 +18,6 @@ def test_rl_discrete_matches_paper_slots_for_200_point_grid(mol):
     assert g.tau_indices.tolist() == (np.arange(150, 200, 5) - 1).tolist()
     assert g.n_actions == 2 * 7 * 10
     assert np.all(np.diff(g.omegas) >= 0) and g.omegas.min() >= m.window.omega_min
-    # bit-identical to the source draw (no carrier bands on this molecule)
     ref = np.sort(np.random.default_rng(3).uniform(m.window.omega_min, m.window.omega_max, 7))
     assert np.array_equal(g.omegas, ref)
 
@@ -48,11 +46,9 @@ def test_grid_library_roundtrip_and_ordering(mol):
         assert lib.is_primitive(a) == (a >= lib.n_grid) == act.is_primitive
         seen.add((act.sigma, round(act.omega, 9), act.tau_index, act.primitive))
     assert len(seen) == lib.n_actions
-    # sigma -> omega -> tau ordering, as in fnorepl.rl.ActionLibrary
     a = (1 * 4 + 2) * 3 + 1
     act = lib.decode(a)
     assert act == Action("-", float(g.omegas[2]), int(g.tau_indices[1]), -1)
-    # primitive decodes with its own snapped duration
     p = lib.decode(lib.n_grid)
     assert p.primitive == 0 and p.omega == mol.primitives[0].omega
     assert p.tau_index == int(np.argmin(np.abs(mol.tau_grid() - mol.primitives[0].tau_ms)))
@@ -93,7 +89,7 @@ def test_drives_group_actions_by_sigma_omega(mol):
 
 
 def test_physics_subset_synthetic(mol):
-    lib = ActionLibrary.physics_subset(mol)           # every pi-time exceeds tau_max here
+    lib = ActionLibrary.physics_subset(mol)
     assert lib.n_grid == 0 and lib.n_primitives == 1
     lib = ActionLibrary.physics_subset(mol, clip_tau=True)
     n_couplings = sum(b.omega.size for b in mol.blocks)
@@ -106,7 +102,6 @@ def test_physics_subset_synthetic(mol):
         assert plus.tau_index == minus.tau_index == mol.window.n_tau - 1
         assert (src[a], tgt[a]) == (tgt[a + 1], src[a + 1])
         assert mol.system.block_of_state[src[a]] == lib.meta["blocks"][a]
-    # resonance = nu_f + (E_f - E_i)
     b0 = mol.blocks[0]
     w = resonant_frequencies(mol, 0, "+")
     e = mol.system.energies
@@ -117,7 +112,6 @@ def test_physics_subset_synthetic(mol):
 @pytest.mark.parametrize("name,d_omega_khz", [("synthetic", 1.0), ("synthetic", 100.0),
                                               ("h3o", 1.0), ("thf", 1.0)])
 def test_uniform_grid_stays_inside_the_window(name, d_omega_khz):
-    """A window width that is an exact multiple of the step once pushed the last point out."""
     mol = load_molecule(name)
     grid = ControlGrid.uniform(mol, d_omega_khz)
     assert np.all(grid.omegas >= mol.window.omega_min)

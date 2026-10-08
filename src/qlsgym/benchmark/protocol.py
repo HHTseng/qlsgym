@@ -1,5 +1,3 @@
-"""Configuration, arm construction and results on disk for the benchmark."""
-
 from __future__ import annotations
 
 import datetime as _dt
@@ -28,42 +26,30 @@ ARMS = ("sweeping", "random", "planner-exact", "planner-fno", "rl-exact", "rl-fn
 FNO_ARMS = ("planner-fno", "rl-fno")
 LIBRARIES = ("physics_subset", "rl_discrete")
 
-# Per-molecule benchmark defaults, measured 2026-09-16; the published runs used these.
-#   max_pulses: the benchmark horizon, long enough for one full sweep of the physics_subset
-#     library (h3o 167 actions, thf 416; 312 when this was measured on the J <= 6 model).  molecule.task.max_pulses is 80, the task budget,
-#     and is far too short to be a benchmark horizon.
-#   eval_greedy: thf's actor is evaluated by sampling -- the argmax of a 312-action stochastic
-#     policy (J <= 6 model) locks onto a single pulse (sampled 0.985 success, greedy 0.005).
 MOLECULE_DEFAULTS = {"h3o": {"max_pulses": 400, "eval_greedy": True},
                      "thf": {"max_pulses": 800, "eval_greedy": False}}
 DEFAULTS_FALLBACK = {"max_pulses": None, "eval_greedy": True}
-# Surrogate tags tried, in order, when --fno-tag is not given.
 FNO_TAG_ORDER = ("mix",)
 
 
 @dataclass(frozen=True)
 class BenchmarkConfig:
     molecule: str = "h3o"
-    library: str = "physics_subset"     # LIBRARIES
+    library: str = "physics_subset"
     n_episodes: int = 1000
-    seed: int = 777                     # evaluation seed; never used for training or selection
-    max_pulses: int | None = None       # None -> molecule.task (80); MOLECULE_DEFAULTS for runs
+    seed: int = 777
+    max_pulses: int | None = None
     p_target: float | None = None
-    # $QLSGYM_WORK/checkpoints/<molecule>/<fno_tag>.json; resolve_fno_tag picks it per molecule
     fno_tag: str = "mix"
     device: str = "cpu"
-    engine: str = "auto"                # dynamics engine: auto | cudaq | exact
-    # planner (arXiv:2608.03702 Sec. II.4): active pool of the top n_pool scores
-    # plus everything within delta_s of the best; None -> greedy
+    engine: str = "auto"
     n_pool: int | None = 16
     delta_s: float = 0.003
     score: ScoreConfig = ScoreConfig()
-    # RL environment reward (arXiv:2410.11839 Sec. SD: r_o = 2 for H3O+)
     rho: float = 2.0
     penalty_mode: str = "indicator"
     ppo: PPOConfig = PPOConfig()
-    retrain: bool = False               # ignore a saved actor and train again
-    # rl_discrete grid (App. C.1 of arXiv:2608.03702); ignored for physics_subset
+    retrain: bool = False
     n_freq: int = 1764
     n_tau_slots: int = 10
     grid_seed: int = 0
@@ -81,12 +67,10 @@ class BenchmarkConfig:
 
 
 def molecule_defaults(molecule_name: str) -> dict:
-    """The benchmark horizon and evaluation mode for a molecule (MOLECULE_DEFAULTS)."""
     return dict(MOLECULE_DEFAULTS.get(str(molecule_name), DEFAULTS_FALLBACK))
 
 
 def default_fno_tag(molecule_name: str, log=None) -> str:
-    """The first of FNO_TAG_ORDER whose manifest exists for this molecule."""
     from ..surrogate.manifest import manifest_path
     say = log if log is not None else (lambda s: print(s, flush=True))
     have = [t for t in FNO_TAG_ORDER if os.path.exists(manifest_path(str(molecule_name), t))]
@@ -103,7 +87,6 @@ def default_fno_tag(molecule_name: str, log=None) -> str:
 
 
 def resolve_fno_tag(molecule_name: str, arm: str, tag: str | None = None, log=None) -> str:
-    """cfg.fno_tag for a run: what was asked for, else the molecule's default."""
     if tag is not None:
         return str(tag)
     try:
@@ -114,9 +97,6 @@ def resolve_fno_tag(molecule_name: str, arm: str, tag: str | None = None, log=No
         return BenchmarkConfig.fno_tag
 
 
-# building blocks
-
-
 def load(cfg: BenchmarkConfig) -> Molecule:
     from .. import load_molecule
     return load_molecule(cfg.molecule)
@@ -125,7 +105,7 @@ def load(cfg: BenchmarkConfig) -> Molecule:
 def build_library(cfg: BenchmarkConfig, molecule: Molecule) -> ActionLibrary:
     if cfg.library == "physics_subset":
         return ActionLibrary.physics_subset(molecule, clip_tau=(molecule.name == "synthetic"))
-    for slots in range(int(cfg.n_tau_slots), 0, -1):   # the most that fit the tau grid
+    for slots in range(int(cfg.n_tau_slots), 0, -1):
         try:
             grid = ControlGrid.rl_discrete(molecule, n_freq=cfg.n_freq, n_tau_slots=slots, seed=cfg.grid_seed)
             break
@@ -137,7 +117,6 @@ def build_library(cfg: BenchmarkConfig, molecule: Molecule) -> ActionLibrary:
 
 
 def library_taus(library: ActionLibrary) -> np.ndarray:
-    """Every tau index an engine must answer for this library (grid + primitives)."""
     prim = [library.primitive_tau_index(k) for k in range(library.n_primitives)]
     return np.unique(np.concatenate([library.tau_indices, np.asarray(prim, dtype=np.int64)]))
 
@@ -148,7 +127,6 @@ def env_config(cfg: BenchmarkConfig) -> EnvConfig:
 
 
 def score_config(cfg: BenchmarkConfig, molecule: Molecule) -> ScoreConfig:
-    """The planner's score weights for this run."""
     sc = cfg.score.for_molecule(molecule)
     if cfg.p_target is not None:
         sc = replace(sc, p_target=float(cfg.p_target))
@@ -157,19 +135,16 @@ def score_config(cfg: BenchmarkConfig, molecule: Molecule) -> ScoreConfig:
 
 def exact_env(cfg: BenchmarkConfig, molecule: Molecule, library: ActionLibrary, batch: int = 1,
               progress: bool = False) -> PurificationEnv:
-    """The evaluation environment: exact tables (built once, cached under $QLSGYM_WORK/cache)."""
     tables = build_action_tables(molecule, library, device=cfg.device, progress=progress)
     return PurificationEnv(molecule, library, tables, env_config(cfg), device=cfg.device, batch=batch)
 
 
 def default_engine(cfg: BenchmarkConfig, molecule: Molecule, tau_indices, log=None):
-    """CUDA-Q where it can run, exact otherwise; cfg.engine / $QLSGYM_ENGINE forces either."""
     from ..physics.engines import select_engine
     return select_engine(molecule, tau_indices=tau_indices, prefer=cfg.engine, log=log)
 
 
 def fno_engine(cfg: BenchmarkConfig, molecule: Molecule, tau_indices, fallback=None, log=None):
-    """The surrogate of cfg.fno_tag, with the default engine as fallback where untrained."""
     from ..surrogate.manifest import load_manifest
     fb = default_engine(cfg, molecule, tau_indices, log=log) if fallback is None else fallback
     return load_manifest(molecule, cfg.fno_tag, tau_indices=tau_indices, device=cfg.device, fallback=fb)
@@ -177,7 +152,6 @@ def fno_engine(cfg: BenchmarkConfig, molecule: Molecule, tau_indices, fallback=N
 
 def fno_env(cfg: BenchmarkConfig, molecule: Molecule, library: ActionLibrary, engine, batch: int = 1,
             progress: bool = False):
-    """A training environment that calls the surrogate on the belief at every step (FnoEnv)."""
     from ..surrogate.fno_env import FnoEnv
 
     tables = build_action_tables(molecule, library, device=cfg.device, progress=progress)
@@ -185,7 +159,6 @@ def fno_env(cfg: BenchmarkConfig, molecule: Molecule, library: ActionLibrary, en
 
 
 def engine_provenance(engine) -> dict:
-    """What the JSON records about the dynamics an arm consulted."""
     d = {"kind": type(engine).__name__}
     m = getattr(engine, "manifest", None)
     if m is not None:
@@ -203,7 +176,6 @@ def engine_provenance(engine) -> dict:
     if hasattr(engine, "calls"):
         d["calls"] = dict(engine.calls)
         f = engine.surrogate_fraction()
-        # NaN (no call yet) is not valid JSON and write_result refuses it
         d["surrogate_fraction"] = float(f) if math.isfinite(f) else None
     return d
 
@@ -212,11 +184,7 @@ def evaluate(env: PurificationEnv, policy, cfg: BenchmarkConfig, progress: bool 
     return rollout(env, policy, n_rollouts=cfg.n_episodes, seed=cfg.seed, progress=progress)
 
 
-# the RL arms
-
-
 def manifest_digest(engine) -> str | None:
-    """Short hash of the surrogate manifest an engine was built from, or None."""
     m = getattr(engine, "manifest", None)
     if m is None:
         return None
@@ -226,7 +194,6 @@ def manifest_digest(engine) -> str | None:
 
 def rl_key(cfg: BenchmarkConfig, library: ActionLibrary, arm: str, molecule: Molecule | None = None,
            engine=None) -> dict:
-    """Everything that changes what a trained actor means (see rl_run_dir)."""
     ec = env_config(cfg)
     if molecule is not None:
         ec = ec.resolve(molecule)
@@ -239,7 +206,6 @@ def rl_key(cfg: BenchmarkConfig, library: ActionLibrary, arm: str, molecule: Mol
 
 def rl_run_dir(cfg: BenchmarkConfig, library: ActionLibrary, arm: str, molecule: Molecule | None = None,
                engine=None) -> str:
-    """Where an RL arm's actor is cached."""
     src = "exact" if arm == "rl-exact" else cfg.fno_tag
     blob = json.dumps(rl_key(cfg, library, arm, molecule, engine), sort_keys=True, default=str)
     h = hashlib.sha256(blob.encode()).hexdigest()[:12]
@@ -250,9 +216,6 @@ def rl_run_dir(cfg: BenchmarkConfig, library: ActionLibrary, arm: str, molecule:
 def train_or_load_actor(cfg: BenchmarkConfig, molecule: Molecule, library: ActionLibrary,
                         env_train: PurificationEnv, env_eval: PurificationEnv, run_dir: str,
                         tables_builder: str, log=None):
-    """The greedy actor for an RL arm: from run_dir/actor_best.pt when a matching run exists, else
-    trained now and saved there.
-    """
     best_path = os.path.join(run_dir, "actor_best.pt")
     want_env, want_ppo = asdict(env_train.cfg), cfg.ppo.as_dict()
     if os.path.exists(best_path) and not cfg.retrain:
@@ -298,11 +261,7 @@ def train_or_load_actor(cfg: BenchmarkConfig, molecule: Molecule, library: Actio
     return best, train_meta
 
 
-# running one arm
-
-
 def run_arm(arm: str, cfg: BenchmarkConfig, log=None, progress: bool = False) -> dict:
-    """Evaluate one arm and return the result record (see module docstring)."""
     if arm not in ARMS:
         raise ValueError(f"unknown arm {arm!r}; choose from {ARMS}")
     say = log if log is not None else (lambda s: None)
@@ -328,7 +287,7 @@ def run_arm(arm: str, cfg: BenchmarkConfig, log=None, progress: bool = False) ->
                                     n_pool=cfg.n_pool, delta_s=cfg.delta_s)
         policy_desc = (f"{arm} (n_pool={cfg.n_pool}, delta_s={cfg.delta_s}, "
                        f"dynamics={type(ref).__name__})")
-    else:  # rl-*
+    else:
         if arm == "rl-exact":
             env_train, builder = env.clone(cfg.ppo.n_envs), "physics"
         else:
@@ -341,8 +300,6 @@ def run_arm(arm: str, cfg: BenchmarkConfig, log=None, progress: bool = False) ->
         say(f"[benchmark] actor ready ({time.time() - t0:.0f}s): selected snapshot {rl_info.get('selected')}")
 
     res = evaluate(env, policy, cfg, progress=progress)
-    # AFTER training and evaluation: engine.calls is a running total, and reading it
-    # before rl-fno trained recorded all-zero counts and a NaN surrogate fraction.
     if engine is not None:
         engine_info = engine_provenance(engine)
     out = {
@@ -371,11 +328,7 @@ def _jsonable(x):
     return x
 
 
-# results on disk
-
-
 def outputs_dir(molecule_name: str) -> str:
-    """Where results and figures land."""
     base = os.environ.get("QLSGYM_OUTPUTS")
     if base is None:
         root = os.environ.get("QLSGYM_ROOT")
@@ -391,7 +344,6 @@ def result_path(molecule_name: str, arm: str, part: int | None = None) -> str:
 
 
 def write_result(result: dict, path: str) -> str:
-    """Write a result record, refusing NaN and Infinity."""
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     payload = _jsonable(result)
     try:
@@ -405,9 +357,6 @@ def write_result(result: dict, path: str) -> str:
 
 
 def merge_results(parts: list) -> dict:
-    """Concatenate the episodes of several parts of the same arm (chunked evaluation over an array
-    of seeds) into one record.
-    """
     if not parts:
         raise ValueError("nothing to merge")
     head = parts[0]
@@ -442,7 +391,6 @@ def merge_results(parts: list) -> dict:
 
 
 def _engine_tag(rec: dict):
-    """(manifest tag, manifest fingerprint) of a part's engine, or None."""
     e = rec.get("engine")
     if not isinstance(e, dict):
         return None
@@ -450,7 +398,6 @@ def _engine_tag(rec: dict):
 
 
 def _merge_engine(engines: list):
-    """One engine record for the merge: head's provenance, call counts summed."""
     present = [e for e in engines if isinstance(e, dict)]
     if not present:
         return None
@@ -468,7 +415,6 @@ def _merge_engine(engines: list):
 
 
 def unmerged_parts(directory: str) -> dict:
-    """{arm: [part path, ...]} for arms that have <arm>.part*.json but no <arm>.json."""
     out = {}
     for arm in ARMS:
         if os.path.exists(os.path.join(directory, f"{arm}.json")):
@@ -480,9 +426,6 @@ def unmerged_parts(directory: str) -> dict:
 
 
 def read_results(molecule: Molecule, directory: str | None = None, warn=None) -> list:
-    """Every <arm>.json in the molecule's output dir whose fingerprint is the molecule's, in ARMS
-    order; stale files are reported through warn and skipped, part files are ignored.
-    """
     d = directory or outputs_dir(molecule.name)
     say = warn if warn is not None else (lambda s: None)
     for arm, parts in unmerged_parts(d).items():

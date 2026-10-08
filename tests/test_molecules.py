@@ -1,4 +1,3 @@
-"""Structure of the two real molecule packs."""
 import re
 
 import numpy as np
@@ -9,8 +8,6 @@ from qlsgym.spec import Molecule, TWO_PI
 from qlsgym.physics.thermal import boltzmann
 from qlsgym.physics.engines import ExactEngine
 
-# mu_B / h in MHz/G, only used to turn a tabulated Zeeman spacing back into a
-# g-factor for the ThF+ Omega-doublet test below.
 MU_B_MHZ_PER_G = 1.3996245
 
 
@@ -55,8 +52,6 @@ def test_thf_structure(thf):
     assert thf.trap.n_nu == 8 and abs(thf.trap.nu_f / (2 * np.pi) - 1112.7182) < 1e-9 and thf.trap.eta == 0.06776
     assert abs((thf.window.omega_max - thf.window.omega_min) / (2 * np.pi) - 940.0) < 1e-9
     assert thf.window.tau_max_ms == 6.0 and thf.window.n_tau == 200 and thf.task.temperature_k == 4.0
-    # the two J = 1, F = 1/2 sigma+ carriers inside the window (ThF finding F5);
-    # with the heff G tensor they sit at 906.3 kHz (f) and 921.7 kHz (e)
     bands = np.array(thf.window.carrier_bands) / (2 * np.pi)
     assert bands.shape == (2, 2) and np.allclose(bands.mean(1), [906.324, 921.657], atol=2e-3)
     assert len(thf.primitives) == 24
@@ -68,28 +63,23 @@ def test_thf_structure(thf):
         assert len(p.blocks) >= 2
     assert thf.provenance["coupling_model"] == "A"
     assert thf.provenance["b_field_gauss"] == 20.0 and thf.provenance["j_max"] == 7
-    # D11 (hand-added Delta_g) is retired: the parity-dependent Zeeman effect
-    # is now the G tensor's own G_Delta = (G_xx - G_yy) / 2.
     assert "delta_g" not in thf.provenance and "delta_g_j_scaling" not in thf.provenance
     assert thf.provenance["zeeman"] == "heff G tensor (G_xx, G_yy, G_zz)"
     assert (thf.provenance["g_xx"], thf.provenance["g_yy"], thf.provenance["g_zz"]) == \
         (8.2211e-4, 1.23327e-3, 0.046532)
     assert thf.provenance["g_delta"] == pytest.approx(-2.0558e-4, abs=1e-12)
     assert thf.provenance["doublet_ordering"].startswith("e below f")
-    # parsed out of the table header, not hard-coded
     assert re.fullmatch(r"[0-9a-f]{7,40}", thf.provenance["heff_git_rev"])
     assert re.fullmatch(r"[0-9a-f]{64}", thf.provenance["heff_spec_hash"])
 
 
 def test_thf_omega_doublet_ordering_and_g_tensor(thf):
-    """heff 2026-09-14: e lies below f at every J, and G_Delta splits their g-factors at J = 1."""
     lv = thf.system.levels
     for J in range(1, 8):
         e_parity = "+" if J % 2 == 0 else "-"
         lo = {p: min(thf.system.energies[i] for i, l in enumerate(lv) if l[0] == J and l[2] == p)
               for p in "+-"}
         assert min(lo, key=lo.get) == e_parity, f"J={J}: lower doublet component is not e"
-    # block order follows the table order, which follows energy
     assert [b.key for b in thf.blocks] == [(7, "-"), (7, "+"), (6, "+"), (6, "-"), (5, "-"), (5, "+"), (4, "+"), (4, "-"),
                                            (3, "-"), (3, "+"), (2, "+"), (2, "-"), (1, "-"), (1, "+")]
 
@@ -98,10 +88,10 @@ def test_thf_omega_doublet_ordering_and_g_tensor(thf):
         e_mhz = np.sort(thf.system.energies[idx]) / (1e3 * TWO_PI)
         return float(np.diff(e_mhz).mean() / (MU_B_MHZ_PER_G * thf.provenance["b_field_gauss"]))
 
-    g_f, g_e = g_magnitude(1, 1.5, "+"), g_magnitude(1, 1.5, "-")      # f upper, e lower
+    g_f, g_e = g_magnitude(1, 1.5, "+"), g_magnitude(1, 1.5, "-")
     assert g_f == pytest.approx(0.014765, abs=1e-6)
     assert g_e == pytest.approx(0.015039, abs=1e-6)
-    assert g_f - g_e == pytest.approx(-2.7405e-4, abs=1e-8)            # = -(g(f) - g(e)) in magnitude
+    assert g_f - g_e == pytest.approx(-2.7405e-4, abs=1e-8)
 
 
 def test_fingerprints_and_boltzmann(h3o, thf):
@@ -116,9 +106,6 @@ def test_fingerprints_and_boltzmann(h3o, thf):
 
 
 def test_two_molecules_do_not_interfere(h3o, thf):
-    """Caches are keyed on the fingerprint: alternating molecules gives the same numbers as using
-    each alone.
-    """
     idx = np.array([50, 199])
     ph, pt = boltzmann(h3o), boltzmann(thf)
     wh = 0.5 * (h3o.window.omega_min + h3o.window.omega_max)
@@ -131,4 +118,4 @@ def test_two_molecules_do_not_interfere(h3o, thf):
     assert a[0].shape == (2, 444) and b[0].shape == (2, 252)
     assert np.array_equal(a[0], a2[0]) and np.array_equal(b[1], b2[1])
     with pytest.raises(ValueError):
-        et.branches_all_tau(pt, wh, "+")      # the H3O+ window is off-window for ThF+
+        et.branches_all_tau(pt, wh, "+")

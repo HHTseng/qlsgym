@@ -1,6 +1,3 @@
-"""Manifest round trip in a temp work dir. The provenance guard itself is tested in
-test_surrogate_provenance.py.
-"""
 import json
 
 import numpy as np
@@ -27,7 +24,6 @@ class FakeExact:
 
 
 def make_runs(mol, root, ratio=0.5):
-    """Runs carrying the table stamp train writes."""
     runs = {}
     torch.manual_seed(0)
     for b in mol.blocks:
@@ -65,7 +61,6 @@ def test_round_trip(tmp_path):
     p = np.full(mol.n_states, 1 / mol.n_states)
     p0, p1 = eng.branches_all_tau(p, mol.trap.nu_f, "+")
     assert p0.shape == (mol.window.n_tau, mol.n_states)
-    # subset + fingerprint guard
     eng = load_manifest(mol, "unit", work=str(work), fallback=FakeExact(mol), device="cpu", blocks={(0, "+")})
     assert eng.trained == {(0, "+")}
     other = load_molecule("synthetic", seed=3)

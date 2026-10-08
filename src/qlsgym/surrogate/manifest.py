@@ -1,5 +1,3 @@
-"""Checkpoint manifests under $QLSGYM_WORK/checkpoints: "<block>,<sigma>" -> checkpoint path."""
-
 from __future__ import annotations
 
 import datetime as _dt
@@ -13,18 +11,16 @@ import numpy as np
 from ..spec import Molecule
 from .dataset import work_dir
 
-# summary.json keys copied into a manifest entry
 _SUMMARY_KEYS = ("strat_on_all_ratio_to_static_median", "strat_on_all_ratio_to_static_p95",
                  "strat_on_on_median", "strat_on_on_static_median", "strat_off_all_ratio_to_static_median",
                  "time_avg_median", "static_time_avg_median", "best_onres_epoch", "best_onres_infidelity",
                  "best_epoch", "n_pairs", "n_freq", "n_init", "n_parameters", "selection", "strat_active_fraction")
 
-# every value check_checkpoint_provenance can return
 PROVENANCE_VALUES = ("tables-sha256", "fingerprint")
 
 
 class StaleCheckpoint(RuntimeError):
-    """The checkpoint was not shown to be trained on the molecule's current tables."""
+    pass
 
 
 def entry_key(block_index: int, sigma: str) -> str:
@@ -36,11 +32,7 @@ def parse_key(key: str) -> tuple[int, str]:
     return int(b), s.strip()
 
 
-# Provenance (physics vintage) of a checkpoint
-
-
 def sha256_file(path) -> str:
-    """Hex sha256 of a file's raw bytes."""
     h = hashlib.sha256()
     with open(path, "rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
@@ -54,7 +46,6 @@ def _table_files(molecule: Molecule):
 
 
 def table_stamp(molecule: Molecule) -> dict:
-    """The ck["tables"] stamp a checkpoint trained on molecule gets."""
     stamp = {"heff_git_rev": molecule.provenance.get("heff_git_rev"),
              "heff_spec_hash": molecule.provenance.get("heff_spec_hash")}
     files = _table_files(molecule)
@@ -66,11 +57,6 @@ def table_stamp(molecule: Molecule) -> dict:
 
 def check_checkpoint_provenance(ck: dict, run_dir: str, molecule: Molecule, block_index: int,
                                 sigma: str) -> str:
-    """Whether checkpoint ck from run_dir was trained on the molecule's current tables.
-
-    'tables-sha256' when the molecule has table files and the checkpoint's stamp hashes match them,
-    'fingerprint' when it has none and the checkpoint's fingerprint matches; StaleCheckpoint otherwise.
-    """
     where = f"{run_dir} ({molecule.name} block {block_index} sigma{sigma})"
     retrain = "retrain on the current tables"
     stamp = ck.get("tables") if isinstance(ck, dict) else None
@@ -78,7 +64,7 @@ def check_checkpoint_provenance(ck: dict, run_dir: str, molecule: Molecule, bloc
         raise StaleCheckpoint(f"{where}: the checkpoint carries no table stamp (ck['tables']), so nothing "
                               f"shows it was trained on the current tables; {retrain}")
     if not isinstance(stamp, dict):
-        stamp = {}                                       # a malformed stamp matches nothing
+        stamp = {}
     files = _table_files(molecule)
     if files is None:
         fp, want = (ck.get("meta") or {}).get("fingerprint"), molecule.fingerprint()
@@ -97,18 +83,14 @@ def check_checkpoint_provenance(ck: dict, run_dir: str, molecule: Molecule, bloc
     return "tables-sha256"
 
 
-# Manifest
-
-
 @dataclass
 class ManifestEntry:
     block_index: int
     sigma: str
-    path: str                              # absolute checkpoint path
+    path: str
     run_dir: str = ""
-    summary: dict = field(default_factory=dict)   # selected summary.json metrics
-    train_data: dict = field(default_factory=dict)  # checkpoint's train_data (alpha, n_freq, ...)
-    # check_checkpoint_provenance verdict; None = never checked (refused on load)
+    summary: dict = field(default_factory=dict)
+    train_data: dict = field(default_factory=dict)
     provenance: str | None = None
 
     @property
@@ -124,13 +106,12 @@ class ManifestEntry:
 class Manifest:
     molecule: str
     tag: str
-    fingerprint: str                       # qlsgym Molecule.fingerprint() the entries are valid for
-    entries: dict = field(default_factory=dict)   # key -> ManifestEntry
+    fingerprint: str
+    entries: dict = field(default_factory=dict)
     note: str = ""
     created: str = ""
 
     def checkpoints(self) -> dict:
-        """{(block_index, sigma): path} for FnoEngine."""
         return {(e.block_index, e.sigma): e.path for e in self.entries.values()}
 
     def add(self, entry: ManifestEntry) -> None:
@@ -161,7 +142,6 @@ class Manifest:
             return cls.from_json(json.load(fh))
 
     def table(self) -> str:
-        """Human summary: one line per entry with the on-resonance ratio and provenance."""
         lines = [f"{self.molecule} / {self.tag}  fingerprint={self.fingerprint}  {len(self.entries)} entries"]
         for k, e in sorted(self.entries.items(), key=lambda kv: parse_key(kv[0])):
             r = e.onres_ratio_to_static
@@ -193,7 +173,6 @@ def build_manifest(
     check_load: bool = True,
     device: str = "cpu",
 ) -> Manifest:
-    """Assemble a manifest from {(block_index, sigma): run_dir}."""
     import torch
 
     from .train import load_model
@@ -240,7 +219,6 @@ def load_manifest(
     allow_mismatch: bool = False,
     blocks: set | None = None,
 ):
-    """FnoEngine from a manifest."""
     from .fno_engine import FnoEngine
 
     path = path or manifest_path(molecule.name, tag, work)

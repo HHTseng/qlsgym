@@ -1,4 +1,3 @@
-"""qlsgym.policies -- reference policies and the rollout driver."""
 from .baselines import (DescendingPopulationPolicy, PhysicsEliminationPolicy, Policy, RandomPolicy,
                         ScorePlannerPolicy, SweepingPolicy)
 from .rollout import RolloutResult, rollout

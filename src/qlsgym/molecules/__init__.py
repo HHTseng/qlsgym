@@ -1,4 +1,3 @@
-"""Molecule packs. Each module exposes build(**kw) -> Molecule."""
 from __future__ import annotations
 import importlib
 from ..spec import Molecule

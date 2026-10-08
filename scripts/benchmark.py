@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-"""Run, merge and plot the policy benchmark."""
 
 from __future__ import annotations
 
@@ -20,7 +19,6 @@ from qlsgym.rl.ppo import PPOConfig
 
 
 def _typed(dc_type, kv: list):
-    """["a=1", "b=x"] -> a dc_type with those fields set, typed by the defaults."""
     obj = dc_type()
     types = {f.name: type(getattr(obj, f.name)) for f in fields(dc_type)}
     for item in kv or []:

@@ -1,5 +1,3 @@
-"""H3O+ / Ca+ (paper system): 444 hyperfine-resolved states, 10 blocks."""
-
 from __future__ import annotations
 
 import dataclasses
@@ -13,8 +11,6 @@ from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_P
 LEVELS_FILE = "H3O_levels_Jmax_4_B_0.00036.txt"
 RABI_FILE = "two_photon_rabi_rates_sum_Jmax_4_p_q10_q21_B_0.00036.txt"
 
-# Reference transition of paper Eq. 39, (J, K, parity, mF, xi) for the
-# initial and final state; its scaled Rabi rate is Omega/2pi = 2.000 kHz.
 REFERENCE_TRANSITION = ((2, 2.0, "-", 1.5, 1), (2, 2.0, "-", 2.5, 1))
 REFERENCE_RABI_KHZ = 2.0
 
@@ -24,9 +20,9 @@ N_NU = 2
 OMEGA_MIN_OVER_2PI_KHZ, OMEGA_MAX_OVER_2PI_KHZ = 5050.0, 5300.0
 TAU_MAX_MS, N_TAU = 4.0, 200
 T_INT_K = 20.0
-RWA_CUTOFF = 1.0e6          # rad/ms
-DELTA_MAX = 1.0e4           # rad/ms, embedding cutoff (paper Table 2)
-OMEGA_MIN_COUPLING = 1.0    # rad/ms
+RWA_CUTOFF = 1.0e6
+DELTA_MAX = 1.0e4
+OMEGA_MIN_COUPLING = 1.0
 
 
 def data_dir() -> Path:
@@ -34,13 +30,7 @@ def data_dir() -> Path:
     return Path(root) / "h3o" if root else Path(__file__).resolve().parents[3] / "data" / "h3o"
 
 
-# Readers (byte-compatible with fnorepl.system)
-
-
 def read_energy_levels(filename):
-    """(levels, energies): levels[j] = (J, K, parity, mF, xi), energies in rad/ms (E_MHz * 1e3 * 2
-    pi).
-    """
     levels, energies = [], []
     with open(filename) as fh:
         for line in fh:
@@ -63,9 +53,6 @@ def read_energy_levels(filename):
 
 
 def read_rabi_file(filename, levels, target_ref_rabi_khz: float = REFERENCE_RABI_KHZ):
-    """(i_idx, f_idx, omega); omega complex, rad/ms, rescaled so that REFERENCE_TRANSITION has
-    |Omega| / 2 pi = target_ref_rabi_khz.
-    """
     i_idx, f_idx, vals = [], [], []
     with open(filename) as fh:
         for line in fh:
@@ -96,11 +83,7 @@ def read_rabi_file(filename, levels, target_ref_rabi_khz: float = REFERENCE_RABI
     return i_arr, f_arr, v_arr * scale
 
 
-# System
-
-
 def build_system(levels_file, rabi_file) -> System:
-    """Load the tables and derive the block decomposition from the sigma+ graph."""
     from ..physics.hamiltonian import components
 
     levels, energies = read_energy_levels(levels_file)
@@ -129,12 +112,8 @@ def build_system(levels_file, rabi_file) -> System:
     return System(tuple(levels), energies, i_idx, f_idx, omega_c, tuple(blocks), block_of_state)
 
 
-# THz primitives (fnorepl.planner.thz_primitives, ported)
-
-
 def thz_primitives(molecule: Molecule, n_families: int = 2, temperature_k: float | None = None,
                    min_source_population: float = 0.01, max_per_family: int | None = None) -> tuple:
-    """The cross-J (THz) control primitives of the paper's "Control library"."""
     from ..physics.thermal import boltzmann
 
     s, eta, nu_f = molecule.system, molecule.trap.eta, molecule.trap.nu_f
@@ -146,13 +125,13 @@ def thz_primitives(molecule: Molecule, n_families: int = 2, temperature_k: float
             gi, gf = int(b.states[b.i_local[k]]), int(b.states[b.f_local[k]])
             ji, jf = s.levels[gi][0], s.levels[gf][0]
             if ji == jf:
-                continue                                   # intra-manifold: not THz
+                continue
             d = s.energies[gf] - s.energies[gi]
             if d <= 0:
-                continue                                   # keep the blue-sideband direction
+                continue
             om = abs(b.omega[k])
             if om <= 0 or np.pi / (eta * om) > tau_max:
-                continue                                   # the pi-pulse must fit the window
+                continue
             rec = families.setdefault((ji, jf), {"mass": 0.0, "res": []})
             rec["mass"] += float(p_th[gi])
             rec["res"].append((b.index, float(nu_f + d), om, float(p_th[gi]), gi, gf))
@@ -180,9 +159,6 @@ def thz_primitives(molecule: Molecule, n_families: int = 2, temperature_k: float
 
 
 def _with_sector_blocks(molecule: Molecule, prims) -> tuple:
-    """Set each primitive's blocks to the union of the blocks its RWA sectors touch (must contain
-    the block it was designed in).
-    """
     from ..physics.hamiltonian import rwa_sectors
 
     out = []
@@ -195,13 +171,9 @@ def _with_sector_blocks(molecule: Molecule, prims) -> tuple:
     return tuple(out)
 
 
-# Entry point
-
-
 def build(n_families: int = 2, n_nu: int = N_NU, temperature_k: float = T_INT_K,
           max_pulses: int = 80, p_target: float = 0.98, primitives: bool = True,
           levels_file=None, rabi_file=None) -> Molecule:
-    """The H3O+ molecule pack."""
     ddir = data_dir()
     lf = Path(levels_file) if levels_file else ddir / LEVELS_FILE
     rf = Path(rabi_file) if rabi_file else ddir / RABI_FILE

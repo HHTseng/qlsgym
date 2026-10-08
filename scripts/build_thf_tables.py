@@ -1,13 +1,4 @@
 #!/usr/bin/env python
-"""Build the ThF+ level and sigma+ coupling tables from heff (qlsgym.molecules.thf_tables).
-
-    source scripts/env.sh
-    python scripts/build_thf_tables.py [--j-max 6] [--b-gauss 20] [--e-vcm 0] [--outdir data/thf]
-
-Re-run whenever heff's parameter set or a setting in qlsgym.molecules.thf / thf_tables changes;
-the file headers carry the heff revision, spec hash and parameter table. Any trained surrogate
-then refuses to load (its table stamp no longer matches) and has to be retrained.
-"""
 from __future__ import annotations
 
 import argparse

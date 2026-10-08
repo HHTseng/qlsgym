@@ -1,6 +1,3 @@
-"""The physics-vintage guard check_checkpoint_provenance and its enforcement in build_manifest /
-load_manifest.
-"""
 import dataclasses
 import json
 import os
@@ -34,9 +31,6 @@ class FakeExact:
 
 @pytest.fixture
 def tabled(tmp_path):
-    """The synthetic molecule, with provenance pointing at two table files (only their bytes are
-    hashed; the physics stays the synthetic one).
-    """
     lf, rf = tmp_path / "levels.txt", tmp_path / "rabi.txt"
     lf.write_text("# levels\n0 0.0\n1 1.0\n")
     rf.write_text("# rabi\n0 1 1.0 0.0 1.0\n")
@@ -59,9 +53,6 @@ def _no_warnings():
     return ctx
 
 
-# the stamp
-
-
 def test_table_stamp(tabled):
     mol, lf, rf = tabled
     s = table_stamp(mol)
@@ -69,14 +60,10 @@ def test_table_stamp(tabled):
                  "heff_git_rev": "abc1234", "heff_spec_hash": "f00d"}
     import hashlib
     assert s["levels_sha256"] == hashlib.sha256(lf.read_bytes()).hexdigest()
-    # no table files -> no hashes; no heff header -> None
     assert table_stamp(load_molecule("synthetic")) == {"heff_git_rev": None, "heff_spec_hash": None}
     m = BlockFNO.for_block(mol, 0, "+", TINY)
     ck = checkpoint_dict(m, TrainConfig(fno=TINY), DataConfig(), DataConfig(), 0, 0.1, 0.2, tables=s)
     assert ck["tables"] == s
-
-
-# rule 1: stamped checkpoints
 
 
 def test_hash_match_accepts(tabled, tmp_path):
@@ -92,12 +79,11 @@ def test_hash_match_accepts(tabled, tmp_path):
 def test_hash_mismatch_refuses_even_with_flag(tabled, tmp_path):
     mol, lf, rf = tabled
     ck = {"meta": {}, "tables": table_stamp(mol)}
-    rf.write_text("# rabi\n0 1 1.0 0.0 1.0001\n")          # tables regenerated after training
+    rf.write_text("# rabi\n0 1 1.0 0.0 1.0001\n")
     run = _run_dir(tmp_path)
     with pytest.raises(StaleCheckpoint, match="tables-sha256 check failed") as exc:
         check_checkpoint_provenance(ck, run, mol, 0, "+")
     assert run in str(exc.value) and RETRAIN in str(exc.value) and "rabi_sha256" in str(exc.value)
-    # a stamp without hashes, or not a dict at all, cannot vouch for a molecule that has table files
     for bad in ({"heff_git_rev": None}, "garbage"):
         with pytest.raises(StaleCheckpoint, match="tables-sha256 check failed"):
             check_checkpoint_provenance({"meta": {}, "tables": bad}, run, mol, 0, "+")
@@ -113,9 +99,6 @@ def test_stamp_on_tableless_molecule_uses_fingerprint(tmp_path):
         check_checkpoint_provenance(bad, run, mol, 0, "+")
 
 
-# rule 2: unstamped checkpoints
-
-
 @pytest.mark.parametrize("molecule", ["tabled", "synthetic"])
 def test_no_stamp_is_refused(tabled, tmp_path, molecule):
     mol = tabled[0] if molecule == "tabled" else load_molecule("synthetic")
@@ -123,9 +106,6 @@ def test_no_stamp_is_refused(tabled, tmp_path, molecule):
     with pytest.raises(StaleCheckpoint, match="no table stamp") as exc:
         check_checkpoint_provenance({"meta": {"fingerprint": mol.fingerprint()}}, run, mol, 0, "+")
     assert run in str(exc.value) and RETRAIN in str(exc.value)
-
-
-# build_manifest / load_manifest
 
 
 def _save_ckpt(mol, run, block, stamp=None, sigma="+"):
@@ -157,9 +137,6 @@ def test_build_manifest_checks_every_entry_and_records_provenance(tabled, tmp_pa
 
 
 def test_build_manifest_from_mix_run_dirs_checks_the_stamp(tabled, tmp_path):
-    """scripts/make_manifest.py: collect <work>/runs/mix_{sp,sm}_block<b>, accept them on their own
-    table stamp, and refuse the whole tag once the tables move under them.
-    """
     mol, _, rf = tabled
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
     import make_manifest
@@ -172,11 +149,11 @@ def test_build_manifest_from_mix_run_dirs_checks_the_stamp(tabled, tmp_path):
         d = work / "runs" / f"mix_{'sp' if sg == '+' else 'sm'}_block{b}"
         d.mkdir()
         _save_ckpt(mol, str(d), b, table_stamp(mol), sigma=sg)
-    (work / "runs" / "other_sp_block0").mkdir()            # a different tag is not collected
+    (work / "runs" / "other_sp_block0").mkdir()
     runs = make_manifest.block_runs(str(work), "mix", ("+", "-"), range(len(mol.blocks)))
     assert set(runs) == want
 
-    ctx = _no_warnings()                                   # a stamped run is accepted silently
+    ctx = _no_warnings()
     try:
         m = build_manifest(mol, "mix", runs)
     finally:
@@ -185,12 +162,10 @@ def test_build_manifest_from_mix_run_dirs_checks_the_stamp(tabled, tmp_path):
     assert m.entries["0,+"].train_data["alpha"] == -2.0
     m.save(work=str(work))
 
-    rf.write_text("# rabi\n0 1 1.0 0.0 1.0001\n")          # tables regenerated after training
+    rf.write_text("# rabi\n0 1 1.0 0.0 1.0001\n")
     with pytest.raises(StaleCheckpoint, match="tables-sha256 check failed") as exc:
         build_manifest(mol, "mix", runs)
     assert "2 of 2 checkpoints" in str(exc.value) and RETRAIN in str(exc.value)
-    # the stamp is a *build-time* guard: the manifest written before the tables moved still loads, which
-    # is why make_manifest.py has to be re-run (and will then refuse) whenever the tables are regenerated
     eng = load_manifest(mol, "mix", work=str(work), fallback=FakeExact(mol), device="cpu")
     assert eng.trained == want
 
@@ -204,7 +179,7 @@ def test_load_manifest_refuses_entry_without_provenance(tabled, tmp_path, value)
     path = build_manifest(mol, "old", {(0, "+"): run}).save(work=work)
     j = json.load(open(path))
     if value is None:
-        del j["entries"]["0,+"]["provenance"]                # a manifest written before the guard
+        del j["entries"]["0,+"]["provenance"]
     else:
         j["entries"]["0,+"]["provenance"] = value
     json.dump(j, open(path, "w"))

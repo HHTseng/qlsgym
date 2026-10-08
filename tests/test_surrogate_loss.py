@@ -1,4 +1,3 @@
-"""The training losses: Eq. 21 (paper) and the activity-weighted generalised KL (wkl)."""
 import pytest
 import torch
 
@@ -31,9 +30,6 @@ def test_wkl_vanishes_at_the_truth_and_is_positive_elsewhere():
 
 
 def test_wkl_minimum_is_the_truth_for_any_weights_but_weighted_ce_is_biased():
-    """At logits = log p the wkl gradient is zero whatever the weights; the naive weighted cross
-    entropy -sum_b w_b p_b log q_b is stationary at q proportional to w p instead.
-    """
     p_true, w = _problem(1)
     g = _logit_grad(lambda z: weighted_kl_loss(z, p_true, w), p_true.log())
     assert g.abs().max() < 1e-12
@@ -54,7 +50,6 @@ def test_wkl_with_unit_weights_is_cross_entropy_minus_entropy():
 
 
 def test_wkl_logit_gradient_has_the_cross_entropy_form():
-    """d/dz_k = w_k (q_k - p_k) - q_k sum_b w_b (q_b - p_b), per (sample, tau), / n_tau."""
     p_true, w = _problem(3)
     z = torch.randn(p_true.shape, dtype=F64)
     q = torch.softmax(z, -1)
@@ -64,11 +59,8 @@ def test_wkl_logit_gradient_has_the_cross_entropy_form():
 
 
 def test_underestimated_population_is_corrected_by_wkl_not_by_eq21():
-    """Truth (0.5, 0.5); prediction puts 1e-4 on the first output. Eq. 21's logit gradient on that
-    output carries a factor q = 1e-4; wkl's is about w (q - p) = -0.5.
-    """
     p_true = torch.tensor([[[0.5, 0.5]]], dtype=F64)
-    z = torch.tensor([[[-9.21, 0.0]]], dtype=F64)                   # q ~ (1e-4, 1)
+    z = torch.tensor([[[-9.21, 0.0]]], dtype=F64)
     w = torch.ones(1, 2, dtype=F64)
     g_paper = _logit_grad(lambda x: weighted_loss(torch.softmax(x, -1), p_true, w), z)[0, 0, 0]
     g_wkl = _logit_grad(lambda x: weighted_kl_loss(x, p_true, w), z)[0, 0, 0]

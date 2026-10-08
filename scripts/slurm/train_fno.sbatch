@@ -1,9 +1,4 @@
 #!/bin/bash
-# Array-train one FNO surrogate per block: ThF has 14 blocks (0-13), H3O has 10 (0-9).
-#
-#   sbatch --array=0-13 scripts/slurm/train_fno.sbatch
-#   MOLECULE=h3o SIGMA=+ TAG=mix ALPHA=-2 sbatch --array=0-9 scripts/slurm/train_fno.sbatch
-#
 #SBATCH --job-name=qlsgym_fno
 #SBATCH --account=iaifi_lab
 #SBATCH --partition=gpu_requeue,iaifi_gpu_requeue,gpu,iaifi_gpu
@@ -18,7 +13,6 @@
 
 set -euo pipefail
 
-# sbatch runs a spooled copy, so BASH_SOURCE points at /var/spool; name the repo explicitly
 REPO="${QLSGYM_REPO:-/n/home02/josemm/RESEARCH/PROJECTS/MOLESQLS/qlsgym}"
 source "$REPO/scripts/env.sh"
 mkdir -p "$QLSGYM_WORK/logs" "$QLSGYM_WORK/runs"

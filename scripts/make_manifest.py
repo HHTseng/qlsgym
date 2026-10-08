@@ -1,9 +1,4 @@
 #!/usr/bin/env python
-"""Build a checkpoint manifest from scripts/train_fno.py runs.
-
-Collects $QLSGYM_WORK/runs/<tag>_{sp|sm}_block<b> for every block of the molecule, checks each
-checkpoint was trained on the current tables, and writes $QLSGYM_WORK/checkpoints/<molecule>/<tag>.json.
-"""
 from __future__ import annotations
 
 import argparse
@@ -16,9 +11,6 @@ from qlsgym.surrogate.manifest import StaleCheckpoint, build_manifest
 
 
 def block_runs(work: str, tag: str, sigmas: tuple = ("+", "-"), blocks=range(12)) -> dict:
-    """{(block, sigma): run_dir} for <work>/runs/<tag>_{sp|sm}_block<b>, the layout
-    scripts/train_fno.py --tag <tag> writes.
-    """
     runs = {}
     for sigma in sigmas:
         p = "sp" if sigma == "+" else "sm"

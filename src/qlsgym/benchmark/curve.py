@@ -1,5 +1,3 @@
-"""The finished-episodes curve of arXiv:2410.11839 Fig. 4c / Fig. S7 / Table 1."""
-
 from __future__ import annotations
 
 import math
@@ -10,7 +8,6 @@ from ..policies.rollout import RolloutResult
 
 
 def finished_curve(lengths, successes, max_pulses: int) -> np.ndarray:
-    """(max_pulses + 1,) fraction of episodes finished within k pulses."""
     lengths = np.asarray(lengths, dtype=np.int64)
     successes = np.asarray(successes, dtype=bool)
     if lengths.shape != successes.shape:
@@ -24,14 +21,12 @@ def finished_curve(lengths, successes, max_pulses: int) -> np.ndarray:
 
 
 def pulses_to(curve, frac: float = 0.85) -> int | None:
-    """First pulse count at which curve reaches frac; None if never."""
     curve = np.asarray(curve, dtype=np.float64)
     hit = np.where(curve >= frac - 1e-12)[0]
     return int(hit[0]) if hit.size else None
 
 
 def from_rollout(res: RolloutResult) -> dict:
-    """Curve, P85 and the headline statistics of one evaluation."""
     curve = finished_curve(res.lengths, res.successes, res.max_pulses)
     mps = res.mean_pulses_successful
     return {

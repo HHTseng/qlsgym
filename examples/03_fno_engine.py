@@ -1,4 +1,3 @@
-"""Swap the exact engine for the FNO surrogate and compare a rollout."""
 from __future__ import annotations
 
 import argparse

@@ -1,8 +1,4 @@
 #!/bin/bash
-# The GPU half of tests/test_cudaq_engine.py (CudaqEngine vs ExactEngine).
-#
-#   sbatch scripts/slurm/test_cudaq_engine.sbatch
-#
 #SBATCH --job-name=qlsgym_cudaq
 #SBATCH --account=iaifi_lab
 #SBATCH --partition=gpu_requeue,iaifi_gpu_requeue,gpu,iaifi_gpu
@@ -16,7 +12,6 @@
 
 set -euo pipefail
 
-# sbatch runs a spooled copy, so BASH_SOURCE points at /var/spool; name the repo explicitly
 REPO="${QLSGYM_REPO:-/n/home02/josemm/RESEARCH/PROJECTS/MOLESQLS/qlsgym}"
 source "$REPO/scripts/env.sh"
 mkdir -p "$QLSGYM_WORK/logs"

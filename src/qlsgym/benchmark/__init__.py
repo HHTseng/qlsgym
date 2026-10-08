@@ -1,4 +1,3 @@
-"""qlsgym.benchmark -- one protocol for comparing state-preparation policies."""
 from .curve import finished_curve, from_rollout, pulses_to
 from .protocol import (ARMS, BenchmarkConfig, merge_results, read_results, run_arm,
                        unmerged_parts, write_result)

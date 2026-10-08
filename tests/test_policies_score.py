@@ -1,4 +1,3 @@
-"""Eq. 25 score (qlsgym.policies.score): scalar/batched consistency on random inputs."""
 import numpy as np
 import pytest
 
@@ -7,7 +6,6 @@ from qlsgym.policies.score import ScoreConfig, score, score_batch, score_terms
 
 def _random_branches(rng, n=12):
     p_in = rng.dirichlet(np.full(n, 0.5))
-    # unnormalised branches that still conserve total probability
     split = rng.uniform(0.05, 0.95)
     p0 = rng.dirichlet(np.full(n, 0.5)) * split
     p1 = rng.dirichlet(np.full(n, 0.5)) * (1 - split)

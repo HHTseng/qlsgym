@@ -1,7 +1,3 @@
-"""232Th19F+ / Ca+: 252 hyperfine-resolved states (X 3Delta1, v = 0, J = 1..7, Omega = +-1, F = J
-+- 1/2), 14 (J, parity) blocks.
-"""
-
 from __future__ import annotations
 
 import dataclasses
@@ -13,26 +9,23 @@ import numpy as np
 
 from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_PI
 
-# settings the tables in data/thf were built at (qlsgym.molecules.thf_tables)
 J_MAX = 7
 B_FIELD_GAUSS = 20.0
 E_FIELD_V_PER_CM = 0.0
 
 
 def table_tag(j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS, e_v_per_cm: float = E_FIELD_V_PER_CM) -> str:
-    """The settings tag in both table filenames; the reader here and the writer in thf_tables share it."""
     return f"Jmax_{j_max}_B_{b_gauss:g}G_E_{e_v_per_cm:g}Vcm"
 
 
 LEVELS_FILE = f"ThF232_levels_{table_tag()}.txt"
 RABI_FILE = f"ThF232_two_photon_sigma_plus_modelA_{table_tag()}.txt"
 
-# effective Zeeman tensor components read back out of the table header
 G_SYMBOLS = ("G_xx", "G_yy", "G_zz")
 REFERENCE_RABI_KHZ = 3.0
 NU_F_OVER_2PI_KHZ = 1112.7182
 ETA = 0.06776
-N_NU = 8          # J = 7 needs 8: 0.67 worst transfer error at 7, 1.5e-3 at 8 (docs/thf_system.md)
+N_NU = 8
 OMEGA_HALF_WIDTH_OVER_2PI_KHZ = 470.0
 TAU_MAX_MS, N_TAU = 6.0, 200
 T_INT_K = 4.0
@@ -51,7 +44,6 @@ _PARAM_RE = re.compile(r"^#\s{2,}(?P<symbol>[A-Za-z][A-Za-z0-9_]*)\s+(?P<value>[
 
 
 def read_table_header(filename) -> dict:
-    """Provenance carried in the # preamble thf_tables.write_tables writes."""
     rev = spec_hash = None
     params: dict = {}
     with open(filename) as fh:
@@ -66,18 +58,12 @@ def read_table_header(filename) -> dict:
             if m is not None:
                 try:
                     params[m.group("symbol")] = float(m.group("value"))
-                except ValueError:                              # pragma: no cover - not a number column
+                except ValueError:  # pragma: no cover
                     pass
     return {"heff_git_rev": rev, "heff_spec_hash": spec_hash, "params": params}
 
 
-# Readers
-
-
 def read_energy_levels(filename):
-    """(levels, energies): levels[j] = (J, F, parity, mF, xi), energies in rad/ms (E_MHz * 1e3 * 2
-    pi).
-    """
     levels, energies = [], []
     with open(filename) as fh:
         for line in fh:
@@ -94,7 +80,6 @@ def read_energy_levels(filename):
 
 
 def read_rabi_file(filename):
-    """(i_idx, f_idx, omega); omega complex, rad/ms, already normalised by the table builder."""
     i_idx, f_idx, vals = [], [], []
     with open(filename) as fh:
         for line in fh:
@@ -109,13 +94,7 @@ def read_rabi_file(filename):
             np.asarray(vals, dtype=np.complex128))
 
 
-# System
-
-
 def build_system(levels_file, rabi_file) -> System:
-    """Load the tables and derive the (J, parity) block decomposition (ordered by descending size,
-    ties by the smallest global state index, i.e. the lower-energy parity first).
-    """
     levels, energies = read_energy_levels(levels_file)
     i_idx, f_idx, omega_c = read_rabi_file(rabi_file)
     keys = [(l[0], l[2]) for l in levels]
@@ -142,13 +121,9 @@ def build_system(levels_file, rabi_file) -> System:
     return System(tuple(levels), energies, i_idx, f_idx, omega_c, tuple(blocks), block_of_state)
 
 
-# Cross-J primitives (thffno.planner.cross_j_primitives, ported)
-
-
 def cross_j_primitives(molecule: Molecule, n_primitives: int = 24, temperature_k: float | None = None,
                        delta_j: tuple = (1, 2), dedupe_khz: float = 1.0, max_per_family: int | None = None,
                        min_coupling: float | None = None, mode: str = "dark_state") -> tuple:
-    """The cross-J sideband primitive library (ThF decisions D8, OPEN-1)."""
     from ..physics.thermal import boltzmann
 
     s, eta, nu_f = molecule.system, molecule.trap.eta, molecule.trap.nu_f
@@ -163,7 +138,7 @@ def cross_j_primitives(molecule: Molecule, n_primitives: int = 24, temperature_k
         om = abs(s.omega_c[k])
         if dj not in delta_j or om < min_coupling:
             continue
-        tau_pi = np.pi / (eta * np.exp(-eta ** 2 / 2.0) * om)       # 2|g| = eta e^{-eta^2/2} |Omega|
+        tau_pi = np.pi / (eta * np.exp(-eta ** 2 / 2.0) * om)
         if tau_pi > tau_max:
             continue
         d = float(s.energies[f] - s.energies[i])
@@ -244,9 +219,6 @@ def cross_j_primitives(molecule: Molecule, n_primitives: int = 24, temperature_k
 
 
 def _with_sector_blocks(molecule: Molecule, prims) -> tuple:
-    """Set each primitive's blocks to the union of the blocks its RWA sectors touch (the (J, p) U
-    (J', p) union of D8).
-    """
     from ..physics.hamiltonian import rwa_sectors
 
     out = []
@@ -259,20 +231,15 @@ def _with_sector_blocks(molecule: Molecule, prims) -> tuple:
     return tuple(out)
 
 
-# Entry point
-
-
 def build(n_primitives: int = 24, mode: str = "dark_state", n_nu: int = N_NU,
           temperature_k: float = T_INT_K, max_pulses: int = 80, p_target: float = 0.98,
           levels_file=None, rabi_file=None) -> Molecule:
-    """The ThF+ molecule pack."""
     ddir = data_dir()
     lf = Path(levels_file) if levels_file else ddir / LEVELS_FILE
     rf = Path(rabi_file) if rabi_file else ddir / RABI_FILE
     system = build_system(lf, rf)
     nu_f = TWO_PI * NU_F_OVER_2PI_KHZ
     trap = Trap(nu_f=nu_f, eta=ETA, n_nu=int(n_nu))
-    # computed in kHz first, exactly as thffno.units does (bit-identical bounds)
     window = Window(omega_min=TWO_PI * (NU_F_OVER_2PI_KHZ - OMEGA_HALF_WIDTH_OVER_2PI_KHZ),
                     omega_max=TWO_PI * (NU_F_OVER_2PI_KHZ + OMEGA_HALF_WIDTH_OVER_2PI_KHZ),
                     tau_max_ms=TAU_MAX_MS, n_tau=N_TAU,

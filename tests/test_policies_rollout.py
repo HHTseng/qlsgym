@@ -1,4 +1,3 @@
-"""Monte-Carlo rollout driver, end to end on the synthetic molecule."""
 import numpy as np
 import pytest
 
@@ -36,8 +35,6 @@ def test_rollout_env_path_matches_engine_path_statistically(setup):
     res_env = rollout(env, policy_env, n_rollouts=60, seed=1)
     policy_eng = SweepingPolicy(lib.n_actions)
     res_eng = rollout(eng, policy_eng, n_rollouts=60, seed=1, library=lib, max_pulses=mol.task.max_pulses)
-    # same tables (fake_tables built from the same engine), same seed and
-    # policy: the two paths should land close in success rate and pulse count.
     assert abs(res_env.success_fraction - res_eng.success_fraction) < 0.25
     assert abs(res_env.mean_pulses - res_eng.mean_pulses) < 5.0
 
@@ -60,7 +57,6 @@ def test_rollout_records_trajectories_when_asked(setup):
 
 
 def test_target_states_is_latched_at_the_step_the_episode_succeeded(setup):
-    """Finished rows keep receiving pulses, so the final argmax can differ from the winner."""
     import collections
 
     import torch
@@ -82,7 +78,6 @@ def test_target_states_is_latched_at_the_step_the_episode_succeeded(setup):
     assert sum(replay.values()) == sum(res.successes)
     got = collections.Counter({int(n) if not isinstance(n, list) else tuple(n): c
                                for n, c in res.target_states})
-    # target_states stores level labels; compare by count, keyed on the label
     labels = mol.system.levels
     want = collections.Counter()
     for n, c in replay.items():

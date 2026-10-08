@@ -1,5 +1,3 @@
-"""Training loop for the per-block FNO surrogate (paper Sec. II.3, Appendix B)."""
-
 from __future__ import annotations
 
 import json
@@ -27,42 +25,28 @@ Tensor = torch.Tensor
 
 @dataclass
 class TrainConfig:
-    """Paper Table 2 (Appendix B.3) plus the two unspecified loss constants."""
-
     batch_size: int = 32
     epochs: int = 200
     lr: float = 5e-4
     weight_decay: float = 3e-4
     scheduler_step: int = 5
     scheduler_gamma: float = 0.7
-    # Eq. 20; NOT given in the paper.
     activity_lambda: float = 1.0
     activity_eps: float = 1e-8
-    # Eq. 21 sums over the batch; AdamW is invariant to the rescaling.
     reduction: str = "sum"
-    # Eq. 21's per-sample outer square root (True is the paper).
     per_sample_sqrt: bool = True
-    # "paper": Eq. 21 (weighted RMS of the populations). "wkl": activity-weighted generalised KL
-    # divergence (weighted_kl_loss), which keeps cross entropy's (q - p) logit gradient.
     loss: str = "paper"
     train_seed: int = 1234
     val_seed: int = 1
-    # on-resonance checkpoint-selection set (0 disables best_onres.pt)
     sel_n_freq: int = 64
     sel_n_init: int = 64
     sel_seed: int = 777
     fno: FNOConfig = field(default_factory=FNOConfig)
 
 
-# Loss
-
-
 def weighted_loss(p_pred: Tensor, p_true: Tensor, weights: Tensor,
                   reduction: str = "sum", per_sample_sqrt: bool = True) -> Tensor:
-    """Eq. 21."""
     se = (p_pred - p_true).square() * weights[:, None, :]
-    # d sqrt(x)/dx -> inf as x -> 0: the additive eps regularises the
-    # gradient of a perfect prediction (perturbs a 1e-3 loss by 5e-7 relative).
     per_sample = se.mean(dim=-1).mean(dim=-1).clamp_min(0)
     if per_sample_sqrt:
         per_sample = (per_sample + 1e-12).sqrt()
@@ -76,18 +60,6 @@ def weighted_loss(p_pred: Tensor, p_true: Tensor, weights: Tensor,
 
 
 def weighted_kl_loss(logits: Tensor, p_true: Tensor, weights: Tensor, reduction: str = "sum") -> Tensor:
-    """Activity-weighted generalised KL divergence between the true and predicted populations.
-
-        per sample: mean over tau of  sum_b w_b [ p_b log(p_b / q_b) - p_b + q_b ],  q = softmax(logits)
-
-    logits and p_true are (B, P_tau, 2 M_f), weights (B, 2 M_f) from activity_weights (Eqs. 19-20).
-    Every bracket is >= 0 and vanishes at q_b = p_b by itself, so any positive weights leave the
-    minimum at q = p. (Weighting cross entropy term by term, -sum_b w_b p_b log q_b, would not: under
-    the softmax its minimum is q_b proportional to w_b p_b.) With w = 1 it equals cross entropy minus
-    the entropy of p, since sum_b q_b = sum_b p_b = 1. Its logit gradient
-    w_k (q_k - p_k) - q_k sum_b w_b (q_b - p_b) keeps cross entropy's (q - p) form, so an
-    underestimated population is not shielded by its own small q_k as it is under Eq. 21.
-    """
     if logits.dtype not in (torch.float32, torch.float64):
         logits = logits.float()
     logq = torch.log_softmax(logits, dim=-1)
@@ -105,7 +77,6 @@ def weighted_kl_loss(logits: Tensor, p_true: Tensor, weights: Tensor, reduction:
 
 def batch_loss(model: nn.Module, xb: Tensor, yb: Tensor, wb: Tensor, cfg: TrainConfig,
                reduction: str | None = None) -> Tensor:
-    """The training objective cfg.loss on one batch."""
     reduction = cfg.reduction if reduction is None else reduction
     if cfg.loss == "paper":
         pred = model(xb).transpose(1, 2)
@@ -128,7 +99,6 @@ def evaluate_loss(model: nn.Module, split: BlockSplit, cfg: TrainConfig, device:
 
 @torch.no_grad()
 def evaluate_onres_infidelity(model: nn.Module, split: BlockSplit, cfg: TrainConfig, device: torch.device) -> float:
-    """Mean <I_p>_tau (Eqs. 28, 30) on a purely on-resonance split."""
     model.eval()
     n, total = len(split), 0.0
     bs = max(cfg.batch_size, 256)
@@ -141,12 +111,8 @@ def evaluate_onres_infidelity(model: nn.Module, split: BlockSplit, cfg: TrainCon
     return total / n
 
 
-# Training
-
-
 def checkpoint_dict(model: BlockFNO, cfg: TrainConfig, train_data: DataConfig, val_data: DataConfig,
                     epoch: int, val_loss: float, onres: float, tables: dict | None = None) -> dict:
-    """What best*.pt contains."""
     ck = {"state_dict": model.state_dict(), "epoch": epoch, "val_loss": val_loss,
           "onres_infidelity": onres, "meta": model.metadata(), "train_config": asdict(cfg),
           "train_data": asdict(train_data), "val_data": asdict(val_data), "source": "qlsgym"}
@@ -169,7 +135,6 @@ def train(
     storage_device: torch.device | str | None = None,
     splits: tuple[BlockSplit, BlockSplit] | None = None,
 ) -> dict:
-    """Train one (molecule, block, sigma) surrogate."""
     device = torch.device(device)
     torch.manual_seed(cfg.train_seed)
     np.random.seed(cfg.train_seed)
@@ -190,7 +155,7 @@ def train(
     opt = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     sched = torch.optim.lr_scheduler.StepLR(opt, step_size=cfg.scheduler_step, gamma=cfg.scheduler_gamma)
 
-    stamp = table_stamp(molecule)   # hashed once, before training, so the stamp is the tables trained on
+    stamp = table_stamp(molecule)
     n = len(tr)
     gen = torch.Generator(device="cpu").manual_seed(cfg.train_seed)
     if verbose:
@@ -249,11 +214,8 @@ def train(
     return {"model": model, "history": history, "train": tr, "val": va}
 
 
-# Loading
-
-
 class FingerprintMismatch(RuntimeError):
-    """The checkpoint was trained against different physics."""
+    pass
 
 
 def load_model(
@@ -262,7 +224,6 @@ def load_model(
     molecule: Molecule | None = None,
     allow_mismatch: bool = False,
 ) -> BlockFNO:
-    """Load a best*.pt checkpoint into a BlockFNO."""
     ckpt = torch.load(path, map_location=device, weights_only=False)
     meta = ckpt["meta"]
     fp = meta.get("fingerprint")
@@ -287,14 +248,10 @@ def load_model(
                      block_index=meta["block_index"], sigma=meta["sigma"],
                      molecule_name=meta.get("molecule", molecule.name if molecule else None),
                      fingerprint=fp, n_nu=meta.get("n_nu")).to(device)
-    # neuralop injects a non-tensor _metadata entry into state_dict.
     sd = {k: v for k, v in ckpt["state_dict"].items() if k != "_metadata"}
     model.load_state_dict(sd)
     model.eval()
     return model
-
-
-# Test-set evaluation (Eqs. 27-30, stratified on/off resonance)
 
 
 @torch.no_grad()
@@ -303,7 +260,6 @@ def evaluate_test_frequencies(
     sigma: str = "+", seed: int = 20260101, alpha: float = 1.0, device: torch.device | str = "cuda",
     batch_size: int = 500,
 ) -> dict:
-    """Eqs. 29-30 on unseen frequencies: infidelity averaged over ensemble, then pulse time."""
     device = torch.device(device)
     model = model.to(device).eval()
     m = molecule.blocks[block_index].n_states
@@ -317,14 +273,14 @@ def evaluate_test_frequencies(
     swing = torch.empty(omegas_t.numel(), dtype=torch.float64, device=device)
     for k in range(omegas_t.numel()):
         t0 = transfer_columns(molecule, block_index, omegas_t[k:k + 1], sigma, device=device,
-                              out_dtype=torch.float64)[0]                    # (P, 2M, M)
+                              out_dtype=torch.float64)[0]
         acc = torch.zeros(n_tau, dtype=torch.float64, device=device)
         acc_s = torch.zeros_like(acc)
         sw = torch.zeros((), dtype=torch.float64, device=device)
         for lo in range(0, n_init, batch_size):
             hi = min(lo + batch_size, n_init)
             pb = p0[lo:hi]
-            p_true = trajectories_from_columns(t0[None], pb)                 # (b, P, 2M)
+            p_true = trajectories_from_columns(t0[None], pb)
             x = emb.build(pb, omegas_t[k].expand(hi - lo), out_dtype=torch.float32)
             pred = model(x).transpose(1, 2).double()
             acc += infidelity_curve(pred, p_true).sum(0)
@@ -342,7 +298,6 @@ def stratified_test_frequencies(
     molecule: Molecule, block_index: int, n_uniform: int = 100, n_on: int = 100, n_off: int = 100,
     seed: int = 20260101, sigma: str = "+", n_linewidths: float = 1.0,
 ) -> dict[str, np.ndarray]:
-    """Three test-frequency sets: uniform (the paper's sampling), on and off resonance."""
     rng = np.random.default_rng(seed)
     return {"uniform": sample_frequencies(molecule, n_uniform, rng),
             "on": resonant_frequency_sample(molecule, block_index, n_on, rng, sigma, n_linewidths),
@@ -355,7 +310,6 @@ def evaluate_stratified(
     n_on: int = 100, n_off: int = 100, n_init: int = 500, freq_seed: int = 20260101,
     init_seed: int = 20260102, n_linewidths: float = 1.0, device: torch.device | str = "cuda", **kw,
 ) -> tuple[dict, dict]:
-    """Eqs. 27-30 on the uniform, on- and off-resonance test sets."""
     sets = stratified_test_frequencies(molecule, block_index, n_uniform, n_on, n_off, freq_seed, sigma, n_linewidths)
     summary: dict = {"n_linewidths": n_linewidths,
                      "active_fraction": active_fraction(molecule, block_index, sigma, n_linewidths)}
@@ -370,13 +324,55 @@ def evaluate_stratified(
     return summary, raw
 
 
+@torch.no_grad()
+def evaluate_basis_p1(
+    model: nn.Module, molecule: Molecule, block_index: int, sigma: str = "+",
+    device: torch.device | str = "cuda", active_threshold: float = 0.05,
+) -> dict:
+    from .dataset import mask_carriers
+    device = torch.device(device)
+    model = model.to(device).eval()
+    m = molecule.blocks[block_index].n_states
+    emb = TorchEmbedding(molecule, block_index, sigma, device)
+    w = molecule.window
+    lines = emb.numpy.w_res
+    lines = lines[(lines >= w.omega_min) & (lines <= w.omega_max)]
+    lines = np.sort(lines[mask_carriers(molecule, lines)])
+    eye = torch.eye(m, dtype=torch.float64, device=device)
+    err = np.zeros((lines.size, m))
+    static = np.zeros((lines.size, m))
+    for k, om in enumerate(lines):
+        t0 = transfer_columns(molecule, block_index, np.array([om]), sigma, device=device,
+                              out_dtype=torch.float64)[0]
+        p1_exact = t0[:, m:, :].sum(1).T
+        x = emb.build(eye, torch.full((m,), float(om), dtype=torch.float64, device=device),
+                      out_dtype=torch.float32)
+        p1_pred = model(x)[:, m:, :].double().sum(1)
+        err[k] = (p1_pred - p1_exact).abs().amax(-1).cpu().numpy()
+        static[k] = p1_exact.abs().amax(-1).cpu().numpy()
+    out = {"lines": lines, "err": err, "static": static}
+    if lines.size:
+        active = static > active_threshold
+        q, j = np.unravel_index(int(np.argmax(err)), err.shape)
+        out["summary"] = {
+            "n_lines": int(lines.size), "n_active": int(active.sum()),
+            "worst": float(err.max()), "p95": float(np.percentile(err, 95)), "median": float(np.median(err)),
+            "active_median": float(np.median(err[active])) if active.any() else None,
+            "static_worst": float(static.max()), "static_active_median":
+                float(np.median(static[active])) if active.any() else None,
+            "worst_line_khz": float(lines[q] / (2 * np.pi)), "worst_state": int(j),
+        }
+    else:
+        out["summary"] = {"n_lines": 0}
+    return out
+
+
 def evaluate_run(
     model: nn.Module, molecule: Molecule, block_index: int, sigma: str, history: dict | None = None,
     out_dir: str | None = None, n_test_freq: int = 100, n_test_init: int = 500, n_on: int = 100,
     n_off: int = 100, test_seed: int = 20260101, n_linewidths: float = 1.0,
     device: torch.device | str = "cuda", extra: dict | None = None, selection: str = "on_resonance",
 ) -> dict:
-    """End-of-training evaluation; writes summary.json, test_eval.npz and stratified_eval.npz."""
     ws = sample_frequencies(molecule, n_test_freq, np.random.default_rng(test_seed))
     ev = evaluate_test_frequencies(model, molecule, block_index, ws, n_init=n_test_init, sigma=sigma,
                                    seed=test_seed + 1, device=device)
@@ -400,8 +396,12 @@ def evaluate_run(
         "frac_freq_fno_beats_static": float(np.mean(ta < ev["static_time_avg"])),
         "swing_median": float(np.median(ev["swing"])), "swing_max": float(np.max(ev["swing"])),
     }
+    basis = evaluate_basis_p1(model, molecule, block_index, sigma, device=device)
+    summary.update({f"basis_p1_{k}": v for k, v in basis["summary"].items()})
     summary.update(extra or {})
     if out_dir:
+        np.savez_compressed(os.path.join(out_dir, "basis_p1_eval.npz"),
+                            lines=basis["lines"], err=basis["err"], static=basis["static"])
         os.makedirs(out_dir, exist_ok=True)
         np.savez_compressed(os.path.join(out_dir, "test_eval.npz"),
                             **{k: v for k, v in ev.items() if isinstance(v, np.ndarray)})

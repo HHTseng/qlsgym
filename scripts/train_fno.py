@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-"""Train one (molecule, block, sigma) FNO surrogate."""
 from __future__ import annotations
 
 import argparse
@@ -124,9 +123,6 @@ def main(argv=None) -> None:
     result = train(molecule, args.block, args.sigma, cfg, train_data, val_data, device=device, out_dir=out_dir,
                    log_every=args.log_every, verbose=not args.quiet, storage_device=args.storage_device)
 
-    # Reload the checkpoint the run itself prefers (on-resonance selection when
-    # available, else the paper's validation-loss selection) for the held-out
-    # test-set evaluation.
     ckpt_name = "best_onres.pt" if result["history"].get("best_onres_epoch", -1) >= 0 else "best.pt"
     model = load_model(os.path.join(out_dir, ckpt_name), device, molecule=molecule)
     selection = "on_resonance" if ckpt_name == "best_onres.pt" else "val_loss"
@@ -137,7 +133,7 @@ def main(argv=None) -> None:
                            device=device, selection=selection,
                            extra={"tag": args.tag, "checkpoint": ckpt_name})
     print(json.dumps(summary, indent=2, default=str))
-    print(f"\nwrote {out_dir}/{{best.pt, best_onres.pt, history.json, summary.json, test_eval.npz}}")
+    print(f"\nwrote {out_dir}/{{best.pt, best_onres.pt, history.json, summary.json, test_eval.npz, basis_p1_eval.npz}}")
 
 
 if __name__ == "__main__":

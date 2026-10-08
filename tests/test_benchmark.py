@@ -1,6 +1,3 @@
-"""qlsgym.benchmark: the finished-episodes curve arithmetic, part merging, result stamping/refusal, and
-the cheap arms end to end on the synthetic molecule (exact physics tables).
-"""
 import json
 import os
 from dataclasses import replace
@@ -20,7 +17,7 @@ from qlsgym.rl.ppo import PPOConfig
 
 def test_curve_is_the_cdf_of_successful_lengths():
     lengths = [1, 3, 3, 5, 5, 5]
-    succ = [True, True, True, False, True, False]     # two failures at the budget
+    succ = [True, True, True, False, True, False]
     c = finished_curve(lengths, succ, max_pulses=5)
     assert c.shape == (6,)
     assert np.allclose(c, [0, 1 / 6, 1 / 6, 3 / 6, 3 / 6, 4 / 6])
@@ -50,9 +47,9 @@ def test_merge_concatenates_parts_and_refuses_mismatches():
     assert np.allclose(m["curve"], finished_curve([2, 10, 4, 4], [True, False, True, True], 10))
     assert m["merged_from"] == [{"seed": 1, "n_episodes": 2}, {"seed": 2, "n_episodes": 2}]
     with pytest.raises(ValueError):
-        merge_results([a, _record("sweeping", 1, [1], [True])])          # same seed twice
+        merge_results([a, _record("sweeping", 1, [1], [True])])
     with pytest.raises(ValueError):
-        merge_results([a, _record("random", 3, [1], [True])])            # different arm
+        merge_results([a, _record("random", 3, [1], [True])])
 
 
 def test_merged_record_describes_the_merge_not_part_zero():
@@ -63,16 +60,13 @@ def test_merged_record_describes_the_merge_not_part_zero():
     a = _record("planner-fno", 1, [2, 10], [True, False], engine=e1)
     b = _record("planner-fno", 2, [4, 4], [True, True], engine=e2)
     m = merge_results([a, b])
-    # the config must not still claim one part's episode count or seed
     assert m["config"]["n_episodes"] == 4 == m["n_episodes"]
     assert m["config"]["seed"] is None and m["seeds"] == [1, 2]
     assert m["created"] != a["created"]
-    # engine call counts are totals, like `seconds` already was
     assert m["engine"]["calls"] == {"fno": 40, "exact_untrained": 1, "exact_primitive": 9}
     assert m["engine"]["surrogate_fraction"] == pytest.approx(40 / 50)
     assert m["engine"]["merged_from_parts"] == 2
     assert m["seconds"] == a["seconds"] + b["seconds"]
-    # parts that consulted different dynamics must not be merged
     c = _record("planner-fno", 3, [4], [True], engine=dict(e1, manifest_tag="mix"))
     with pytest.raises(ValueError, match="different dynamics"):
         merge_results([a, c])
@@ -108,14 +102,11 @@ def test_render_and_table(tmp_path):
     assert all(os.path.exists(p) for p in paths)
     txt = table(recs)
     assert "sweeping" in txt and "rl-fno" in txt
-    # the numbers, then the figure key that replaces the (forbidden) on-image legend
     assert txt.splitlines()[:3] == [l for l in txt.splitlines()[:3]] and len(txt.splitlines()) > 5
     assert "colour" in txt and "style" in txt
 
 
 def test_figure_names_the_arms_and_carries_nothing_else():
-    """The legend names the curves -- that is content.  Titles, captions and
-    annotations are not, and must stay off the image."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -132,21 +123,17 @@ def test_figure_names_the_arms_and_carries_nothing_else():
         assert ax.get_xlabel() and ax.get_ylabel()
     finally:
         plt.close(fig)
-    # legend=False gives the bare curves
     fig, ax = plt.subplots()
     draw(ax, recs, budget=5, legend=False)
     try:
         assert ax.get_legend() is None
     finally:
         plt.close(fig)
-    # three unambiguous classes, so the plot still reads in greyscale
     assert {STYLE[a][1] for a in ("sweeping", "random")} == {":"}
     assert {STYLE[a][1] for a in ("planner-exact", "rl-exact")} == {"--"}
     assert {STYLE[a][1] for a in ("planner-fno", "rl-fno")} == {"-"}
-    # the exact/fno pair of a family shares a colour and differs in style
     for a, b in (("planner-exact", "planner-fno"), ("rl-exact", "rl-fno")):
         assert STYLE[a][0] == STYLE[b][0] and STYLE[a][1] != STYLE[b][1]
-    # no guide may be mistaken for an arm
     assert (GUIDE_COLOUR, "-") not in {(c, ls) for c, ls, _ in STYLE.values()}
     txt = style_legend(recs)
     for arm in ARMS:
@@ -158,14 +145,12 @@ def test_unmerged_parts_are_reported_not_silently_dropped(tmp_path):
     mol = load_molecule("synthetic")
     ok = _record("sweeping", 1, [1, 2], [True, True]); ok["fingerprint"] = mol.fingerprint()
     write_result(ok, str(tmp_path / "sweeping.json"))
-    # planner-exact exists only as a part file: it would vanish from the figure
     write_result(ok, str(tmp_path / "planner-exact.part90.json"))
     assert list(unmerged_parts(str(tmp_path))) == ["planner-exact"]
     warnings = []
     got = read_results(mol, str(tmp_path), warn=warnings.append)
     assert [r["arm"] for r in got] == ["sweeping"]
     assert any("planner-exact" in w and "MISSING" in w for w in warnings)
-    # once merged, no warning
     write_result(ok, str(tmp_path / "planner-exact.json"))
     assert unmerged_parts(str(tmp_path)) == {}
 
@@ -174,7 +159,7 @@ def test_p_target_override_reaches_the_planner_score():
     mol = load_molecule("synthetic")
     assert score_config(BenchmarkConfig(molecule="synthetic"), mol).p_target == mol.task.p_target
     sc = score_config(BenchmarkConfig(molecule="synthetic", p_target=0.999), mol)
-    assert sc.p_target == 0.999      # the env would stop at 0.999; so must the planner
+    assert sc.p_target == 0.999
 
 
 def test_config_validation():
@@ -206,7 +191,6 @@ def test_cheap_arms_end_to_end(synthetic_cfg, arm, tmp_path):
     assert r["library"]["n_actions"] > 0 and r["config"]["seed"] == 5
     if arm == "rl-exact":
         assert r["rl"]["tables_builder"] == "physics" and os.path.exists(r["rl"]["run_dir"] + "/actor_best.pt")
-        # a second call loads the saved actor instead of training
         r2 = run_arm(arm, synthetic_cfg)
         assert r2["rl"]["loaded_from"].endswith("actor_best.pt")
         assert r2["lengths"] == r["lengths"]
@@ -229,7 +213,6 @@ def test_rl_run_dir_separates_materially_different_configs(synthetic_cfg):
                   replace(synthetic_cfg, ppo=replace(synthetic_cfg.ppo, obs="p")),
                   replace(synthetic_cfg, ppo=replace(synthetic_cfg.ppo, total_steps=128))):
         assert rl_run_dir(other, lib, "rl-exact", molecule=mol) != base, other
-    # the surrogate manifest, not just its tag, is part of the key
     class _Eng:
         pass
     e1, e2 = _Eng(), _Eng()
@@ -241,8 +224,6 @@ def test_rl_run_dir_separates_materially_different_configs(synthetic_cfg):
 
 
 def test_saved_actor_is_refused_when_it_does_not_match_the_request(synthetic_cfg, tmp_path):
-    """load_policy rebuilds the net from the SAVED ppo config, so a mismatch used to
-    evaluate one network while the result JSON reported another."""
     mol = load_molecule("synthetic")
     lib = build_library(synthetic_cfg, mol)
     env = exact_env(synthetic_cfg, mol, lib, batch=synthetic_cfg.n_episodes)
@@ -250,11 +231,9 @@ def test_saved_actor_is_refused_when_it_does_not_match_the_request(synthetic_cfg
     run_dir = str(tmp_path / "run")
     _, meta = train_or_load_actor(synthetic_cfg, mol, lib, env_train, env, run_dir, "physics")
     assert meta["ppo_config"]["hidden"] == synthetic_cfg.ppo.hidden
-    # same directory, different network: must refuse rather than silently reuse
     other = replace(synthetic_cfg, ppo=replace(synthetic_cfg.ppo, hidden=32))
     with pytest.raises(RuntimeError, match="hidden"):
         train_or_load_actor(other, mol, lib, env_train, env, run_dir, "physics")
-    # unchanged config still loads
     pol, meta2 = train_or_load_actor(synthetic_cfg, mol, lib, env_train, env, run_dir, "physics")
     assert meta2["loaded_from"].endswith("actor_best.pt")
 
@@ -265,14 +244,13 @@ def test_benchmark_sbatch_passes_the_horizon_and_the_tag_through():
     assert "MAXPULSES" in sb and "--max-pulses" in sb
     assert "FNO_TAG" in sb and "--fno-tag" in sb
     assert '"${OPT_ARGS[@]}"' in sb
-    # neither may carry one molecule's value here: benchmark.py resolves both per molecule
     assert ': "${MAXPULSES:=}"' in sb and ': "${FNO_TAG:=}"' in sb
 
 
 def test_both_molecules_have_a_horizon_and_an_evaluation_mode():
     for name, lib_actions in (("h3o", 167), ("thf", 416)):
         d = molecule_defaults(name)
-        assert d["max_pulses"] > lib_actions      # one full sweep of the library must fit
+        assert d["max_pulses"] > lib_actions
         assert isinstance(d["eval_greedy"], bool)
     assert molecule_defaults("thf")["eval_greedy"] is False
     assert molecule_defaults("no-such-molecule")["max_pulses"] is None
@@ -283,12 +261,11 @@ def test_fno_tag_defaults_to_mix_where_its_manifest_exists(tmp_path, monkeypatch
     ck = tmp_path / "checkpoints" / "thf"
     ck.mkdir(parents=True)
     (ck / "other.json").write_text("{}")
-    with pytest.raises(FileNotFoundError, match="present: \\['other'\\]"):   # never picks another tag
+    with pytest.raises(FileNotFoundError, match="present: \\['other'\\]"):
         resolve_fno_tag("thf", "planner-fno", log=lambda s: None)
     (ck / "mix.json").write_text("{}")
     assert resolve_fno_tag("thf", "planner-fno", log=lambda s: None) == "mix"
     assert resolve_fno_tag("thf", "planner-fno", "other", log=lambda s: None) == "other"
-    # an arm that never touches the surrogate must not need a manifest at all
     assert resolve_fno_tag("h3o", "sweeping", log=lambda s: None) == BenchmarkConfig.fno_tag
     with pytest.raises(FileNotFoundError):
         resolve_fno_tag("h3o", "planner-fno", log=lambda s: None)
@@ -303,5 +280,4 @@ def test_render_marks_the_task_budget(tmp_path):
     recs = [_record("sweeping", 1, [5, 30, 30], [True, True, True], max_pulses=30)]
     paths = render(recs, str(tmp_path / "fig"), budget=10)
     assert all(os.path.exists(p) for p in paths)
-    # a budget at or beyond the horizon draws nothing and must not raise
     assert render(recs, str(tmp_path / "fig2"), budget=30)
