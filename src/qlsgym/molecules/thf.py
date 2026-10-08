@@ -7,11 +7,16 @@ from pathlib import Path
 
 import numpy as np
 
+from ..config import molecule_config
 from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_PI
 
-J_MAX = 7
-B_FIELD_GAUSS = 20.0
-E_FIELD_V_PER_CM = 0.0
+CONFIG = molecule_config("thf")
+_TAB, _TRAP, _WIN = CONFIG["tables"], CONFIG["trap"], CONFIG["window"]
+_EMB, _TASK, _PRIM = CONFIG["embedding"], CONFIG["task"], CONFIG["primitives"]
+
+J_MAX = int(_TAB["j_max"])
+B_FIELD_GAUSS = float(_TAB["b_field_gauss"])
+E_FIELD_V_PER_CM = float(_TAB["e_field_v_per_cm"])
 
 
 def table_tag(j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS, e_v_per_cm: float = E_FIELD_V_PER_CM) -> str:
@@ -22,16 +27,16 @@ LEVELS_FILE = f"ThF232_levels_{table_tag()}.txt"
 RABI_FILE = f"ThF232_two_photon_sigma_plus_modelA_{table_tag()}.txt"
 
 G_SYMBOLS = ("G_xx", "G_yy", "G_zz")
-REFERENCE_RABI_KHZ = 3.0
-NU_F_OVER_2PI_KHZ = 1112.7182
-ETA = 0.06776
-N_NU = 8
-OMEGA_HALF_WIDTH_OVER_2PI_KHZ = 470.0
-TAU_MAX_MS, N_TAU = 6.0, 200
-T_INT_K = 4.0
-RWA_CUTOFF = 1.0e6
-DELTA_MAX = 1.0e4
-OMEGA_MIN_COUPLING = 1.0
+REFERENCE_RABI_KHZ = float(_TAB["reference_rabi_khz"])
+NU_F_OVER_2PI_KHZ = float(_TRAP["nu_f_khz"])
+ETA = float(_TRAP["eta"])
+N_NU = int(_TRAP["n_nu"])
+OMEGA_HALF_WIDTH_OVER_2PI_KHZ = float(_WIN["half_width_khz"])
+TAU_MAX_MS, N_TAU = float(_WIN["tau_max_ms"]), int(_WIN["n_tau"])
+T_INT_K = float(_TASK["temperature_k"])
+RWA_CUTOFF = float(_WIN["rwa_cutoff_rad_per_ms"])
+DELTA_MAX = float(_EMB["delta_max_rad_per_ms"])
+OMEGA_MIN_COUPLING = float(_WIN["omega_min_coupling_rad_per_ms"])
 
 
 def data_dir() -> Path:
@@ -121,9 +126,10 @@ def build_system(levels_file, rabi_file) -> System:
     return System(tuple(levels), energies, i_idx, f_idx, omega_c, tuple(blocks), block_of_state)
 
 
-def cross_j_primitives(molecule: Molecule, n_primitives: int = 24, temperature_k: float | None = None,
-                       delta_j: tuple = (1, 2), dedupe_khz: float = 1.0, max_per_family: int | None = None,
-                       min_coupling: float | None = None, mode: str = "dark_state") -> tuple:
+def cross_j_primitives(molecule: Molecule, n_primitives: int = int(_PRIM["n"]), temperature_k: float | None = None,
+                       delta_j: tuple = tuple(_PRIM["delta_j"]), dedupe_khz: float = float(_PRIM["dedupe_khz"]),
+                       max_per_family: int | None = None, min_coupling: float | None = None,
+                       mode: str = str(_PRIM["mode"])) -> tuple:
     from ..physics.thermal import boltzmann
 
     s, eta, nu_f = molecule.system, molecule.trap.eta, molecule.trap.nu_f
@@ -231,8 +237,9 @@ def _with_sector_blocks(molecule: Molecule, prims) -> tuple:
     return tuple(out)
 
 
-def build(n_primitives: int = 24, mode: str = "dark_state", n_nu: int = N_NU,
-          temperature_k: float = T_INT_K, max_pulses: int = 80, p_target: float = 0.98,
+def build(n_primitives: int = int(_PRIM["n"]), mode: str = str(_PRIM["mode"]), n_nu: int = N_NU,
+          temperature_k: float = T_INT_K, max_pulses: int = int(_TASK["max_pulses"]),
+          p_target: float = float(_TASK["p_target"]),
           levels_file=None, rabi_file=None) -> Molecule:
     ddir = data_dir()
     lf = Path(levels_file) if levels_file else ddir / LEVELS_FILE
@@ -243,7 +250,8 @@ def build(n_primitives: int = 24, mode: str = "dark_state", n_nu: int = N_NU,
     window = Window(omega_min=TWO_PI * (NU_F_OVER_2PI_KHZ - OMEGA_HALF_WIDTH_OVER_2PI_KHZ),
                     omega_max=TWO_PI * (NU_F_OVER_2PI_KHZ + OMEGA_HALF_WIDTH_OVER_2PI_KHZ),
                     tau_max_ms=TAU_MAX_MS, n_tau=N_TAU,
-                    rwa_cutoff=RWA_CUTOFF, omega_min_coupling=OMEGA_MIN_COUPLING, carrier_bands=())
+                    rwa_cutoff=RWA_CUTOFF, omega_min_coupling=OMEGA_MIN_COUPLING, carrier_bands=(),
+                    s_emb=float(_EMB["s_emb"]), beta_emb=float(_EMB["beta_emb"]))
     task = Task(temperature_k=float(temperature_k), p_target=float(p_target), max_pulses=int(max_pulses))
     hdr = read_table_header(lf)
     g = hdr["params"]
@@ -261,12 +269,14 @@ def build(n_primitives: int = 24, mode: str = "dark_state", n_nu: int = N_NU,
         "doublet_ordering": "e below f (heff 2026-09-14)",
         "heff_git_rev": hdr["heff_git_rev"], "heff_spec_hash": hdr["heff_spec_hash"],
         "reference_rabi_khz": REFERENCE_RABI_KHZ,
-        "delta_max": DELTA_MAX, "s_emb": 0.05, "beta_emb": 0.01,
+        "delta_max": DELTA_MAX, "s_emb": window.s_emb, "beta_emb": window.beta_emb,
         "primitives": f"cross_j_primitives(mode={mode!r}, n_primitives={n_primitives})",
     }
     from ..physics.spectrum import carrier_bands
     mol = Molecule("thf", system, trap, window, task, (), provenance)
-    bands = tuple(tuple(map(float, b)) for sg in ("+", "-") for b in carrier_bands(mol, sg))
+    bands = tuple(tuple(map(float, b)) for sg in ("+", "-") for b in carrier_bands(
+        mol, sg, half_width_khz=float(_WIN["carrier_half_width_khz"]),
+        min_coupling=TWO_PI * float(_WIN["carrier_min_coupling_khz"])))
     mol = dataclasses.replace(mol, window=dataclasses.replace(window, carrier_bands=bands))
     if n_primitives > 0:
         mol = dataclasses.replace(mol, primitives=_with_sector_blocks(

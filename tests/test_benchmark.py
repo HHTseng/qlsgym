@@ -180,7 +180,7 @@ def synthetic_cfg(tmp_path_factory):
                                          eval_every=1, eval_rollouts=4, hidden=16))
 
 
-@pytest.mark.parametrize("arm", ["sweeping", "random", "planner-exact", "rl-exact"])
+@pytest.mark.parametrize("arm", ["sweeping", "random", "planner-exact", "planner-identity", "rl-exact"])
 def test_cheap_arms_end_to_end(synthetic_cfg, arm, tmp_path):
     lines = []
     r = run_arm(arm, synthetic_cfg, log=lines.append)
@@ -196,6 +196,8 @@ def test_cheap_arms_end_to_end(synthetic_cfg, arm, tmp_path):
         assert r2["lengths"] == r["lengths"]
     if arm == "planner-exact":
         assert r["engine"]["kind"] == "ExactEngine" and "n_pool=3" in r["policy"]
+    if arm == "planner-identity":
+        assert r["engine"]["kind"] == "TrivialEngine" and r["engine"]["calls"]["substituted"] > 0
     path = write_result(r, str(tmp_path / f"{arm}.json"))
     with open(path) as fh:
         assert json.load(fh)["arm"] == arm

@@ -6,6 +6,7 @@ STYLE = {
     "sweeping": ("C4", ":", "baseline"),
     "random": ("C1", ":", "baseline"),
     "planner-exact": ("C2", "--", "exact dynamics"),
+    "planner-identity": ("C3", ":", "no Raman dynamics"),
     "planner-fno": ("C2", "-", "surrogate in the loop"),
     "rl-exact": ("C0", "--", "exact dynamics"),
     "rl-fno": ("C0", "-", "surrogate in the loop"),

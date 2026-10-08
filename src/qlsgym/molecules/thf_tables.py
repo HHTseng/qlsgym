@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ..spec import TWO_PI
-from .thf import B_FIELD_GAUSS, E_FIELD_V_PER_CM, J_MAX, REFERENCE_RABI_KHZ, table_tag
+from .thf import B_FIELD_GAUSS, CONFIG, E_FIELD_V_PER_CM, J_MAX, REFERENCE_RABI_KHZ, table_tag
 
 __all__ = ["REFERENCE_TRANSITION", "JONES", "Levels", "Couplings", "build_levels", "two_photon_amplitudes",
            "sigma_plus_couplings", "build_tables", "write_tables", "table_files"]
@@ -23,10 +23,10 @@ def _heff():
     return heff
 
 
-REFERENCE_TRANSITION = (
-    (1, 1.5, "+", 0.5, 0),
-    (1, 1.5, "+", 1.5, 0),
-)
+REFERENCE_TRANSITION = tuple(tuple(t) for t in CONFIG["tables"]["reference_transition"])
+PARAMETER_SET = str(CONFIG["tables"]["heff_parameter_set"])
+INTERMEDIATE_EXTRA_J = int(CONFIG["tables"]["intermediate_extra_j"])
+MIN_REL_AMPLITUDE = float(CONFIG["tables"]["min_rel_amplitude"])
 
 
 @dataclass(frozen=True)
@@ -44,7 +44,7 @@ def build_levels(j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS, e_v_per_cm:
                  pset=None) -> Levels:
     heff = _heff()
     spec = heff.thf_spec(J_max=j_max)
-    pset = heff.thf_v1() if pset is None else pset
+    pset = getattr(heff, PARAMETER_SET)() if pset is None else pset
     ctx = heff.ctx_from(spec, pset)
     kets = heff.enumerate_kets(spec)
     blocks = heff.block_by_mF(kets)
@@ -158,11 +158,11 @@ class Couplings:
 
 def sigma_plus_couplings(levels: Levels, j_max_int: int | None = None, reference: tuple = REFERENCE_TRANSITION,
                          reference_rabi_khz: float = REFERENCE_RABI_KHZ,
-                         min_rel_amplitude: float = 1e-9) -> Couplings:
+                         min_rel_amplitude: float = MIN_REL_AMPLITUDE) -> Couplings:
     heff = _heff()
     j_max = int(max(l[0] for l in levels.labels))
     I = heff.thf_spec(J_max=j_max).I
-    j_max_int = j_max_int or j_max + 1
+    j_max_int = j_max_int or j_max + INTERMEDIATE_EXTRA_J
 
     mfs = np.array([l[3] for l in levels.labels])
     dm = mfs[:, None] - mfs[None, :]
@@ -240,7 +240,7 @@ def write_tables(levels: Levels, cpl: Couplings, levels_file: str, rabi_file: st
         "# Zeeman: heff's full effective tensor G = diag(G_xx, G_yy, G_zz) (below); the parity-dependent",
         "#   part is its G_Delta = (G_xx - G_yy)/2, so nothing is added here.",
         "#   Omega-doublet ordering: e (parity +(-1)^J) lies BELOW f at every J.",
-        "# heff parameter set thf_v1:",
+        f"# heff parameter set {PARAMETER_SET}:",
     ] + ["#   " + line for line in levels.params_table.splitlines()]
     with open(levels_file, "w") as fh:
         fh.write("\n".join(common) + "\n")

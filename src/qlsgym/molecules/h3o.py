@@ -6,23 +6,28 @@ from pathlib import Path
 
 import numpy as np
 
+from ..config import molecule_config
 from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_PI
 
-LEVELS_FILE = "H3O_levels_Jmax_4_B_0.00036.txt"
-RABI_FILE = "two_photon_rabi_rates_sum_Jmax_4_p_q10_q21_B_0.00036.txt"
+CONFIG = molecule_config("h3o")
+_TAB, _TRAP, _WIN = CONFIG["tables"], CONFIG["trap"], CONFIG["window"]
+_EMB, _TASK, _PRIM = CONFIG["embedding"], CONFIG["task"], CONFIG["primitives"]
 
-REFERENCE_TRANSITION = ((2, 2.0, "-", 1.5, 1), (2, 2.0, "-", 2.5, 1))
-REFERENCE_RABI_KHZ = 2.0
+LEVELS_FILE = str(_TAB["levels_file"])
+RABI_FILE = str(_TAB["rabi_file"])
 
-NU_F_OVER_2PI_KHZ = 5164.0
-ETA = 0.09
-N_NU = 2
-OMEGA_MIN_OVER_2PI_KHZ, OMEGA_MAX_OVER_2PI_KHZ = 5050.0, 5300.0
-TAU_MAX_MS, N_TAU = 4.0, 200
-T_INT_K = 20.0
-RWA_CUTOFF = 1.0e6
-DELTA_MAX = 1.0e4
-OMEGA_MIN_COUPLING = 1.0
+REFERENCE_TRANSITION = tuple(tuple(t) for t in _TAB["reference_transition"])
+REFERENCE_RABI_KHZ = float(_TAB["reference_rabi_khz"])
+
+NU_F_OVER_2PI_KHZ = float(_TRAP["nu_f_khz"])
+ETA = float(_TRAP["eta"])
+N_NU = int(_TRAP["n_nu"])
+OMEGA_MIN_OVER_2PI_KHZ, OMEGA_MAX_OVER_2PI_KHZ = float(_WIN["omega_min_khz"]), float(_WIN["omega_max_khz"])
+TAU_MAX_MS, N_TAU = float(_WIN["tau_max_ms"]), int(_WIN["n_tau"])
+T_INT_K = float(_TASK["temperature_k"])
+RWA_CUTOFF = float(_WIN["rwa_cutoff_rad_per_ms"])
+DELTA_MAX = float(_EMB["delta_max_rad_per_ms"])
+OMEGA_MIN_COUPLING = float(_WIN["omega_min_coupling_rad_per_ms"])
 
 
 def data_dir() -> Path:
@@ -112,8 +117,8 @@ def build_system(levels_file, rabi_file) -> System:
     return System(tuple(levels), energies, i_idx, f_idx, omega_c, tuple(blocks), block_of_state)
 
 
-def thz_primitives(molecule: Molecule, n_families: int = 2, temperature_k: float | None = None,
-                   min_source_population: float = 0.01, max_per_family: int | None = None) -> tuple:
+def thz_primitives(molecule: Molecule, n_families: int = int(_PRIM["n_families"]), temperature_k: float | None = None,
+                   min_source_population: float = float(_PRIM["min_source_population"]), max_per_family: int | None = None) -> tuple:
     from ..physics.thermal import boltzmann
 
     s, eta, nu_f = molecule.system, molecule.trap.eta, molecule.trap.nu_f
@@ -171,8 +176,9 @@ def _with_sector_blocks(molecule: Molecule, prims) -> tuple:
     return tuple(out)
 
 
-def build(n_families: int = 2, n_nu: int = N_NU, temperature_k: float = T_INT_K,
-          max_pulses: int = 80, p_target: float = 0.98, primitives: bool = True,
+def build(n_families: int = int(_PRIM["n_families"]), n_nu: int = N_NU, temperature_k: float = T_INT_K,
+          max_pulses: int = int(_TASK["max_pulses"]), p_target: float = float(_TASK["p_target"]),
+          primitives: bool = True,
           levels_file=None, rabi_file=None) -> Molecule:
     ddir = data_dir()
     lf = Path(levels_file) if levels_file else ddir / LEVELS_FILE
@@ -181,19 +187,22 @@ def build(n_families: int = 2, n_nu: int = N_NU, temperature_k: float = T_INT_K,
     trap = Trap(nu_f=TWO_PI * NU_F_OVER_2PI_KHZ, eta=ETA, n_nu=int(n_nu))
     window = Window(omega_min=TWO_PI * OMEGA_MIN_OVER_2PI_KHZ, omega_max=TWO_PI * OMEGA_MAX_OVER_2PI_KHZ,
                     tau_max_ms=TAU_MAX_MS, n_tau=N_TAU, rwa_cutoff=RWA_CUTOFF,
-                    omega_min_coupling=OMEGA_MIN_COUPLING, carrier_bands=())
+                    omega_min_coupling=OMEGA_MIN_COUPLING, carrier_bands=(),
+                    s_emb=float(_EMB["s_emb"]), beta_emb=float(_EMB["beta_emb"]))
     task = Task(temperature_k=float(temperature_k), p_target=float(p_target), max_pulses=int(max_pulses))
     provenance = {
         "levels_file": str(lf), "rabi_file": str(rf),
-        "b_field_mt": 0.36, "j_max": 4,
+        "b_field_mt": float(_TAB["b_field_mt"]), "j_max": int(_TAB["j_max"]),
         "reference_transition": REFERENCE_TRANSITION, "reference_rabi_khz": REFERENCE_RABI_KHZ,
-        "delta_max": DELTA_MAX, "s_emb": 0.05, "beta_emb": 0.01,
+        "delta_max": DELTA_MAX, "s_emb": window.s_emb, "beta_emb": window.beta_emb,
         "primitives": f"thz_primitives(n_families={n_families}), sigma+ at their pi-time",
         "paper": "arXiv:2410.11839",
     }
     from ..physics.spectrum import carrier_bands
     mol = Molecule("h3o", system, trap, window, task, (), provenance)
-    bands = tuple(tuple(map(float, b)) for sg in ("+", "-") for b in carrier_bands(mol, sg))
+    bands = tuple(tuple(map(float, b)) for sg in ("+", "-") for b in carrier_bands(
+        mol, sg, half_width_khz=float(_WIN["carrier_half_width_khz"]),
+        min_coupling=TWO_PI * float(_WIN["carrier_min_coupling_khz"])))
     mol = dataclasses.replace(mol, window=dataclasses.replace(window, carrier_bands=bands))
     if primitives and n_families > 0:
         mol = dataclasses.replace(mol, primitives=_with_sector_blocks(mol, thz_primitives(mol, n_families)))

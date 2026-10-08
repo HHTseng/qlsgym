@@ -22,7 +22,7 @@ from ..rl.ppo import PPOConfig, load_policy, policy_from_state_dict, save_policy
 from ..spec import Molecule
 from .curve import finished_curve, from_rollout, pulses_to
 
-ARMS = ("sweeping", "random", "planner-exact", "planner-fno", "rl-exact", "rl-fno")
+ARMS = ("sweeping", "random", "planner-exact", "planner-identity", "planner-fno", "rl-exact", "rl-fno")
 FNO_ARMS = ("planner-fno", "rl-fno")
 LIBRARIES = ("physics_subset", "rl_discrete")
 
@@ -148,6 +148,11 @@ def fno_engine(cfg: BenchmarkConfig, molecule: Molecule, tau_indices, fallback=N
     from ..surrogate.manifest import load_manifest
     fb = default_engine(cfg, molecule, tau_indices, log=log) if fallback is None else fallback
     return load_manifest(molecule, cfg.fno_tag, tau_indices=tau_indices, device=cfg.device, fallback=fb)
+
+
+def identity_engine(molecule: Molecule, tau_indices):
+    from ..physics.engines import TrivialEngine
+    return TrivialEngine(molecule, tau_indices=tau_indices, sigmas=("+", "-"))
 
 
 def fno_env(cfg: BenchmarkConfig, molecule: Molecule, library: ActionLibrary, engine, batch: int = 1,
@@ -282,7 +287,12 @@ def run_arm(arm: str, cfg: BenchmarkConfig, log=None, progress: bool = False) ->
         policy = RandomPolicy(library.n_actions)
     elif arm.startswith("planner-"):
         ref = default_engine(cfg, molecule, taus, log=say)
-        engine = ref if arm == "planner-exact" else fno_engine(cfg, molecule, taus, fallback=ref)
+        if arm == "planner-exact":
+            engine = ref
+        elif arm == "planner-identity":
+            engine = identity_engine(molecule, taus)
+        else:
+            engine = fno_engine(cfg, molecule, taus, fallback=ref)
         policy = ScorePlannerPolicy(engine, library, score_config(cfg, molecule), tau_mode="library",
                                     n_pool=cfg.n_pool, delta_s=cfg.delta_s)
         policy_desc = (f"{arm} (n_pool={cfg.n_pool}, delta_s={cfg.delta_s}, "

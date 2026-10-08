@@ -5,11 +5,10 @@ from typing import Sequence
 
 import numpy as np
 
+from ..physics.thermal import KB_OVER_HBAR
 from ..spec import Molecule
 from .actions import ActionLibrary
 from .cache import ActionTables
-
-KB_OVER_HBAR = 2.0 * np.pi * 2.0836619123e7
 
 
 @dataclass(frozen=True)

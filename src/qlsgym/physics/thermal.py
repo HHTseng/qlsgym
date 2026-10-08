@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..config import constants
 from ..spec import Molecule, TWO_PI
 
-KB_OVER_HBAR = TWO_PI * 2.0836619123e7
+KB_OVER_HBAR = TWO_PI * float(constants()["k_B_over_h_kHz_per_K"])
 
 
 def boltzmann(molecule: Molecule, temperature_k: float | None = None) -> np.ndarray:
