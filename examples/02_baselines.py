@@ -1,4 +1,3 @@
-"""python examples/02_baselines.py thf 200 150 # n_rollouts, max_pulses"""
 from __future__ import annotations
 
 import sys

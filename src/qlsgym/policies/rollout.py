@@ -1,5 +1,3 @@
-"""qlsgym.policies.rollout -- Monte-Carlo evaluation of a policy."""
-
 from __future__ import annotations
 
 import collections
@@ -23,14 +21,14 @@ class RolloutResult:
     success_err: float
     mean_pulses: float
     mean_pulses_successful: float
-    lengths: list                      # pulses used per rollout (max_pulses if failed)
-    successes: list                    # bool per rollout
-    outcomes: dict                     # {"success": .., "max_pulses": .., "no_action": ..} fractions
-    target_states: list                # [[level label, count], ...] most common first
-    engine_calls: int = 0              # branches_all_tau calls made to advance the state
-    policy_engine_calls: int | None = None   # engine drives evaluated by the policy, if it counts
+    lengths: list
+    successes: list
+    outcomes: dict
+    target_states: list
+    engine_calls: int = 0
+    policy_engine_calls: int | None = None
     seconds: float = 0.0
-    trajectories: list | None = None   # per rollout [(action, outcome), ...] when record=True
+    trajectories: list | None = None
     policy: str = ""
     engine: str = ""
 
@@ -78,16 +76,12 @@ def _as_action(pick, library: ActionLibrary) -> Action:
 def rollout(env_or_engine, policy, n_rollouts: int = 100, seed: int = 0, max_pulses: int | None = None,
             p_target: float | None = None, library: ActionLibrary | None = None,
             p_init: np.ndarray | None = None, record: bool = False, progress: bool = False) -> RolloutResult:
-    """Monte-Carlo evaluation (module docstring)."""
     if isinstance(env_or_engine, PurificationEnv):
         return _rollout_env(env_or_engine, policy, n_rollouts, seed, max_pulses, p_target, record, progress)
     if library is None:
         raise ValueError("rollout against an engine needs the ActionLibrary the policy indexes into")
     return _rollout_engine(env_or_engine, policy, library, n_rollouts, seed, max_pulses, p_target, p_init,
                            record, progress)
-
-
-# engine path
 
 
 def _rollout_engine(engine: TauBatchedEngine, policy, library: ActionLibrary, n_rollouts, seed, max_pulses,
@@ -145,9 +139,6 @@ def _rollout_engine(engine: TauBatchedEngine, policy, library: ActionLibrary, n_
                    type(engine).__name__, traj, n_rollouts)
 
 
-# environment path
-
-
 def _rollout_env(env: PurificationEnv, policy, n_rollouts, seed, max_pulses, p_target, record, progress):
     max_pulses = env.cfg.max_pulses if max_pulses is None else int(max_pulses)
     p_target = env.cfg.p_target if p_target is None else float(p_target)
@@ -159,7 +150,6 @@ def _rollout_env(env: PurificationEnv, policy, n_rollouts, seed, max_pulses, p_t
     rng = np.random.default_rng(seed)
     t0 = time.time()
     if stateful:
-        # one trajectory at a time so per-trajectory policy memory is private
         env.reset(seed=seed, batch=1)
         chunks = [1] * n_rollouts
     else:
@@ -180,12 +170,8 @@ def _rollout_env(env: PurificationEnv, policy, n_rollouts, seed, max_pulses, p_t
         length = np.full(B, max_pulses, dtype=np.int64)
         succ = np.zeros(B, dtype=bool)
         no_act = np.zeros(B, dtype=bool)
-        # argmax of the belief AT the step the episode succeeded.  Finished rows
-        # stay in the batch and keep receiving pulses, so the belief at the end
-        # of the loop is the post-success one and its argmax can differ.
         target = np.full(B, -1, dtype=np.int64)
         steps = [[] for _ in range(B)] if record else None
-        # success may already hold at t = 0
         done0 = env.is_done(state).cpu().numpy()
         if done0.any():
             target[done0] = state.argmax(-1).cpu().numpy()[done0]

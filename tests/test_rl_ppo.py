@@ -1,4 +1,3 @@
-"""PPO on the synthetic molecule with fake tables: the loop, both estimators, checkpoints."""
 import numpy as np
 import pytest
 
@@ -33,7 +32,7 @@ def test_train_runs_and_records(setup, target):
     res = train_ppo(env, cfg, log=lines.append)
     assert res.n_updates == 3 and res.env_steps == 8 * 6 * 3
     assert len(res.history) == 3 and all(np.isfinite(h["loss_pi"]) for h in res.history)
-    assert [s["update"] for s in res.snapshots] == [2, 3]     # every 2 updates plus the last
+    assert [s["update"] for s in res.snapshots] == [2, 3]
     assert res.best in res.snapshots and 0.0 <= res.best["success"] <= 1.0
     assert lines and lines[0].startswith("[ppo] update 2/3")
 
@@ -62,7 +61,7 @@ def test_actor_policy_protocol_and_reproducibility(setup):
     stoch = policy_from_state_dict(res.best_state_dict, res.n_in, res.n_actions, cfg, greedy=False)
     s1 = stoch.act_batch(beliefs, 0, np.random.default_rng(5))
     s2 = stoch.act_batch(beliefs, 0, np.random.default_rng(5))
-    assert np.array_equal(s1, s2)                         # same rng, same draws
+    assert np.array_equal(s1, s2)
     r = rollout(env, pol, n_rollouts=6, seed=0)
     assert r.n_rollouts == 6
 
@@ -92,9 +91,6 @@ def test_eval_env_must_match(setup):
 
 @pytest.mark.slow
 def test_learns_the_easy_fake_dynamics(setup):
-    """The fake dynamics are pi-pulse-like, so a policy that pulses the right states purifies far
-    faster than a random one.
-    """
     env = _env(setup, batch=64)
     cfg = PPOConfig(n_envs=64, n_steps=16, total_steps=64 * 16 * 150, minibatches=4, epochs=4,
                     eval_every=50, eval_rollouts=100, hidden=64, seed=0, lr=3e-3)
@@ -102,6 +98,5 @@ def test_learns_the_easy_fake_dynamics(setup):
     pol = policy_from_state_dict(res.best_state_dict, res.n_in, res.n_actions, cfg)
     learned = rollout(env, pol, n_rollouts=300, seed=11)
     rnd = rollout(env, RandomPolicy(env.n_actions), n_rollouts=300, seed=11)
-    # measured 2026-09-16: learned 0.95 / 10.0 pulses, random 0.26 / 18.6
     assert learned.success_fraction > rnd.success_fraction + 0.3
     assert learned.mean_pulses < rnd.mean_pulses - 3.0

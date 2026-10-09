@@ -1,4 +1,3 @@
-"""Fake dynamics for env/policy unit tests -- no physics package required."""
 from __future__ import annotations
 
 import hashlib
@@ -21,8 +20,6 @@ def column_stochastic(rng, rows: int, cols: int) -> np.ndarray:
 
 
 class FakeEngine:
-    """Deterministic pseudo-dynamics satisfying TauBatchedEngine."""
-
     def __init__(self, molecule: Molecule, tau_indices=None, seed: int = 0, leak: float = 0.03):
         self.molecule = molecule
         self.tau_indices = np.arange(molecule.window.n_tau) if tau_indices is None else np.asarray(tau_indices)
@@ -39,13 +36,12 @@ class FakeEngine:
             j = int(rng.integers(S))
             jt = (j + 1) % S if S > 1 else j
             rabi = rng.uniform(1.0, 4.0)
-            go = np.sin(0.5 * rabi * taus) ** 2                         # (n_tau,)
+            go = np.sin(0.5 * rabi * taus) ** 2
             t = np.zeros((taus.size, 2 * S, S))
             t[:, :S, :] = np.eye(S)[None]
             t[:, j, j] = 1.0 - go
             t[:, S + jt, j] = go
-            # a small tau-independent leak from every column into nu >= 1
-            L = column_stochastic(rng, S, S) * self.leak                # (S, S)
+            L = column_stochastic(rng, S, S) * self.leak
             t[:, :S, :] *= (1.0 - self.leak)
             t[:, S:, :] = t[:, S:, :] * (1.0 - self.leak) + L[None]
             self._cache[k] = t
@@ -82,7 +78,6 @@ def fake_tables(molecule: Molecule, library: ActionLibrary, engine: FakeEngine |
 
 
 def random_tables(molecule: Molecule, library: ActionLibrary, seed: int = 0, dtype=np.float32) -> ActionTables:
-    """Unrelated random column-stochastic tables of the right shapes."""
     rng = np.random.default_rng(seed)
     blocks = [np.stack([column_stochastic(rng, 2 * b.n_states, b.n_states) for _ in range(library.n_grid)]).astype(dtype)
               for b in molecule.blocks]

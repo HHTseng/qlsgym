@@ -1,4 +1,3 @@
-"""Physics core on the synthetic molecule: fast, no tables, no GPU."""
 import numpy as np
 import pytest
 import torch
@@ -43,13 +42,11 @@ def test_hermitian_and_dims(mol, omegas):
                 h = op.build(w)
                 assert h.shape == (mol.trap.n_nu * b.n_states,) * 2
                 assert hermiticity_error(h) < 1e-12
-                # component referencing: every decoupled component has zero-mean diagonal
                 d = np.real(np.diag(h))
                 for c in range(op.n_component_n):
                     assert abs(d[op.component_n == c].mean()) < 1e-9 * max(1.0, np.abs(d).max())
             h2 = op.build(omegas[0], n_nu=2)
             assert h2.shape == (2 * b.n_states,) * 2 and hermiticity_error(h2) < 1e-12
-            # the nu = 0 -> 1 couplings are the same in both truncations
             m = b.n_states
             assert np.array_equal(h2[m:, :m], op.build(omegas[0])[m:2 * m, :m])
 
@@ -70,7 +67,7 @@ def test_probability_conservation_and_lump(mol, omegas):
         u = propagator_series(op.build(omegas[1]), taus)
         t = np.abs(u[:, :, :m]) ** 2
         assert t.shape == (taus.size, mol.trap.n_nu * m, m)
-        assert np.allclose(t.sum(1), 1.0, atol=1e-12)          # column stochastic
+        assert np.allclose(t.sum(1), 1.0, atol=1e-12)
         tl = lump(t, m)
         assert tl.shape == (taus.size, 2 * m, m)
         assert np.allclose(tl[:, :m], t[:, :m]) and np.allclose(tl[:, m:], t[:, m:].reshape(taus.size, -1, m, m).sum(1))
@@ -85,7 +82,6 @@ def test_transfer_columns_torch_matches_numpy(mol, omegas):
         assert tc.shape == (omegas.size, mol.window.n_tau, 2 * mol.blocks[1].n_states, mol.blocks[1].n_states)
         for k, w in enumerate(omegas):
             assert np.abs(tc[k].numpy() - transfer_matrix(mol, 1, w, sg)).max() < 1e-12
-    # primitive frequency: one off-window omega, RWA at that drive
     pr = mol.primitives[0]
     sec = rwa_sectors(mol, pr.sigma, pr.omega)
     for s in sec:
@@ -122,14 +118,14 @@ def test_trivial_engine_semantics(mol, omegas):
     p = boltzmann(mol)
     e = TrivialEngine(mol)
     p0, p1 = e.branches_all_tau(p, omegas[3], "+")
-    assert np.allclose(p0, p[None, :]) and np.all(p1 == 0)      # sigma+ in-window: p(tau) = p(0)
-    q0, q1 = e.branches_all_tau(p, omegas[3], "-")             # sigma- is exact, as in the source
+    assert np.allclose(p0, p[None, :]) and np.all(p1 == 0)
+    q0, q1 = e.branches_all_tau(p, omegas[3], "-")
     ex = ExactEngine(mol).branches_all_tau(p, omegas[3], "-")
     assert np.allclose(q0, ex[0]) and np.allclose(q1, ex[1])
     both = TrivialEngine(mol, sigmas=("+", "-"))
     r0, r1 = both.branches_all_tau(p, omegas[3], "-")
     assert np.allclose(r0, p[None, :]) and np.all(r1 == 0)
-    two = two_block_molecule()                                  # primitives are exact
+    two = two_block_molecule()
     pr = two.primitives[0]
     q = np.full(two.n_states, 0.25)
     a = TrivialEngine(two).branches_all_tau(q, pr.omega, pr.sigma)
@@ -155,19 +151,15 @@ def test_exact_equals_torch_and_batch(mol, omegas):
         e0, e1 = te.branches_batch(p, mixed, sg)
         f0, f1 = branches_batch_fallback(ne, p, mixed, sg)
         assert np.abs(e0 - f0).max() < 1e-10 and np.abs(e1 - f1).max() < 1e-10
-    # single-tau accessor agrees with the row
     a0, a1 = ne.branches(p, omegas[1], "+", 7)
     assert np.allclose(a0, ne.branches_all_tau(p, omegas[1], "+")[0][2])
 
 
 def two_block_molecule():
-    """Two 2-state blocks ("J manifolds" 2pi*3000 rad/ms apart) with one cross-block coupling 1 ->
-    2 and a sigma+ primitive resonant with it.
-    """
     from qlsgym.spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_PI
     nu_f, eta = TWO_PI * 1000.0, 0.08
     e = TWO_PI * np.array([0.0, 20.0, 3000.0, 3020.0])
-    w_intra, w_cross = TWO_PI * 1.5 * np.exp(0.3j), TWO_PI * 5.0 * np.exp(-0.7j)   # pi-time 1.26 ms fits the 2 ms grid
+    w_intra, w_cross = TWO_PI * 1.5 * np.exp(0.3j), TWO_PI * 5.0 * np.exp(-0.7j)
     blocks = (Block(0, np.array([0, 1]), (0, "+"), np.array([0]), np.array([1]), np.array([w_intra])),
               Block(1, np.array([2, 3]), (1, "+"), np.array([0]), np.array([1]), np.array([w_intra])))
     system = System(((0, 0), (0, 1), (1, 0), (1, 1)), e, np.array([0, 2, 1]), np.array([1, 3, 2]),
@@ -179,9 +171,6 @@ def two_block_molecule():
 
 
 def test_synthetic_primitive_is_identity(mol):
-    """The lead's synthetic primitive sits at 2pi*5e6 rad/ms where no coupling resonates: the RWA
-    keeps nothing and the pulse is the identity.
-    """
     pr = mol.primitives[0]
     assert rwa_sectors(mol, pr.sigma, pr.omega) == ()
     p = boltzmann(mol)
@@ -200,12 +189,10 @@ def test_primitive_couples_its_blocks():
         p0, p1 = eng.branches_all_tau(p, pr.omega, pr.sigma)
         check_branches(p0, p1, 4)
         k = int(np.argmin(np.abs(taus - pr.tau_ms)))
-        assert p1[k, pr.target] > 0.95                          # pi-pulse moves source -> target, nu = 1
-        assert np.all(p1[:, [0, 3]] == 0) and np.all(p0[:, [0, 3]] == 0)   # untouched states are untouched
-        # a sigma- pulse at the same frequency keeps no coupling: identity
+        assert p1[k, pr.target] > 0.95
+        assert np.all(p1[:, [0, 3]] == 0) and np.all(p0[:, [0, 3]] == 0)
         q0, q1 = eng.branches_all_tau(p, pr.omega, "-")
         assert np.array_equal(q0, np.tile(p, (taus.size, 1))) and np.all(q1 == 0)
-    # in-window the two blocks are independent (the cross coupling is not in any block)
     w = two.trap.nu_f + (two.system.energies[1] - two.system.energies[0])
     p0, p1 = ExactEngine(two).branches_all_tau(p, w, "+")
     assert np.all(p1[:, [2, 3]] == 0) and p1[:, 1].max() < 1e-6

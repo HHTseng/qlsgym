@@ -1,5 +1,3 @@
-"""Proximal policy optimisation on the batched belief MDP."""
-
 from __future__ import annotations
 
 import json
@@ -13,8 +11,6 @@ import numpy as np
 from ..env.env import PurificationEnv, Transition
 from ..policies.rollout import RolloutResult, rollout
 
-# seed of the in-training snapshot evaluations; the caller's final evaluation
-# must use a different one so the reported number is not the selection number
 SNAPSHOT_SEED = 4242
 
 OBS_TRANSFORMS = ("p", "sqrt")
@@ -23,13 +19,13 @@ VALUE_TARGETS = ("gae", "qmdp")
 
 @dataclass(frozen=True)
 class PPOConfig:
-    n_envs: int = 256               # parallel trajectories per update
-    n_steps: int = 32               # env steps per trajectory per update
-    total_steps: int = 2_000_000    # environment steps in total (n_envs * n_steps * updates)
-    epochs: int = 4                 # optimisation passes per update
+    n_envs: int = 256
+    n_steps: int = 32
+    total_steps: int = 2_000_000
+    epochs: int = 4
     minibatches: int = 8
     lr: float = 1.0e-3
-    gamma: float = 1.0              # finite horizon, undiscounted like the source papers
+    gamma: float = 1.0
     gae_lambda: float = 0.95
     clip: float = 0.2
     ent_coef: float = 0.01
@@ -37,17 +33,11 @@ class PPOConfig:
     max_grad_norm: float = 0.5
     hidden: int = 256
     n_hidden_layers: int = 2
-    obs: str = "sqrt"               # OBS_TRANSFORMS
-    value_target: str = "gae"       # VALUE_TARGETS
-    # rewards are multiplied by this before learning; None -> 1 / max_pulses
+    obs: str = "sqrt"
+    value_target: str = "gae"
     reward_scale: float | None = None
-    eval_every: int = 25            # updates between snapshot evaluations
+    eval_every: int = 25
     eval_rollouts: int = 200
-    # How the trained actor acts when evaluated.  A PPO actor IS a stochastic
-    # policy; taking its argmax is a different policy, and on a large library it
-    # is a much worse one -- it can lock onto one drive and repeat it forever.
-    # With 312 ThF+ actions the sampled policy finishes every episode while its
-    # argmax finishes 0.5 %, so the eval mode has to be explicit, not assumed.
     eval_greedy: bool = True
     seed: int = 0
 
@@ -67,16 +57,12 @@ class PPOConfig:
         return asdict(self)
 
 
-# network and policy
-
-
 def _torch():
     import torch
     return torch
 
 
 def transform_obs(belief, kind: str):
-    """(B, n) belief tensor -> network input (same shape, float32)."""
     x = belief.to(_torch().float32)
     if kind == "sqrt":
         return x.clamp_min(0.0).sqrt()
@@ -88,10 +74,6 @@ def _build_actor_critic():
     nn = torch.nn
 
     class ActorCritic(nn.Module):
-        """Shared trunk n_in -> hidden -> ... -> hidden, a policy head of n_actions logits and a
-        value head of one number.
-        """
-
         def __init__(self, n_in: int, n_actions: int, hidden: int = 256, n_hidden_layers: int = 2):
             super().__init__()
             layers: list = [nn.Linear(n_in, hidden), nn.Tanh()]
@@ -117,8 +99,6 @@ ActorCritic = _build_actor_critic()
 
 
 class ActorPolicy:
-    """A trained ActorCritic as a Policy."""
-
     stateful = False
 
     def __init__(self, net, obs: str = "sqrt", device: str = "cpu", greedy: bool = True):
@@ -169,9 +149,6 @@ def save_policy(net, cfg: PPOConfig, path: str, meta: dict | None = None) -> str
 
 
 def load_policy(path: str, device: str = "cpu", greedy: bool = True) -> ActorPolicy:
-    """The saved actor as an ActorPolicy; .meta carries what save_policy was given (library tag,
-    fingerprint, ...).
-    """
     torch = _torch()
     ck = torch.load(path, map_location="cpu", weights_only=False)
     cfg = PPOConfig(**ck["ppo_config"])
@@ -183,18 +160,15 @@ def load_policy(path: str, device: str = "cpu", greedy: bool = True) -> ActorPol
     return pol
 
 
-# training
-
-
 @dataclass
 class TrainResult:
     config: dict
     n_updates: int
     env_steps: int
     seconds: float
-    history: list                       # per update: {update, env_steps, loss_pi, loss_v, entropy, ...}
-    snapshots: list                     # per evaluation: {update, env_steps, success, mean_pulses, ...}
-    best: dict                          # the selected snapshot's record
+    history: list
+    snapshots: list
+    best: dict
     best_state_dict: dict
     final_state_dict: dict
     n_in: int
@@ -207,8 +181,6 @@ class TrainResult:
 
 
 def _evaluate(net, cfg: PPOConfig, env_eval: PurificationEnv, device) -> RolloutResult:
-    # a private view: the rollout resizes and reseeds the env it is given, and
-    # env_eval may be the training env itself
     pol = ActorPolicy(net, cfg.obs, device, greedy=cfg.eval_greedy)
     res = rollout(env_eval.clone(cfg.eval_rollouts), pol, n_rollouts=cfg.eval_rollouts, seed=SNAPSHOT_SEED)
     net.train()
@@ -225,9 +197,6 @@ def _better(a: dict, b: dict | None) -> bool:
 
 def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | None = None,
               log=None, on_snapshot=None) -> TrainResult:
-    """Train on env (its batch is set to cfg.n_envs); evaluate greedy snapshots on env_eval
-    (default: env itself, which is only right when env is exact).
-    """
     torch = _torch()
     device = env.device
     env_eval = env if env_eval is None else env_eval
@@ -246,8 +215,8 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
     logp_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
     val_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
     rew_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
-    term_buf = torch.zeros((T, B), dtype=torch.float32, device=device)   # 1 where the episode ended
-    q_buf = torch.zeros((T, B), dtype=torch.float32, device=device)      # qmdp one-step target
+    term_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
+    q_buf = torch.zeros((T, B), dtype=torch.float32, device=device)
 
     history, snapshots = [], []
     best, best_sd = None, None
@@ -276,7 +245,6 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
                     c1 = (1.0 - tr.done1.to(torch.float32)) * (1.0 - trunc_next)
                     q_buf[t] = (tr.pi0.to(torch.float32) * (tr.r0.to(torch.float32) * r_scale + cfg.gamma * c0 * v0)
                                 + tr.pi1.to(torch.float32) * (tr.r1.to(torch.float32) * r_scale + cfg.gamma * c1 * v1))
-                # episode bookkeeping, then reset the finished rows
                 n_end = int(ended.sum())
                 if n_end:
                     ep_len_sum += float(env.steps[ended].sum()); ep_n += n_end; ep_succ += int(tr.done.sum())
@@ -286,7 +254,6 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
         env_steps += B * T
         net.train()
 
-        # advantages
         if cfg.value_target == "gae":
             adv = torch.zeros_like(rew_buf)
             gae = torch.zeros(B, device=device)
@@ -301,7 +268,6 @@ def train_ppo(env: PurificationEnv, cfg: PPOConfig, env_eval: PurificationEnv | 
             ret = q_buf
             adv = q_buf - val_buf
 
-        # PPO update
         n = B * T
         flat = lambda z: z.reshape(n, *z.shape[2:])
         f_obs, f_act, f_logp, f_adv, f_ret = flat(obs_buf), flat(act_buf), flat(logp_buf), flat(adv), flat(ret)

@@ -1,6 +1,3 @@
-"""qlsgym.surrogate.fno_env.FnoEnv: the surrogate replaces exactly the blocks it covers and nothing
-else, batched rows each get their own belief and drive, and the guards fire.
-"""
 import numpy as np
 import pytest
 
@@ -12,10 +9,6 @@ from _fake_tables import FakeEngine, fake_tables
 
 
 class StubFno:
-    """Minimal FnoEngine stand-in: answers covered blocks by moving all of the block's population
-    into the nu >= 1 branch of its first state.
-    """
-
     def __init__(self, molecule, covered, tau_indices):
         self.molecule = molecule
         self.trained = set(covered)
@@ -33,7 +26,7 @@ class StubFno:
         self.seen.append((block_index, sigma, sub.copy(), omegas.copy()))
         n, m = sub.shape[0], sub.shape[1]
         out = np.zeros((n, self.tau_indices.size, 2 * m))
-        out[:, :, m] = sub.sum(1)[:, None]          # all mass -> nu >= 1, state 0
+        out[:, :, m] = sub.sum(1)[:, None]
         return out
 
 
@@ -62,11 +55,10 @@ def test_only_covered_blocks_are_replaced(setup):
     f0, f1 = env.apply(p, [a])
     states = mol.blocks[0].states
     other = np.setdiff1d(np.arange(mol.n_states), states)
-    assert np.allclose(e0[other].numpy(), f0[other].numpy())          # untouched
+    assert np.allclose(e0[other].numpy(), f0[other].numpy())
     assert np.allclose(e1[other].numpy(), f1[other].numpy())
-    assert f0[states].numpy().sum() == pytest.approx(0.0)             # the stub's answer
+    assert f0[states].numpy().sum() == pytest.approx(0.0)
     assert f1[states[0]].item() == pytest.approx(p[states].sum())
-    # a sigma- action is not covered, so nothing changes
     am = next(i for i in range(lib.n_grid) if lib.decode(i).sigma == "-")
     assert np.allclose(exact.apply(p, [am])[0].numpy(), env.apply(p, [am])[0].numpy())
 
@@ -100,9 +92,9 @@ def test_primitives_stay_exact(setup):
 
 def test_guards(setup):
     mol, lib, tables = setup
-    with pytest.raises(ValueError):                    # covers nothing
+    with pytest.raises(ValueError):
         FnoEnv(mol, lib, tables, StubFno(mol, [], _taus(lib)))
-    with pytest.raises(ValueError):                    # engine lacks a duration
+    with pytest.raises(ValueError):
         FnoEnv(mol, lib, tables, StubFno(mol, [(0, "+")], _taus(lib)[:1]))
 
 

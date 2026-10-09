@@ -1,6 +1,3 @@
-"""PurificationEnv invariants (ported from the old gym's test_invariants.py) on the synthetic
-molecule with FakeEngine-derived tables.
-"""
 import numpy as np
 import pytest
 import torch
@@ -29,7 +26,7 @@ def _env(setup, batch=8, **cfg):
 def rand_beliefs(n_beliefs, n, seed=0, concentrated=True):
     rng = np.random.default_rng(seed)
     b = rng.dirichlet(np.full(n, 0.3), size=n_beliefs)
-    if concentrated:      # a few nearly pure rows too
+    if concentrated:
         b[0] = 0.0; b[0, 1] = 1.0
         b[1] = np.full(n, 0.005); b[1, 2] = 1.0 - 0.005 * (n - 1)
     return b
@@ -71,7 +68,6 @@ def test_apply_matches_engine_including_primitives(setup):
         ti = act.tau_index
         assert np.allclose(P0[a].numpy(), p0[ti], atol=1e-12)
         assert np.allclose(P1[a].numpy(), p1[ti], atol=1e-12)
-    # the primitive really couples two blocks: population leaves block 0 into block 1's states
     e = np.zeros(mol.n_states); e[mol.primitives[0].source] = 1.0
     P0, P1 = env.apply(torch.as_tensor(e), np.array([lib.n_grid]))
     moved_to = np.where(P1.numpy() > 1e-9)[0]
@@ -134,8 +130,6 @@ def test_seed_reproducibility_and_batch_independence(setup):
     assert all(torch.equal(p, q) for p, q in zip(x, y))
     z = run(12)
     assert any(not torch.equal(p, q) for p, q in zip(x, z))
-    # trajectory k with batch 8 == trajectory 0 of a batch-1 env fed the same draws?  Not
-    # guaranteed by torch.rand; what *is* guaranteed: each row depends only on its own action.
     env.reset(seed=1)
     tr = env.step(acts[0])
     env2 = _env(setup, batch=8)
@@ -170,7 +164,6 @@ def test_reward_is_step_reward_minus_overlap_penalty(setup):
 def test_zero_mass_branch_keeps_belief_and_is_not_done(setup):
     mol, lib, _, tables = setup
     env = PurificationEnv(mol, lib, tables, EnvConfig(p_target=0.5), batch=1)
-    # a pure state in a block that the chosen drive does not address at all -> nu>=1 branch may vanish
     for a in range(lib.n_grid):
         e = torch.zeros(1, mol.n_states, dtype=torch.float64); e[0, -1] = 1.0
         s0, s1, pi0, pi1, r0, r1, d0, d1 = env.branch_outcomes(e, np.array([a]))

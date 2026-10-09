@@ -1,9 +1,8 @@
-"""Molecule packs. Each module exposes build(**kw) -> Molecule."""
 from __future__ import annotations
 import importlib
 from ..spec import Molecule
 
-_REGISTRY = {"h3o": "qlsgym.molecules.h3o", "thf": "qlsgym.molecules.thf",
+_REGISTRY = {"h3o": "qlsgym.molecules.h3o", "thf": "qlsgym.molecules.thf", "thf229": "qlsgym.molecules.thf229",
              "synthetic": "qlsgym.molecules.synthetic"}
 
 

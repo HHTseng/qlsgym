@@ -1,5 +1,3 @@
-"""The trained surrogate inside the loop: per-(block, sigma) FNOs with an exact fallback."""
-
 from __future__ import annotations
 
 import os
@@ -13,8 +11,6 @@ from .train import load_model
 
 
 class FnoEngine:
-    """FnoEngine(molecule, {(block_index, sigma): path, ...})."""
-
     def __init__(
         self,
         molecule: Molecule,
@@ -22,7 +18,6 @@ class FnoEngine:
         tau_indices: np.ndarray | None = None,
         device: torch.device | str | None = None,
         fallback: TauBatchedEngine | None = None,
-        legacy: bool | set = False,
         allow_mismatch: bool = False,
     ) -> None:
         self.molecule = molecule
@@ -43,15 +38,13 @@ class FnoEngine:
         for key, path in self.checkpoints.items():
             if not os.path.exists(path):
                 raise FileNotFoundError(path)
-            leg = legacy if isinstance(legacy, bool) else (key in legacy)
-            model = load_model(path, self.device, molecule=molecule, allow_mismatch=allow_mismatch, legacy=leg)
+            model = load_model(path, self.device, molecule=molecule, allow_mismatch=allow_mismatch)
             if (int(model.block_index), model.sigma) != key:
                 raise ValueError(f"{path} is for block {model.block_index} sigma{model.sigma}, registered as {key}")
             self._models[key] = model
             self._embs[key] = TorchEmbedding(molecule, key[0], key[1], self.device)
         self._tau_t = torch.as_tensor(self.tau_indices, device=self.device)
 
-    # helpers
     @staticmethod
     def _key(k) -> tuple[int, str]:
         if isinstance(k, str):
@@ -68,7 +61,7 @@ class FnoEngine:
     @property
     def fallback(self) -> TauBatchedEngine:
         if self._fallback is None:
-            from ..physics.engines import ExactEngine   # lazy: only when needed
+            from ..physics.engines import ExactEngine
 
             self._fallback = ExactEngine(self.molecule, tau_indices=self.tau_indices)
             self._check_fallback(self._fallback)
@@ -76,7 +69,6 @@ class FnoEngine:
 
     @property
     def trained(self) -> set:
-        """{(block_index, sigma), ...} covered by a surrogate."""
         return set(self._models)
 
     def surrogate_fraction(self) -> float:
@@ -86,31 +78,28 @@ class FnoEngine:
     def in_window(self, omega: float) -> bool:
         return self.molecule.window.contains(float(omega))
 
-    # surrogate evaluation
     @torch.no_grad()
     def _fno_block_batch(self, key: tuple, sub: np.ndarray, omegas: np.ndarray) -> np.ndarray:
-        """(n, len(tau_indices), 2 M_f) populations from the surrogate."""
-        sub = np.atleast_2d(np.asarray(sub, dtype=np.float64))      # (1, M) or (n, M)
+        sub = np.atleast_2d(np.asarray(sub, dtype=np.float64))
         omegas = np.asarray(omegas, dtype=np.float64).ravel()
         n = omegas.size
         if sub.shape[0] == 1 and n > 1:
             sub = np.broadcast_to(sub, (n, sub.shape[1]))
         if sub.shape[0] != n:
             raise ValueError(f"sub has {sub.shape[0]} rows, omegas has {n}")
-        mass = sub.sum(1, keepdims=True)                            # (n, 1)
+        mass = sub.sum(1, keepdims=True)
         live = mass[:, 0] > 0.0
         emb = self._embs[key]
         p0 = torch.as_tensor(sub / np.where(mass > 0.0, mass, 1.0), dtype=torch.float64, device=self.device)
         w = torch.as_tensor(omegas, device=self.device)
-        x = emb.build(p0, w, out_dtype=torch.float32)               # (n, C, P_tau)
-        y = self._models[key](x)                                    # (n, 2M, P_tau)
-        traj = y.permute(0, 2, 1).double()                          # (n, P_tau, 2M)
+        x = emb.build(p0, w, out_dtype=torch.float32)
+        y = self._models[key](x)
+        traj = y.permute(0, 2, 1).double()
         out = traj[:, self._tau_t].cpu().numpy() * mass[:, None]
         out[~live] = 0.0
         return out
 
     def block_branches(self, block_index: int, sigma: str, sub: np.ndarray, omegas: np.ndarray) -> np.ndarray:
-        """Surrogate populations for one block, batched over rows."""
         key = (int(block_index), str(sigma))
         if key not in self._models:
             raise KeyError(f"no surrogate for block {block_index} sigma{sigma}; "
@@ -119,9 +108,7 @@ class FnoEngine:
         self.calls["fno"] += int(omegas.size)
         return self._fno_block_batch(key, sub, omegas)
 
-    # protocol
     def branches_batch(self, p_in: np.ndarray, omegas: np.ndarray, sigma: str) -> tuple[np.ndarray, np.ndarray]:
-        """(P0, P1) of shape (n_omega, len(tau_indices), n_states)."""
         p_in = np.asarray(p_in, dtype=np.float64)
         omegas = np.asarray(omegas, dtype=np.float64).ravel()
         n, ns, nt = omegas.size, self.molecule.n_states, self.tau_indices.size
@@ -159,12 +146,10 @@ class FnoEngine:
         return out0, out1
 
     def branches_all_tau(self, p_in: np.ndarray, omega: float, sigma: str) -> tuple[np.ndarray, np.ndarray]:
-        """(P0, P1) of shape (len(tau_indices), n_states) for one drive."""
         a, c = self.branches_batch(p_in, np.array([float(omega)]), sigma)
         return a[0], c[0]
 
     def branches(self, p_in: np.ndarray, omega: float, sigma: str, tau_index: int) -> tuple[np.ndarray, np.ndarray]:
-        """One duration: tau_index is an index into molecule.tau_grid."""
         rows = np.where(self.tau_indices == int(tau_index))[0]
         if rows.size == 0:
             raise ValueError(f"tau_index {tau_index} is not in this engine's tau_indices")

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-"""Train one (molecule, block, sigma) FNO surrogate."""
 from __future__ import annotations
 
 import argparse
@@ -53,6 +52,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     a.add_argument("--activity-lambda", type=float, default=1.0)
     a.add_argument("--activity-eps", type=float, default=1e-8)
     a.add_argument("--reduction", default="sum", choices=["sum", "mean"])
+    a.add_argument("--loss", default="paper", choices=["paper", "wkl"],
+                   help="'paper': Eq. 21; 'wkl': activity-weighted generalised KL (unbiased under weights)")
     a.add_argument("--no-per-sample-sqrt", action="store_true",
                    help="deviation: drop Eq. 21's outer per-sample square root")
 
@@ -102,7 +103,7 @@ def main(argv=None) -> None:
     cfg = TrainConfig(batch_size=args.batch_size, epochs=args.epochs, lr=args.lr, weight_decay=args.weight_decay,
                       scheduler_step=args.scheduler_step, scheduler_gamma=args.scheduler_gamma,
                       activity_lambda=args.activity_lambda, activity_eps=args.activity_eps,
-                      reduction=args.reduction, per_sample_sqrt=not args.no_per_sample_sqrt,
+                      reduction=args.reduction, per_sample_sqrt=not args.no_per_sample_sqrt, loss=args.loss,
                       train_seed=args.train_seed, val_seed=args.val_seed,
                       sel_n_freq=args.sel_n_freq, sel_n_init=args.sel_n_init, fno=fno_cfg)
     train_data = DataConfig(n_freq=args.n_freq, n_init=args.n_init, n_pairs=args.n_pairs, pairing=args.pairing,
@@ -122,9 +123,6 @@ def main(argv=None) -> None:
     result = train(molecule, args.block, args.sigma, cfg, train_data, val_data, device=device, out_dir=out_dir,
                    log_every=args.log_every, verbose=not args.quiet, storage_device=args.storage_device)
 
-    # Reload the checkpoint the run itself prefers (on-resonance selection when
-    # available, else the paper's validation-loss selection) for the held-out
-    # test-set evaluation, exactly as thffno/fnorepl's train_fno.py does.
     ckpt_name = "best_onres.pt" if result["history"].get("best_onres_epoch", -1) >= 0 else "best.pt"
     model = load_model(os.path.join(out_dir, ckpt_name), device, molecule=molecule)
     selection = "on_resonance" if ckpt_name == "best_onres.pt" else "val_loss"
@@ -135,7 +133,7 @@ def main(argv=None) -> None:
                            device=device, selection=selection,
                            extra={"tag": args.tag, "checkpoint": ckpt_name})
     print(json.dumps(summary, indent=2, default=str))
-    print(f"\nwrote {out_dir}/{{best.pt, best_onres.pt, history.json, summary.json, test_eval.npz}}")
+    print(f"\nwrote {out_dir}/{{best.pt, best_onres.pt, history.json, summary.json, test_eval.npz, basis_p1_eval.npz}}")
 
 
 if __name__ == "__main__":

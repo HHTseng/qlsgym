@@ -1,41 +1,42 @@
-"""232Th19F+ / Ca+: 192 hyperfine-resolved states (X 3Delta1, v = 0, J = 1..6, Omega = +-1, F = J
-+- 1/2), 12 (J, parity) blocks.
-"""
-
 from __future__ import annotations
 
 import dataclasses
 import os
 import re
-import subprocess
 from pathlib import Path
 
 import numpy as np
 
+from ..config import molecule_config
 from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_PI
 
-# table tag; mirrors thffno.units.table_tag(J_MAX, B_FIELD_GAUSS, E_FIELD_V_PER_CM)
-# (kept as a literal so qlsgym stays importable without the source package, G10)
-_TAG = "Jmax_6_B_20G_E_0Vcm"
-LEVELS_FILE = f"ThF232_levels_{_TAG}.txt"
-RABI_FILE = f"ThF232_two_photon_sigma_plus_modelA_{_TAG}.txt"
-SOURCE_REPO = "/n/home02/josemm/RESEARCH/PROJECTS/MOLESQLS/FNO_NEW_MOLECULE/ThF_232_19"
+CONFIG = molecule_config("thf")
+_TAB, _TRAP, _WIN = CONFIG["tables"], CONFIG["trap"], CONFIG["window"]
+_EMB, _TASK, _PRIM = CONFIG["embedding"], CONFIG["task"], CONFIG["primitives"]
 
-J_MAX = 6
-B_FIELD_GAUSS = 20.0
-E_FIELD_V_PER_CM = 0.0
-# effective Zeeman tensor components read back out of the table header
+J_MAX = int(_TAB["j_max"])
+B_FIELD_GAUSS = float(_TAB["b_field_gauss"])
+E_FIELD_V_PER_CM = float(_TAB["e_field_v_per_cm"])
+
+
+def table_tag(j_max: int = J_MAX, b_gauss: float = B_FIELD_GAUSS, e_v_per_cm: float = E_FIELD_V_PER_CM) -> str:
+    return f"Jmax_{j_max}_B_{b_gauss:g}G_E_{e_v_per_cm:g}Vcm"
+
+
+LEVELS_FILE = f"ThF232_levels_{table_tag()}.txt"
+RABI_FILE = f"ThF232_two_photon_sigma_plus_modelA_{table_tag()}.txt"
+
 G_SYMBOLS = ("G_xx", "G_yy", "G_zz")
-REFERENCE_RABI_KHZ = 3.0
-NU_F_OVER_2PI_KHZ = 1112.7182
-ETA = 0.06776
-N_NU = 7
-OMEGA_HALF_WIDTH_OVER_2PI_KHZ = 470.0
-TAU_MAX_MS, N_TAU = 6.0, 200
-T_INT_K = 4.0
-RWA_CUTOFF = 1.0e6
-DELTA_MAX = 1.0e4
-OMEGA_MIN_COUPLING = 1.0
+REFERENCE_RABI_KHZ = float(_TAB["reference_rabi_khz"])
+NU_F_OVER_2PI_KHZ = float(_TRAP["nu_f_khz"])
+ETA = float(_TRAP["eta"])
+N_NU = int(_TRAP["n_nu"])
+OMEGA_HALF_WIDTH_OVER_2PI_KHZ = float(_WIN["half_width_khz"])
+TAU_MAX_MS, N_TAU = float(_WIN["tau_max_ms"]), int(_WIN["n_tau"])
+T_INT_K = float(_TASK["temperature_k"])
+RWA_CUTOFF = float(_WIN["rwa_cutoff_rad_per_ms"])
+DELTA_MAX = float(_EMB["delta_max_rad_per_ms"])
+OMEGA_MIN_COUPLING = float(_WIN["omega_min_coupling_rad_per_ms"])
 
 
 def data_dir() -> Path:
@@ -43,21 +44,11 @@ def data_dir() -> Path:
     return Path(root) / "thf" if root else Path(__file__).resolve().parents[3] / "data" / "thf"
 
 
-def _git_rev(repo: str):
-    try:
-        out = subprocess.run(["git", "-C", repo, "rev-parse", "HEAD"], capture_output=True,
-                             text=True, timeout=5)
-        return out.stdout.strip() if out.returncode == 0 else None
-    except Exception:
-        return None
-
-
 _GENERATED_RE = re.compile(r"\(heff @ (?P<rev>\S+?), spec_hash (?P<hash>\S+?)\)")
 _PARAM_RE = re.compile(r"^#\s{2,}(?P<symbol>[A-Za-z][A-Za-z0-9_]*)\s+(?P<value>[-+0-9.eE]+)\s")
 
 
 def read_table_header(filename) -> dict:
-    """Provenance carried in the # preamble thffno.molecule writes."""
     rev = spec_hash = None
     params: dict = {}
     with open(filename) as fh:
@@ -72,18 +63,12 @@ def read_table_header(filename) -> dict:
             if m is not None:
                 try:
                     params[m.group("symbol")] = float(m.group("value"))
-                except ValueError:                              # pragma: no cover - not a number column
+                except ValueError:  # pragma: no cover
                     pass
     return {"heff_git_rev": rev, "heff_spec_hash": spec_hash, "params": params}
 
 
-# Readers (byte-compatible with thffno.system)
-
-
 def read_energy_levels(filename):
-    """(levels, energies): levels[j] = (J, F, parity, mF, xi), energies in rad/ms (E_MHz * 1e3 * 2
-    pi).
-    """
     levels, energies = [], []
     with open(filename) as fh:
         for line in fh:
@@ -100,7 +85,6 @@ def read_energy_levels(filename):
 
 
 def read_rabi_file(filename):
-    """(i_idx, f_idx, omega); omega complex, rad/ms, already normalised by the table builder."""
     i_idx, f_idx, vals = [], [], []
     with open(filename) as fh:
         for line in fh:
@@ -115,13 +99,7 @@ def read_rabi_file(filename):
             np.asarray(vals, dtype=np.complex128))
 
 
-# System
-
-
 def build_system(levels_file, rabi_file) -> System:
-    """Load the tables and derive the (J, parity) block decomposition (ordered by descending size,
-    ties by the smallest global state index, i.e. the lower-energy parity first).
-    """
     levels, energies = read_energy_levels(levels_file)
     i_idx, f_idx, omega_c = read_rabi_file(rabi_file)
     keys = [(l[0], l[2]) for l in levels]
@@ -148,13 +126,10 @@ def build_system(levels_file, rabi_file) -> System:
     return System(tuple(levels), energies, i_idx, f_idx, omega_c, tuple(blocks), block_of_state)
 
 
-# Cross-J primitives (thffno.planner.cross_j_primitives, ported)
-
-
-def cross_j_primitives(molecule: Molecule, n_primitives: int = 24, temperature_k: float | None = None,
-                       delta_j: tuple = (1, 2), dedupe_khz: float = 1.0, max_per_family: int | None = None,
-                       min_coupling: float | None = None, mode: str = "dark_state") -> tuple:
-    """The cross-J sideband primitive library (ThF decisions D8, OPEN-1)."""
+def cross_j_primitives(molecule: Molecule, n_primitives: int = int(_PRIM["n"]), temperature_k: float | None = None,
+                       delta_j: tuple = tuple(_PRIM["delta_j"]), dedupe_khz: float = float(_PRIM["dedupe_khz"]),
+                       max_per_family: int | None = None, min_coupling: float | None = None,
+                       mode: str = str(_PRIM["mode"])) -> tuple:
     from ..physics.thermal import boltzmann
 
     s, eta, nu_f = molecule.system, molecule.trap.eta, molecule.trap.nu_f
@@ -169,7 +144,7 @@ def cross_j_primitives(molecule: Molecule, n_primitives: int = 24, temperature_k
         om = abs(s.omega_c[k])
         if dj not in delta_j or om < min_coupling:
             continue
-        tau_pi = np.pi / (eta * np.exp(-eta ** 2 / 2.0) * om)       # 2|g| = eta e^{-eta^2/2} |Omega|
+        tau_pi = np.pi / (eta * np.exp(-eta ** 2 / 2.0) * om)
         if tau_pi > tau_max:
             continue
         d = float(s.energies[f] - s.energies[i])
@@ -250,9 +225,6 @@ def cross_j_primitives(molecule: Molecule, n_primitives: int = 24, temperature_k
 
 
 def _with_sector_blocks(molecule: Molecule, prims) -> tuple:
-    """Set each primitive's blocks to the union of the blocks its RWA sectors touch (the (J, p) U
-    (J', p) union of D8).
-    """
     from ..physics.hamiltonian import rwa_sectors
 
     out = []
@@ -265,24 +237,21 @@ def _with_sector_blocks(molecule: Molecule, prims) -> tuple:
     return tuple(out)
 
 
-# Entry point
-
-
-def build(n_primitives: int = 24, mode: str = "dark_state", n_nu: int = N_NU,
-          temperature_k: float = T_INT_K, max_pulses: int = 80, p_target: float = 0.98,
+def build(n_primitives: int = int(_PRIM["n"]), mode: str = str(_PRIM["mode"]), n_nu: int = N_NU,
+          temperature_k: float = T_INT_K, max_pulses: int = int(_TASK["max_pulses"]),
+          p_target: float = float(_TASK["p_target"]),
           levels_file=None, rabi_file=None) -> Molecule:
-    """The ThF+ molecule pack."""
     ddir = data_dir()
     lf = Path(levels_file) if levels_file else ddir / LEVELS_FILE
     rf = Path(rabi_file) if rabi_file else ddir / RABI_FILE
     system = build_system(lf, rf)
     nu_f = TWO_PI * NU_F_OVER_2PI_KHZ
     trap = Trap(nu_f=nu_f, eta=ETA, n_nu=int(n_nu))
-    # computed in kHz first, exactly as thffno.units does (bit-identical bounds)
     window = Window(omega_min=TWO_PI * (NU_F_OVER_2PI_KHZ - OMEGA_HALF_WIDTH_OVER_2PI_KHZ),
                     omega_max=TWO_PI * (NU_F_OVER_2PI_KHZ + OMEGA_HALF_WIDTH_OVER_2PI_KHZ),
                     tau_max_ms=TAU_MAX_MS, n_tau=N_TAU,
-                    rwa_cutoff=RWA_CUTOFF, omega_min_coupling=OMEGA_MIN_COUPLING, carrier_bands=())
+                    rwa_cutoff=RWA_CUTOFF, omega_min_coupling=OMEGA_MIN_COUPLING, carrier_bands=(),
+                    s_emb=float(_EMB["s_emb"]), beta_emb=float(_EMB["beta_emb"]))
     task = Task(temperature_k=float(temperature_k), p_target=float(p_target), max_pulses=int(max_pulses))
     hdr = read_table_header(lf)
     g = hdr["params"]
@@ -300,14 +269,14 @@ def build(n_primitives: int = 24, mode: str = "dark_state", n_nu: int = N_NU,
         "doublet_ordering": "e below f (heff 2026-09-14)",
         "heff_git_rev": hdr["heff_git_rev"], "heff_spec_hash": hdr["heff_spec_hash"],
         "reference_rabi_khz": REFERENCE_RABI_KHZ,
-        "delta_max": DELTA_MAX, "s_emb": 0.05, "beta_emb": 0.01,
-        "source_repo": SOURCE_REPO, "source_package": "thffno", "source_git_rev": _git_rev(SOURCE_REPO),
-        "primitives": f"thffno.planner.cross_j_primitives(mode={mode!r}, n_primitives={n_primitives})",
-        "max_pulses_in_source_results": 150,
+        "delta_max": DELTA_MAX, "s_emb": window.s_emb, "beta_emb": window.beta_emb,
+        "primitives": f"cross_j_primitives(mode={mode!r}, n_primitives={n_primitives})",
     }
     from ..physics.spectrum import carrier_bands
     mol = Molecule("thf", system, trap, window, task, (), provenance)
-    bands = tuple(tuple(map(float, b)) for sg in ("+", "-") for b in carrier_bands(mol, sg))
+    bands = tuple(tuple(map(float, b)) for sg in ("+", "-") for b in carrier_bands(
+        mol, sg, half_width_khz=float(_WIN["carrier_half_width_khz"]),
+        min_coupling=TWO_PI * float(_WIN["carrier_min_coupling_khz"])))
     mol = dataclasses.replace(mol, window=dataclasses.replace(window, carrier_bands=bands))
     if n_primitives > 0:
         mol = dataclasses.replace(mol, primitives=_with_sector_blocks(

@@ -1,6 +1,3 @@
-"""Quickstart: molecule -> action library -> cached transfer tables -> a few steps of the batched
-belief-MDP environment.
-"""
 from __future__ import annotations
 
 import numpy as np
@@ -8,7 +5,7 @@ import numpy as np
 from qlsgym import load_molecule
 from qlsgym.env import ActionLibrary, PurificationEnv, build_action_tables
 
-MOLECULE = "synthetic"   # -> "thf" or "h3o" for the real molecules; everything below is unchanged
+MOLECULE = "synthetic"
 
 
 def main() -> None:
@@ -17,15 +14,11 @@ def main() -> None:
           f"{len(mol.primitives)} primitives, p_target={mol.task.p_target}, "
           f"max_pulses={mol.task.max_pulses}")
 
-    # Resonant frequencies at pi-times, plus every primitive.
-    # clip_tau keeps couplings
-    # whose pi-time would otherwise exceed tau_max
-    #! not what the ThF/H3O scripts do.
     lib = ActionLibrary.physics_subset(mol, clip_tau=(mol.name == "synthetic"))
     print(f"action library: {lib.n_grid} grid actions + {lib.n_primitives} primitives "
           f"= {lib.n_actions} total (tag {lib.tag()})")
 
-    tables = build_action_tables(mol, lib)   # cached under $QLSGYM_WORK/cache/<name>/<fingerprint>/<tag>/
+    tables = build_action_tables(mol, lib)
     print(f"tables: {tables.nbytes() / 1e6:.2f} MB, builder={tables.manifest.get('builder')}")
 
     env = PurificationEnv(mol, lib, tables, batch=1)
@@ -47,8 +40,6 @@ def main() -> None:
         if bool(tr.done[0]) or bool(tr.truncated[0]):
             break
 
-    # env.apply(belief, action) is the pure two-branch computation env.step()
-    # samples from -- the hook for tree search / qMDP targets.
     P0, P1 = env.apply(belief, np.array([0]))
     print(f"\napply() (tree-search hook): action 0 from the initial belief splits into "
           f"Pi(nu=0)={float(P0.sum()):.4f}, Pi(nu>=1)={float(P1.sum()):.4f}")
