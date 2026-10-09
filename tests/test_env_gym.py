@@ -1,6 +1,3 @@
-"""Gymnasium wrapper: standard reset/step API, spaces, both branches in info. Skipped entirely if
-gymnasium is not installed (env/gym.py degrades gracefully).
-"""
 import numpy as np
 import pytest
 

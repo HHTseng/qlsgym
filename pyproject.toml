@@ -18,7 +18,11 @@ cudaq = ["cudaq>=0.15"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+qlsgym = ["physics.config"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["slow: takes more than a few seconds (deselect with -m 'not slow')",
-           "gpu: needs the CUDA-Q dynamics target (skipped without a GPU)"]
+           "gpu: needs the CUDA-Q dynamics target (skipped without a GPU)",
+           "integration: exercises several subsystems together"]

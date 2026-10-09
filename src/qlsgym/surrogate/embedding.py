@@ -1,5 +1,3 @@
-"""Physics-informed input embedding for the FNO surrogate (paper Eqs. 11-16)."""
-
 from __future__ import annotations
 
 import numpy as np
@@ -7,17 +5,14 @@ import torch
 
 from ..spec import Molecule
 
-# Paper Eq. 11 / Table 2 detuning cutoff, rad/ms.
 PAPER_DELTA_MAX = 1.0e4
 
 
 def embedding_delta_max(molecule: Molecule) -> float:
-    """Eq. 11 Delta_max for this molecule (see the module note)."""
     return float(molecule.provenance.get("delta_max", PAPER_DELTA_MAX))
 
 
 def resonant_frequencies(molecule: Molecule, block_index: int, sigma: str = "+") -> np.ndarray:
-    """Sideband resonance omega^(+/-) of each coupling in the block (Eq. 3), shape (n_tr,)."""
     block = molecule.blocks[block_index]
     e = molecule.system.energies
     d_omega = e[block.states[block.f_local]] - e[block.states[block.i_local]]
@@ -31,7 +26,6 @@ def resonant_frequencies(molecule: Molecule, block_index: int, sigma: str = "+")
 def retained_transitions(
     molecule: Molecule, block_index: int, sigma: str = "+", delta_max: float | None = None
 ) -> np.ndarray:
-    """Indices (into the block's coupling list) retained by Eq. 11."""
     delta_max = embedding_delta_max(molecule) if delta_max is None else float(delta_max)
     block = molecule.blocks[block_index]
     w = molecule.window
@@ -43,8 +37,6 @@ def retained_transitions(
 
 
 class Embedding:
-    """Per-(molecule, block, sigma) embedding geometry, numpy version."""
-
     def __init__(
         self, molecule: Molecule, block_index: int, sigma: str = "+", delta_max: float | None = None
     ) -> None:
@@ -58,7 +50,6 @@ class Embedding:
         self.delta_max = embedding_delta_max(molecule) if delta_max is None else float(delta_max)
         self.transitions = retained_transitions(molecule, block_index, sigma, self.delta_max)
         self.w_res = resonant_frequencies(molecule, block_index, sigma)[self.transitions]
-        # HWHM eta |Omega_q| of each retained transition, rad/ms
         self.linewidths = molecule.trap.eta * np.abs(block.omega[self.transitions])
         self.taus = molecule.tau_grid().astype(np.float64)
         self.omega_min = float(w.omega_min)
@@ -67,14 +58,12 @@ class Embedding:
         self.s_emb = float(w.s_emb)
         self.beta_emb = float(w.beta_emb)
 
-    # geometry
     @property
     def n_transitions(self) -> int:
         return int(self.w_res.size)
 
     @property
     def n_channels(self) -> int:
-        """M_f + Q + 1 -- the FNO input width."""
         return self.n_states + self.n_transitions + 1
 
     @property
@@ -82,28 +71,23 @@ class Embedding:
         return int(self.taus.size)
 
     def resonance_distance(self, omega: np.ndarray | float) -> np.ndarray:
-        """min_q |omega_res,q - omega| / (eta |Omega_q|) -- distance in HWHM."""
         omega = np.atleast_1d(np.asarray(omega, dtype=np.float64))
         return (np.abs(omega[:, None] - self.w_res[None, :]) / self.linewidths[None, :]).min(axis=1)
 
-    # Eqs. 12-16
     def detunings(self, omega: np.ndarray | float) -> np.ndarray:
-        """Delta_q(omega, sigma) (Eq. 12) -- shape (Q,) or (B, Q)."""
         omega = np.asarray(omega, dtype=np.float64)
         return self.w_res - omega[..., None]
 
     def control_channels(self, omega: np.ndarray | float) -> np.ndarray:
-        """The Q + 1 control channels, shape (B, Q + 1, P_tau)."""
         omega = np.atleast_1d(np.asarray(omega, dtype=np.float64))
-        delta = self.detunings(omega)                                       # (B, Q)
+        delta = self.detunings(omega)
         phi = (self.s_emb * np.sin(delta[..., None] * self.taus)
-               / (1.0 + self.beta_emb * np.abs(delta)[..., None]))          # (B, Q, P)
+               / (1.0 + self.beta_emb * np.abs(delta)[..., None]))
         w_tilde = 2.0 * (omega - self.omega_min) / (self.omega_max - self.omega_min) - 1.0
         phi_w = self.s_emb * np.sin(2.0 * np.pi * w_tilde[:, None] * (self.taus / self.tau_max))
         return np.concatenate([phi, phi_w[:, None, :]], axis=1)
 
     def build(self, p0: np.ndarray, omega: np.ndarray | float) -> np.ndarray:
-        """Full FNO input (Eq. 16), shape (B, M_f + Q + 1, P_tau)."""
         p0 = np.atleast_2d(np.asarray(p0, dtype=np.float64))
         omega = np.atleast_1d(np.asarray(omega, dtype=np.float64))
         if omega.size == 1 and p0.shape[0] > 1:
@@ -117,8 +101,6 @@ class Embedding:
 
 
 class TorchEmbedding:
-    """Torch twin of Embedding (ported from thffno.torch_ops)."""
-
     def __init__(
         self,
         molecule: Molecule,
@@ -160,7 +142,6 @@ class TorchEmbedding:
         return self.w_res - omega[..., None]
 
     def control_channels(self, omega: torch.Tensor, out_dtype: torch.dtype = torch.float64) -> torch.Tensor:
-        """The Q + 1 control channels (Eqs. 13, 15), (B, Q + 1, P_tau)."""
         omega = torch.atleast_1d(torch.as_tensor(omega, dtype=torch.float64, device=self.device))
         delta = self.detunings(omega)
         phi = (self.s_emb * torch.sin(delta[..., None] * self.taus)
@@ -170,7 +151,6 @@ class TorchEmbedding:
         return torch.cat([phi, phi_w[:, None, :]], dim=1).to(out_dtype)
 
     def build(self, p0: torch.Tensor, omega: torch.Tensor, out_dtype: torch.dtype = torch.float32) -> torch.Tensor:
-        """Full FNO input (Eq. 16), shape (B, M_f + Q + 1, P_tau)."""
         p0 = torch.atleast_2d(torch.as_tensor(p0, device=self.device))
         omega = torch.atleast_1d(torch.as_tensor(omega, dtype=torch.float64, device=self.device))
         if omega.numel() == 1 and p0.shape[0] > 1:
@@ -184,12 +164,10 @@ class TorchEmbedding:
 
 
 def resonance_geometry_of(molecule: Molecule, block_index: int, sigma: str = "+") -> tuple[np.ndarray, np.ndarray]:
-    """(omega_res, linewidth) of the retained transitions; linewidth is the HWHM in rad/ms."""
     emb = Embedding(molecule, block_index, sigma)
     return emb.w_res, emb.linewidths
 
 
 def block_shapes(molecule: Molecule, block_index: int, sigma: str = "+") -> tuple[int, int, int]:
-    """(M_f, Q, in_channels) for one block."""
     emb = Embedding(molecule, block_index, sigma)
     return emb.n_states, emb.n_transitions, emb.n_channels

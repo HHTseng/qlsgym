@@ -1,6 +1,3 @@
-"""Reference policies on the synthetic molecule with fake tables/engine; PhysicsEliminationPolicy's
-molecule guard; ScorePlannerPolicy closed-loop re-planning against FakeEngine.
-"""
 import numpy as np
 import pytest
 
@@ -83,9 +80,6 @@ def test_score_planner_policy_free_tau_returns_action(setup):
 
 
 def test_score_planner_pool_sampling(setup):
-    """n_pool=None is the greedy first maximum; a pool draws uniformly from the top scores (plus
-    everything within delta_s of the best) and nothing else.
-    """
     mol, lib, eng, _ = setup
     from qlsgym.env.env import boltzmann_belief
     belief = boltzmann_belief(mol)
@@ -99,10 +93,9 @@ def test_score_planner_pool_sampling(setup):
     rng = np.random.default_rng(1)
     draws = {pooled.act(belief, 0, rng) for _ in range(80)}
     assert a_greedy in draws and 1 < len(draws) <= 3
-    # exactly the three best-scoring drives are reachable
     cands = [(v, k) for k, v in enumerate([3.0, 1.0, 2.5, 2.9, -1.0])]
     picks = {pooled._choose(cands, np.random.default_rng(s)) for s in range(40)}
     assert picks == {0, 2, 3}
-    wide = ScorePlannerPolicy(eng, lib, n_pool=1, delta_s=0.15)   # 2.9 is within 0.15 of 3.0
+    wide = ScorePlannerPolicy(eng, lib, n_pool=1, delta_s=0.15)
     picks = {wide._choose(cands, np.random.default_rng(s)) for s in range(40)}
     assert picks == {0, 3}

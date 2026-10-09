@@ -1,5 +1,3 @@
-"""CUDA-Q Dynamics engine: the lumped transfer columns of ExactEngine, from an ODE solve."""
-
 from __future__ import annotations
 
 import importlib.util
@@ -12,18 +10,17 @@ from ..spec import Molecule
 from .engines import _EngineBase
 from .hamiltonian import lump, make_operator, operator
 
-__all__ = ["CudaqEngine", "dynamics_available", "DEFAULT_MAX_STEP_SIZE", "MAX_PHASE_PER_STEP"]
+__all__ = ["CudaqEngine", "dynamics_available", "DEFAULT_ATOL", "DEFAULT_MAX_STEP_SIZE"]
 
+DEFAULT_ATOL = 1.0e-6
 DEFAULT_MAX_STEP_SIZE = 3.0e-5
-MAX_PHASE_PER_STEP = 0.05
-UNITARITY_ATOL = 1e-6
+GUARD = 2.0
 
 _UID = itertools.count()
 _STATUS: tuple[bool, str] | None = None
 
 
 def dynamics_available(recheck: bool = False) -> tuple[bool, str]:
-    """(can this process run the engine, why)."""
     global _STATUS
     if _STATUS is not None and not recheck:
         return _STATUS
@@ -32,7 +29,6 @@ def dynamics_available(recheck: bool = False) -> tuple[bool, str]:
 
 
 def _probe() -> tuple[bool, str]:
-    # importing cudaq costs ~20 s, so the cheap disqualifiers come first
     if importlib.util.find_spec("cudaq") is None:
         return False, "cudaq is not installed"
     import torch
@@ -47,20 +43,14 @@ def _probe() -> tuple[bool, str]:
     if n_gpu < 1:
         return False, "cudaq sees no GPU"
     try:
-        # set_target is the only honest probe: it is what brings up cuDensityMat.
         cudaq.set_target("dynamics")
     except Exception as exc:
         return False, f"cudaq target 'dynamics' unavailable: {exc}"
     return True, f"{cudaq.__version__}, dynamics target, {n_gpu} GPU(s)"
 
 
-# H(omega) for one sector
-
-
 @dataclass(frozen=True)
 class _Drive:
-    """H(omega) = h_ref + (omega - w_ref) grad, exactly (BlockOperator.build is affine in omega)."""
-
     n_states: int
     w_ref: float
     h_ref: np.ndarray
@@ -83,7 +73,6 @@ class _Drive:
 
 
 def _block_operator(molecule: Molecule, sector, sigma: str, omega: float):
-    """The BlockOperator physics.propagate.transfer_matrix would use for this drive."""
     w = None if molecule.window.contains(float(omega)) else float(omega)
     if sector.index < 0:
         return make_operator(molecule, sector, sigma, omega_lo=w, omega_hi=w)
@@ -94,8 +83,6 @@ def make_drive(molecule: Molecule, sector, sigma: str, omega: float) -> _Drive:
     op = _block_operator(molecule, sector, sigma, omega)
     w = molecule.window
     in_window = w.contains(float(omega))
-    # reference the split at the drive itself when off-window, so that reconstructing
-    # H(omega) never differences two numbers larger than the window is wide
     w_ref = 0.5 * (w.omega_min + w.omega_max) if in_window else float(omega)
     step = max(1.0, w.omega_max - w.omega_min)
     h_ref = op.build(w_ref)
@@ -107,58 +94,49 @@ def make_drive(molecule: Molecule, sector, sigma: str, omega: float) -> _Drive:
                   h_id=f"qlsgym_h_{uid}", grad_id=f"qlsgym_dh_{uid}")
 
 
-# schedule, step size, columns
+def _basis_vector(dim: int, j: int) -> np.ndarray:
+    v = np.zeros(dim, dtype=np.complex128)
+    v[j] = 1.0
+    return v
 
 
 def schedule_and_rows(taus: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Integration schedule (sorted, unique, starting at tau = 0) and each tau's row in it."""
     taus = np.asarray(taus, dtype=np.float64)
     sched = np.unique(np.concatenate([[0.0], taus]))
     return sched, np.searchsorted(sched, taus)
 
 
-def step_size(h: np.ndarray, max_step_size: float, max_phase: float) -> float:
-    norm = float(np.abs(h).sum(1).max())        # bounds the spectral radius
-    return min(float(max_step_size), float(max_phase) / norm) if norm > 0.0 else float(max_step_size)
+def step_size(h: np.ndarray, t_max: float, atol: float, max_step_size: float) -> float:
+    norm = float(np.abs(h).sum(1).max())
+    if norm <= 0.0 or t_max <= 0.0:
+        return float(max_step_size)
+    return min(float(max_step_size), (72.0 * float(atol) / (float(t_max) * norm)) ** 0.2 / norm)
 
 
 def rk_steps(sched: np.ndarray, dt: float) -> int:
     return int(np.ceil(np.diff(sched) / dt).sum())
 
 
-def columns_from_amplitudes(psi: np.ndarray, n_states: int, atol: float = UNITARITY_ATOL) -> np.ndarray:
-    """(n_basis, n_sched, dim) amplitudes -> (n_sched, 2 M, M) lumped transfer columns."""
-    t = lump(np.abs(np.moveaxis(psi, 0, -1)) ** 2, n_states)
-    err = float(np.abs(t.sum(-2) - 1.0).max())
-    if not err <= atol:                         # not "err > atol": a diverged run gives NaN
-        raise RuntimeError(f"CUDA-Q integration lost {err:.3g} of the norm (tolerance {atol:.3g}): "
-                           "the RK4 step is too large for this Hamiltonian")
-    return t
+def columns_from_amplitudes(psi: np.ndarray, n_states: int) -> np.ndarray:
+    return lump(np.abs(np.moveaxis(psi, 0, -1)) ** 2, n_states)
+
+
+def norm_loss(t: np.ndarray) -> float:
+    return float(np.abs(t.sum(-2) - 1.0).max())
 
 
 class CudaqEngine(_EngineBase):
-    """ExactEngine's contract, with each drive's propagator integrated by cudaq.evolve.
-
-    One evolve call per (sector, sigma, omega) covers every tau: the schedule is the tau grid
-    and the intermediate states are kept.
-    """
-
-    def __init__(self, molecule: Molecule, tau_indices=None,
-                 max_step_size: float = DEFAULT_MAX_STEP_SIZE,
-                 max_phase_per_step: float = MAX_PHASE_PER_STEP,
-                 unitarity_atol: float = UNITARITY_ATOL):
+    def __init__(self, molecule: Molecule, tau_indices=None, atol: float = DEFAULT_ATOL,
+                 max_step_size: float = DEFAULT_MAX_STEP_SIZE):
         super().__init__(molecule, tau_indices)
         ok, reason = dynamics_available()
         if not ok:
             raise RuntimeError(f"CudaqEngine cannot run here: {reason}")
+        self.atol = float(atol)
         self.max_step_size = float(max_step_size)
-        self.max_phase_per_step = float(max_phase_per_step)
-        self.unitarity_atol = float(unitarity_atol)
         self.settings = {"target": "dynamics", "integrator": "RungeKutta(order=4)",
-                         "max_step_size": self.max_step_size,
-                         "max_phase_per_step": self.max_phase_per_step,
-                         "unitarity_atol": self.unitarity_atol, "probe": reason}
-        self.stats = {"solves": 0, "rk_steps": 0}
+                         "atol": self.atol, "max_step_size": self.max_step_size, "probe": reason}
+        self.stats = {"solves": 0, "rk_steps": 0, "max_norm_loss": 0.0, "min_step_size": None}
         self._drives: dict = {}
         self._defined: set = set()
 
@@ -175,25 +153,30 @@ class CudaqEngine(_EngineBase):
 
     def _compute_columns(self, sector, sigma: str, omega: float) -> np.ndarray:
         drive = self.drive(sector, sigma, omega)
-        dt = step_size(drive.dense(omega), self.max_step_size, self.max_phase_per_step)
         sched, rows = schedule_and_rows(self.taus)
-        psi = self._evolve(drive, float(omega), sched, dt)
+        dt = step_size(drive.dense(omega), float(sched[-1]), self.atol, self.max_step_size)
+        t = columns_from_amplitudes(self._evolve(drive, float(omega), sched, dt), drive.n_states)
+        lost = norm_loss(t)
+        if not lost <= GUARD * self.atol:
+            raise RuntimeError(
+                f"CUDA-Q lost {lost:.3g} of the norm at omega = {omega:.6g}, sigma{sigma}, "
+                f"dt = {dt:.3g} ms, more than the {GUARD * self.atol:.3g} the step was chosen for")
         self.stats["solves"] += 1
         self.stats["rk_steps"] += rk_steps(sched, dt)
-        return columns_from_amplitudes(psi, drive.n_states, self.unitarity_atol)[rows]
+        self.stats["max_norm_loss"] = max(self.stats["max_norm_loss"], lost)
+        self.stats["min_step_size"] = min(self.stats["min_step_size"] or dt, dt)
+        return t[rows]
 
     def _evolve(self, drive: _Drive, omega: float, sched: np.ndarray, dt: float) -> np.ndarray:
-        """(M, len(sched), dim): the nu = 0 basis states propagated to every schedule point."""
         import cudaq
         from cudaq.dynamics.helpers import IntermediateResultSave
 
         self._define(drive)
-        eye = np.eye(drive.dim, dtype=np.complex128)
         res = cudaq.evolve(
             drive.symbolic(omega),
             {0: drive.dim},
             cudaq.Schedule([float(t) for t in sched], ["t"]),
-            [cudaq.State.from_data(eye[:, j].copy()) for j in range(drive.n_states)],
+            [cudaq.State.from_data(_basis_vector(drive.dim, j)) for j in range(drive.n_states)],
             store_intermediate_results=IntermediateResultSave.ALL,
             integrator=cudaq.RungeKuttaIntegrator(order=4, max_step_size=float(dt)),
         )

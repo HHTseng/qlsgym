@@ -1,5 +1,3 @@
-"""Torch mirror of the exact propagation, batched over drive frequency."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,18 +14,16 @@ __all__ = ["TorchBlockOperator", "propagator_columns", "transfer_columns",
 
 @dataclass(frozen=True)
 class TorchBlockOperator:
-    """Device-resident copy of a BlockOperator."""
-
     block_index: int
     n_states: int
     sigma: str
     nu_f: float
     n_nu: int
-    e_shifted: torch.Tensor       # (M,) float64
-    src: torch.Tensor             # (n_keep (n_nu-1),) int64, already nu-offset
-    dst: torch.Tensor             # same
-    gval: torch.Tensor            # (n_keep (n_nu-1),) complex128, rung factors applied
-    component: torch.Tensor       # (n_nu M,) int64
+    e_shifted: torch.Tensor
+    src: torch.Tensor
+    dst: torch.Tensor
+    gval: torch.Tensor
+    component: torch.Tensor
     n_component: int
 
     @property
@@ -52,14 +48,13 @@ class TorchBlockOperator:
         )
 
     def build(self, omegas: torch.Tensor) -> torch.Tensor:
-        """Batched (B, n_nu M, n_nu M) Hamiltonians; the torch twin of BlockOperator.build."""
         dev = self.e_shifted.device
         omegas = torch.atleast_1d(omegas).to(device=dev, dtype=torch.float64)
         b, m, n_nu = omegas.shape[0], self.n_states, self.n_nu
         dim = n_nu * m
         diag = torch.cat(
             [self.e_shifted[None, :] + k * (self.nu_f - omegas)[:, None] for k in range(n_nu)], dim=1
-        )                                                                    # (B, dim)
+        )
         counts = torch.bincount(self.component, minlength=self.n_component).to(torch.float64)
         sums = torch.zeros((b, self.n_component), dtype=torch.float64, device=dev).index_add_(
             1, self.component, diag)
@@ -79,11 +74,10 @@ class TorchBlockOperator:
 
 
 def propagator_columns(h: torch.Tensor, taus: torch.Tensor, n_cols: int | None = None) -> torch.Tensor:
-    """U(tau)[:,:n_cols] for a batch of Hamiltonians (B, D, D); returns (B, n_tau, D, n_cols)."""
-    evals, evecs = torch.linalg.eigh(h)                                    # (B,D), (B,D,D)
-    phases = torch.exp(-1j * taus.to(evals.dtype)[None, :, None] * evals[:, None, :])   # (B,P,D)
+    evals, evecs = torch.linalg.eigh(h)
+    phases = torch.exp(-1j * taus.to(evals.dtype)[None, :, None] * evals[:, None, :])
     n_cols = h.shape[-1] if n_cols is None else n_cols
-    w = evecs[:, None, :, :] * phases[:, :, None, :]                        # (B,P,D,D)
+    w = evecs[:, None, :, :] * phases[:, :, None, :]
     return w @ evecs[:, None, :n_cols, :].conj().transpose(-1, -2)
 
 
@@ -91,9 +85,6 @@ _TORCH_OPS: dict = {}
 
 
 def torch_operator(molecule: Molecule, block, sigma: str, omega: float | None, device) -> TorchBlockOperator:
-    """Cached TorchBlockOperator; omega=None is the in-window operator, otherwise the RWA is taken
-    at omega (a primitive).
-    """
     dev = torch.device(device)
     if isinstance(block, Block):
         if omega is None:
@@ -120,9 +111,6 @@ def transfer_columns(
     chunk_bytes: float = 2.0e9,
     op: TorchBlockOperator | None = None,
 ) -> torch.Tensor:
-    """Lumped transfer columns for many drive frequencies at once: (n_omega, n_tau, 2 M, M) on
-    device, n_tau = len(tau_indices) (default the whole tau grid).
-    """
     dev = torch.device(device)
     om = torch.as_tensor(np.asarray(omegas, dtype=np.float64).reshape(-1), dtype=torch.float64, device=dev) \
         if not isinstance(omegas, torch.Tensor) else omegas.reshape(-1).to(device=dev, dtype=torch.float64)
@@ -145,7 +133,7 @@ def transfer_columns(
     out = torch.empty((om.numel(), n_tau, 2 * m, m), dtype=out_dtype, device=dev)
     for lo in range(0, om.numel(), chunk):
         hi = min(lo + chunk, om.numel())
-        u = propagator_columns(op.build(om[lo:hi]), taus, n_cols=m)         # (b, P, n_nu M, M)
+        u = propagator_columns(op.build(om[lo:hi]), taus, n_cols=m)
         t = u.real.square() + u.imag.square()
         out[lo:hi] = torch.cat(
             [t[..., :m, :], t[..., m:, :].unflatten(-2, (n_nu - 1, m)).sum(-3)], dim=-2
@@ -154,7 +142,4 @@ def transfer_columns(
 
 
 def trajectories_from_columns(t0: torch.Tensor, p0: torch.Tensor) -> torch.Tensor:
-    """p(tau) = T0(tau) p0: t0 (..., n_tau, 2M, M), p0 (..., M) (leading axes broadcast); returns
-    (..., n_tau, 2M).
-    """
     return (t0 * p0[..., None, None, :]).sum(-1)

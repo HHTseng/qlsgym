@@ -1,6 +1,3 @@
-"""Initial-state and frequency sampling (pure numpy); split generation needs agent A's
-physics.torch_ops and is skipped without it.
-"""
 import numpy as np
 import pytest
 
@@ -22,10 +19,10 @@ def test_random_mixed_populations():
     p = random_mixed_populations(26, 500, rng, 1.0)
     assert p.shape == (500, 26) and np.all(p >= 0)
     np.testing.assert_allclose(p.sum(1), 1.0)
-    assert np.median(p.max(1)) < 0.25                     # uniform simplex: spread states
+    assert np.median(p.max(1)) < 0.25
     q = random_mixed_populations(26, 500, np.random.default_rng(0), -2.0)
     np.testing.assert_allclose(q.sum(1), 1.0)
-    assert np.percentile(q.max(1), 90) > 0.85              # log-uniform mixture reaches concentrated states
+    assert np.percentile(q.max(1), 90) > 0.85
     assert np.median(q.max(1)) > np.median(p.max(1))
 
 
@@ -85,5 +82,8 @@ def test_build_split_if_physics_present(mol, tmp_path):
     assert sp.p_true.shape == (4, mol.window.n_tau, 2 * e_n) and sp.weights.shape == (4, 2 * e_n)
     np.testing.assert_allclose(sp.p_true.sum(-1).numpy(), 1.0, atol=1e-5)
     assert split_path(mol, 0, "+", cfg, str(tmp_path)).startswith(str(tmp_path)) and mol.fingerprint() in split_path(mol, 0, "+", cfg, str(tmp_path))
-    sp2 = build_or_load_split(mol, 0, cfg, "+", device="cpu", work=str(tmp_path))   # from disk
+    sp2 = build_or_load_split(mol, 0, cfg, "+", device="cpu", work=str(tmp_path))
     np.testing.assert_allclose(sp2.x.numpy(), sp.x.numpy())
+    sp3 = build_or_load_split(mol, 0, cfg, "+", device="cpu", work=str(tmp_path), activity_lambda=0.0)
+    assert split_path(mol, 0, "+", cfg, str(tmp_path), activity_lambda=0.0) != split_path(mol, 0, "+", cfg, str(tmp_path))
+    assert not np.allclose(sp3.weights.numpy(), sp.weights.numpy())

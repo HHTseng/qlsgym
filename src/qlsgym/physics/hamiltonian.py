@@ -1,5 +1,3 @@
-"""Block Hamiltonians for a single Raman sideband pulse."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,13 +13,7 @@ __all__ = [
 ]
 
 
-# Small helpers
-
-
 def sideband_matrix_elements(eta: float, n_nu: int, n_fock: int = 40) -> np.ndarray:
-    """<n+1| exp(i eta (a + a^dag)) |n> for n = 0 .. n_nu - 2, from the displacement operator
-    itself rather than a first-order Lamb-Dicke expansion.
-    """
     n = np.arange(1, n_fock)
     a = np.diag(np.sqrt(n), 1)
     x = a + a.conj().T
@@ -31,9 +23,6 @@ def sideband_matrix_elements(eta: float, n_nu: int, n_fock: int = 40) -> np.ndar
 
 
 def components(n: int, src: np.ndarray, dst: np.ndarray) -> np.ndarray:
-    """Connected-component label per node of the undirected graph {src[k] -- dst[k]} on n nodes
-    (union-find, labels 0..n_comp-1 in order of first appearance of the root).
-    """
     parent = np.arange(n)
 
     def find(a: int) -> int:
@@ -56,38 +45,29 @@ def hermiticity_error(h: np.ndarray) -> float:
 
 
 def lump(t: np.ndarray, n_states: int) -> np.ndarray:
-    """Collapse a nu-resolved transfer array onto the measured branches."""
     m = int(n_states)
     rest = t[..., m:, :]
     lumped = rest.reshape(*t.shape[:-2], -1, m, t.shape[-1]).sum(axis=-3)
     return np.concatenate([t[..., :m, :], lumped], axis=-2)
 
 
-# The operator
-
-
 @dataclass(frozen=True)
 class BlockOperator:
-    """Pre-computed, well-conditioned Hamiltonian builder for one block or RWA sector of one
-    molecule.
-    """
-
     block_index: int
     key: tuple
-    n_states: int                 # M_f
+    n_states: int
     sigma: str
     nu_f: float
     eta: float
     n_nu: int
-    e_shifted: np.ndarray         # (M_f,) molecular energies, coarse per-component origin
-    src: np.ndarray               # (n_keep,) local index, nu side
-    dst: np.ndarray               # (n_keep,) local index, nu + 1 side
-    g: np.ndarray                 # (n_keep,) complex (Omega/2) <1|D(i eta)|0> = i eta e^{-eta^2/2} Omega/2
-    rung: np.ndarray              # (n_nu - 1,) complex d_nu / d_0; rung[0] == 1 exactly
-    component: np.ndarray         # (M_f,) component id per molecular state
-    keep: np.ndarray              # (n_cpl,) bool mask into Block.omega
-    e_origin: np.ndarray          # (n_comp,) subtracted energy origins
-    # dynamically decoupled components of the nu-enlarged space (n_nu M_f,)
+    e_shifted: np.ndarray
+    src: np.ndarray
+    dst: np.ndarray
+    g: np.ndarray
+    rung: np.ndarray
+    component: np.ndarray
+    keep: np.ndarray
+    e_origin: np.ndarray
     component_n: np.ndarray
     n_component_n: int
 
@@ -105,7 +85,6 @@ class BlockOperator:
         return src, dst, gval
 
     def build(self, omega: float, n_nu: int | None = None) -> np.ndarray:
-        """Dense (n_nu M_f, n_nu M_f) Hermitian Hamiltonian at drive omega (rad/ms), nu-major."""
         n_nu = self.n_nu if n_nu is None else int(n_nu)
         if n_nu < 2:
             raise ValueError("n_nu must be at least 2")
@@ -131,7 +110,6 @@ class BlockOperator:
         return h
 
     def detunings(self, omega: float) -> np.ndarray:
-        """Delta = E(J',nu=1) - E(J,nu=0) for the retained couplings."""
         return self.e_shifted[self.dst] + (self.nu_f - omega) - self.e_shifted[self.src]
 
 
@@ -143,7 +121,6 @@ def make_operator(
     omega_hi: float | None = None,
     rwa_cutoff: float | None = None,
 ) -> BlockOperator:
-    """Build the BlockOperator for block (index, block or RWA sector) and polarisation sigma."""
     s, trap, w = molecule.system, molecule.trap, molecule.window
     b = s.blocks[int(block)] if not isinstance(block, Block) else block
     lo = w.omega_min if omega_lo is None else float(omega_lo)
@@ -167,11 +144,6 @@ def make_operator(
     comp = components(m, src, dst)
     e_mol = s.energies[b.states]
     n_comp = int(comp.max()) + 1 if m else 0
-    # Coarse origin on the molecular energies: enough to keep e_shifted small
-    # for MHz drives; build() then does the exact per-component referencing in
-    # the nu-enlarged space.  Use the nu = 0 (source) side of each component,
-    # because for a THz drive the two motional layers sit in different
-    # rotational manifolds and their mean would leave a ~1e9 rad/ms residual.
     origin = np.empty(n_comp, dtype=np.float64)
     src_set = set(src.tolist())
     for c in range(n_comp):
@@ -204,7 +176,6 @@ _OPERATORS: dict = {}
 
 def operator(molecule: Molecule, block_index: int, sigma: str = "+",
              omega: float | None = None) -> BlockOperator:
-    """Cached make_operator, keyed on (fingerprint, block, sigma, omega)."""
     key = (molecule.fingerprint(), int(block_index), sigma, None if omega is None else float(omega))
     op = _OPERATORS.get(key)
     if op is None:
@@ -216,14 +187,8 @@ def operator(molecule: Molecule, block_index: int, sigma: str = "+",
     return op
 
 
-# Off-window primitives: RWA sectors
-
-
 def rwa_sectors(molecule: Molecule, sigma: str, omega: float,
                 rwa_cutoff: float | None = None) -> tuple:
-    """Dynamically coupled sectors at drive omega: connected components of the *global* couplings
-    that survive the RWA there.
-    """
     s = molecule.system
     cutoff = molecule.window.rwa_cutoff if rwa_cutoff is None else float(rwa_cutoff)
     d = s.energies[s.f_idx] - s.energies[s.i_idx]

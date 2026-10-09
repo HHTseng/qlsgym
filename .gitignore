@@ -3,3 +3,6 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 _work/
+
+# independent review scratch (distilled into docs/h3o_fno_findings.md)
+codex_adversary/

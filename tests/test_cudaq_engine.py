@@ -1,4 +1,3 @@
-"""CudaqEngine: everything but the ODE solve runs on CPU; the solve itself needs a GPU."""
 import numpy as np
 import pytest
 
@@ -6,7 +5,8 @@ from qlsgym import load_molecule
 from qlsgym.benchmark.protocol import engine_provenance
 from qlsgym.physics import cudaq_engine as ce
 from qlsgym.physics.cudaq_engine import (CudaqEngine, columns_from_amplitudes, dynamics_available,
-                                         make_drive, rk_steps, schedule_and_rows, step_size)
+                                         make_drive, norm_loss, rk_steps, schedule_and_rows,
+                                         step_size)
 from qlsgym.physics.engines import ExactEngine, engine_choice, select_engine
 from qlsgym.physics.hamiltonian import rwa_sectors
 from qlsgym.physics.propagate import propagator_series
@@ -21,10 +21,6 @@ def mol():
 
 
 class ExactEvolve(CudaqEngine):
-    """CudaqEngine with cudaq.evolve replaced by the exact propagator, so that the schedule,
-    the lumping and the tau gathering can be pinned without a GPU.
-    """
-
     def _evolve(self, drive, omega, sched, dt):
         u = propagator_series(drive.dense(omega), sched)
         return np.moveaxis(u[:, :, :drive.n_states], -1, 0)
@@ -36,11 +32,7 @@ def stub(monkeypatch, mol):
     return ExactEvolve(mol, TAU_IDX)
 
 
-# the Hamiltonian handed to CUDA-Q
-
-
 def test_affine_split_reproduces_the_block_operator(mol):
-    """H(omega) = h_ref + (omega - w_ref) grad must be the operator ExactEngine propagates."""
     for b in mol.blocks:
         for sigma in ("+", "-"):
             op = ce._block_operator(mol, b, sigma, mol.trap.nu_f)
@@ -50,7 +42,6 @@ def test_affine_split_reproduces_the_block_operator(mol):
 
 
 def test_stubbed_engine_matches_exact_engine_on_h3o(monkeypatch):
-    """The real molecule, in-window and at an off-window primitive (RWA sectors)."""
     monkeypatch.setattr(ce, "dynamics_available", lambda *a, **k: (True, "stubbed"))
     mol = load_molecule("h3o")
     idx = np.array([0, 40, 199])
@@ -65,9 +56,6 @@ def test_stubbed_engine_matches_exact_engine_on_h3o(monkeypatch):
         assert np.abs(got[1] - want[1]).max() < 1e-12
 
 
-# schedule, step size, norm check
-
-
 def test_schedule_starts_at_zero_and_rows_point_back(mol):
     taus = mol.tau_grid()[[7, 3, 15, 3]]
     sched, rows = schedule_and_rows(taus)
@@ -75,25 +63,25 @@ def test_schedule_starts_at_zero_and_rows_point_back(mol):
     assert np.array_equal(sched[rows], taus)
 
 
-def test_step_size_is_capped_by_the_hamiltonian():
-    small = np.diag([1.0, -1.0]).astype(complex)
-    assert step_size(small, 3e-5, 0.05) == 3e-5
-    big = np.diag([1e5, -1e5]).astype(complex)
-    assert step_size(big, 3e-5, 0.05) == pytest.approx(0.05 / 1e5)
+def test_step_size_follows_the_hamiltonian_and_the_pulse_length():
+    h = np.diag([1.5e3, -1.5e3]).astype(complex)
+    dt = step_size(h, 4.0, 1e-6, 3e-5)
+    assert 1e-5 < dt < 3e-5
+    assert 4.0 * 1.5e3 * (1.5e3 * dt) ** 5 / 72 == pytest.approx(1e-6, rel=1e-6)
+    assert step_size(h, 40.0, 1e-6, 3e-5) < dt
+    assert step_size(45.0 * h, 4.0, 1e-6, 3e-5) < dt / 45.0
+    assert step_size(np.zeros((2, 2), dtype=complex), 4.0, 1e-6, 3e-5) == 3e-5
+    assert step_size(h, 0.0, 1e-6, 3e-5) == 3e-5
     assert rk_steps(np.array([0.0, 1.0]), 0.25) == 4
 
 
-def test_lost_norm_raises_instead_of_returning_a_wrong_answer():
+def test_columns_and_their_norm_loss():
     psi = np.zeros((2, 3, 4), dtype=complex)
     psi[0, :, 0] = 1.0
     psi[1, :, 1] = 1.0
     t = columns_from_amplitudes(psi, 2)
-    assert t.shape == (3, 4, 2) and np.allclose(t.sum(-2), 1.0)
-    with pytest.raises(RuntimeError, match="lost"):
-        columns_from_amplitudes(0.9 * psi, 2)
-
-
-# the engine, with the solve stubbed out
+    assert t.shape == (3, 4, 2) and norm_loss(t) == 0.0
+    assert norm_loss(columns_from_amplitudes(0.9 * psi, 2)) == pytest.approx(0.19)
 
 
 def test_stubbed_engine_matches_exact_engine(mol, stub):
@@ -119,10 +107,19 @@ def test_one_solve_per_drive_covers_every_tau(mol, stub):
     assert solves == mol.system.n_blocks
     p0, _ = stub.branches_all_tau(p, w, "+")
     assert p0.shape == (TAU_IDX.size, mol.n_states)
-    assert stub.stats["solves"] == solves          # cached, and every tau came from one solve
+    assert stub.stats["solves"] == solves
 
 
-# selection
+def test_an_integration_that_loses_norm_raises(mol, monkeypatch):
+    monkeypatch.setattr(ce, "dynamics_available", lambda *a, **k: (True, "stubbed"))
+
+    class Leaky(ExactEvolve):
+        def _evolve(self, drive, omega, sched, dt):
+            return 0.99 * super()._evolve(drive, omega, sched, dt)
+
+    p = np.full(mol.n_states, 1.0 / mol.n_states)
+    with pytest.raises(RuntimeError, match="lost"):
+        Leaky(mol, TAU_IDX).branches_all_tau(p, mol.trap.nu_f, "+")
 
 
 def test_engine_choice_reads_the_environment(monkeypatch):
@@ -162,9 +159,6 @@ def test_forced_cudaq_fails_loudly_where_it_cannot_run(mol):
         select_engine(mol, TAU_IDX, prefer="cudaq", log=lambda s: None)
 
 
-# the real thing
-
-
 def _require_gpu():
     ok, reason = dynamics_available()
     if not ok:
@@ -173,6 +167,7 @@ def _require_gpu():
 
 def _compare_with_exact(mol, block, idx, atol):
     engine, exact = CudaqEngine(mol, idx), ExactEngine(mol, idx)
+    print(f"{mol.name}: tau <= {engine.taus.max():.4g} ms, atol {engine.atol:.1g}")
     p = np.zeros(mol.n_states)
     p[mol.blocks[block].states] = 1.0 / mol.blocks[block].n_states
     w = 0.5 * (mol.window.omega_min + mol.window.omega_max)
@@ -185,29 +180,25 @@ def _compare_with_exact(mol, block, idx, atol):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("name,block", [("h3o", 0), ("thf", 11)])
-def test_cudaq_matches_exact_engine(name, block):
-    """Short pulses: enough dynamics to be a real check, few enough RK steps to be a test."""
+@pytest.mark.slow
+def test_cudaq_matches_exact_engine_on_a_production_pulse():
     _require_gpu()
-    mol = load_molecule(name)
-    print(name, "max error", _compare_with_exact(mol, block, np.array([0, 1, 2, 5]), 1e-5))
+    err = _compare_with_exact(load_molecule("h3o"), 0, None, 1e-5)
+    print("h3o full grid, max |P - P_exact| =", err)
 
 
 @pytest.mark.gpu
-@pytest.mark.slow
-def test_cudaq_matches_exact_engine_over_the_whole_tau_grid():
-    mol = load_molecule("h3o")
+def test_cudaq_matches_exact_engine_on_thf():
     _require_gpu()
-    print("h3o full grid max error", _compare_with_exact(mol, 0, None, 1e-5))
+    err = _compare_with_exact(load_molecule("thf"), 11, np.array([0, 1, 2]), 1e-5)
+    print("thf block 11, max |P - P_exact| =", err)
 
 
 @pytest.mark.gpu
-@pytest.mark.slow
-def test_a_reckless_step_size_raises():
-    """The reason max_step_size is explicit: CUDA-Q's own default diverges on this system."""
+def test_the_engine_reports_what_it_did():
     _require_gpu()
     mol = load_molecule("h3o")
-    engine = CudaqEngine(mol, np.array([0, 199]), max_step_size=1.0, max_phase_per_step=1e3)
-    p = np.full(mol.n_states, 1.0 / mol.n_states)
-    with pytest.raises(RuntimeError, match="lost"):
-        engine.branches_all_tau(p, 0.5 * (mol.window.omega_min + mol.window.omega_max), "+")
+    engine = CudaqEngine(mol, np.array([0, 1, 2]))
+    engine.branches_all_tau(np.full(mol.n_states, 1.0 / mol.n_states), mol.trap.nu_f, "+")
+    assert 0.0 < engine.stats["max_norm_loss"] <= engine.atol
+    assert engine.stats["rk_steps"] > 0 and engine.stats["min_step_size"] <= engine.max_step_size

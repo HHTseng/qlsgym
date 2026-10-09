@@ -1,5 +1,3 @@
-"""qlsgym.env.env -- the batched belief-MDP purification environment."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -7,28 +5,21 @@ from typing import Sequence
 
 import numpy as np
 
+from ..physics.thermal import KB_OVER_HBAR
 from ..spec import Molecule
 from .actions import ActionLibrary
 from .cache import ActionTables
 
-KB_OVER_HBAR = 2.0 * np.pi * 2.0836619123e7   # (rad/ms) / K, as in both source packages
-
 
 @dataclass(frozen=True)
 class EnvConfig:
-    """Stopping rule, budget and reward."""
-
     p_target: float | None = None
     max_pulses: int | None = None
     temperature_k: float | None = None
-    # overlap-penalty weight rho (r_o of Ref. [29]); 0 disables
     rho: float = 1.0
-    # penalise when cos(p_t, p_{t+1}) > threshold; None -> 1 - 1/n_states
     overlap_threshold: float | None = None
-    # 'indicator' (-rho once crossed) or 'proportional' (-rho * cos)
     penalty_mode: str = "indicator"
     step_reward: float = -1.0
-    # branches below this probability are treated as unreachable (float32 noise)
     min_branch_prob: float = 1e-9
 
     def resolve(self, molecule: Molecule) -> "EnvConfig":
@@ -43,17 +34,15 @@ class EnvConfig:
 
 @dataclass
 class Transition:
-    """One environment step for B trajectories (all tensors on the env device)."""
-
-    belief: "torch.Tensor"       # (B, n) float64
-    reward: "torch.Tensor"       # (B,)   float64
-    done: "torch.Tensor"         # (B,)   bool
-    truncated: "torch.Tensor"    # (B,)   bool
-    outcome: "torch.Tensor"      # (B,)   long, 0 or 1
-    s0: "torch.Tensor"           # (B, n) posterior given nu = 0
-    s1: "torch.Tensor"           # (B, n) posterior given nu >= 1
-    pi0: "torch.Tensor"          # (B,)   probability of nu = 0
-    pi1: "torch.Tensor"          # (B,)   probability of nu >= 1
+    belief: "torch.Tensor"
+    reward: "torch.Tensor"
+    done: "torch.Tensor"
+    truncated: "torch.Tensor"
+    outcome: "torch.Tensor"
+    s0: "torch.Tensor"
+    s1: "torch.Tensor"
+    pi0: "torch.Tensor"
+    pi1: "torch.Tensor"
     r0: "torch.Tensor"
     r1: "torch.Tensor"
     done0: "torch.Tensor"
@@ -65,7 +54,6 @@ class Transition:
 
 
 def boltzmann_belief(molecule: Molecule, temperature_k: float | None = None) -> np.ndarray:
-    """Thermal initial belief (paper Eq. 5)."""
     T = molecule.task.temperature_k if temperature_k is None else float(temperature_k)
     try:
         from ..physics.thermal import boltzmann
@@ -77,8 +65,6 @@ def boltzmann_belief(molecule: Molecule, temperature_k: float | None = None) -> 
 
 
 class PurificationEnv:
-    """Batched, table-driven purification cycle (module docstring)."""
-
     def __init__(
         self,
         molecule: Molecule,
@@ -105,13 +91,11 @@ class PurificationEnv:
 
         tdt = torch.float64 if np.dtype(tables.dtype) == np.float64 else torch.float32
         self._tdt = tdt
-        # grid tables: per block (n_grid, 2M, M); index_select on the action axis
         self._T = [torch.as_tensor(np.ascontiguousarray(b), dtype=tdt, device=self.device) for b in tables.blocks]
         self._idx = [torch.as_tensor(b.states, dtype=torch.long, device=self.device) for b in molecule.blocks]
         self._M = [b.n_states for b in molecule.blocks]
         unblocked = np.where(molecule.system.block_of_state < 0)[0]
         self._unblocked = torch.as_tensor(unblocked, dtype=torch.long, device=self.device)
-        # primitive tables: per primitive (2S, S) over its union sector
         self._P = [(torch.as_tensor(p.states, dtype=torch.long, device=self.device),
                     torch.as_tensor(np.ascontiguousarray(p.table), dtype=tdt, device=self.device))
                    for p in tables.primitives]
@@ -131,14 +115,11 @@ class PurificationEnv:
         self.state = self._p_init.expand(self.batch, -1).clone()
         self.steps = torch.zeros(self.batch, dtype=torch.long, device=self.device)
 
-    # construction helpers
-
     @property
     def p_init(self) -> np.ndarray:
         return self._p_init.cpu().numpy().copy()
 
     def clone(self, batch: int) -> "PurificationEnv":
-        """A second view on the same tables with a different batch size."""
         import copy
 
         other = copy.copy(self)
@@ -148,12 +129,7 @@ class PurificationEnv:
         other.reset()
         return other
 
-    # physics
-
     def apply(self, belief, actions):
-        """Unnormalised branches (P0, P1), each (B, n) float64, for belief (B, n) and integer
-        actions (B,).
-        """
         torch = self.torch
         belief = torch.as_tensor(belief, dtype=torch.float64, device=self.device)
         squeeze = belief.dim() == 1
@@ -174,14 +150,13 @@ class PurificationEnv:
         st = belief.to(self._tdt)
         for k in range(len(self._T)):
             idx, m = self._idx[k], self._M[k]
-            mat = self._T[k].index_select(0, a_grid)                    # (B, 2M, M)
+            mat = self._T[k].index_select(0, a_grid)
             res = torch.bmm(mat, st[:, idx].unsqueeze(-1)).squeeze(-1).to(torch.float64)
             out0[:, idx] = res[:, :m]
             out1[:, idx] = res[:, m:]
         if self._unblocked.numel():
             out0[:, self._unblocked] = belief[:, self._unblocked]
         if bool(is_prim.any()):
-            # primitive rows: identity outside the sector, (2S, S) table inside
             out0 = torch.where(is_prim.unsqueeze(-1), belief, out0)
             out1 = torch.where(is_prim.unsqueeze(-1), torch.zeros_like(out1), out1)
             for k, (states, T) in enumerate(self._P):
@@ -189,8 +164,8 @@ class PurificationEnv:
                 if rows.numel() == 0:
                     continue
                 S = states.numel()
-                sub = st[rows][:, states]                                 # (r, S)
-                res = (sub @ T.transpose(0, 1)).to(torch.float64)          # (r, 2S)
+                sub = st[rows][:, states]
+                res = (sub @ T.transpose(0, 1)).to(torch.float64)
                 r0 = out0[rows]; r0[:, states] = res[:, :S]; out0[rows] = r0
                 r1 = out1[rows]; r1[:, states] = res[:, S:]; out1[rows] = r1
         out0 = out0.clamp_min_(0.0)
@@ -200,7 +175,6 @@ class PurificationEnv:
         return out0, out1
 
     def branch_outcomes(self, belief, actions):
-        """Everything one qMDP transition needs, for both outcomes (Eqs. 8-10)."""
         torch = self.torch
         belief = torch.as_tensor(belief, dtype=torch.float64, device=self.device)
         p0, p1 = self.apply(belief, actions)
@@ -233,13 +207,10 @@ class PurificationEnv:
         belief = self.torch.as_tensor(belief, dtype=self.torch.float64, device=self.device)
         return belief.max(-1).values >= self.cfg.p_target
 
-    # driver
-
     def seed(self, seed: int) -> None:
         self.generator.manual_seed(int(seed))
 
     def reset(self, seed: int | None = None, batch: int | None = None):
-        """Return the (B, n) initial belief; reseed the sampler if asked."""
         if batch is not None:
             self.batch = int(batch)
         if seed is not None:
@@ -249,9 +220,6 @@ class PurificationEnv:
         return self.state
 
     def reset_rows(self, mask) -> None:
-        """Put the trajectories selected by the boolean mask (B,) back in the initial belief with a
-        zero pulse count, leaving the others alone.
-        """
         torch = self.torch
         mask = torch.as_tensor(mask, dtype=torch.bool, device=self.device).reshape(-1)
         if mask.shape[0] != self.batch:
@@ -261,7 +229,6 @@ class PurificationEnv:
             self.steps = torch.where(mask, torch.zeros_like(self.steps), self.steps)
 
     def step(self, actions) -> Transition:
-        """Sample one motional outcome per trajectory and advance."""
         torch = self.torch
         actions = torch.as_tensor(actions, dtype=torch.long, device=self.device).reshape(-1)
         if actions.numel() == 1 and self.batch > 1:

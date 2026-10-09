@@ -8,7 +8,12 @@ Hamiltonian and training of neural operators for the dynamic surrogate.
 The package is designed to be modular and extensible, allowing for integration of
  new molecules, action libraries, and dynamics surrogates.
 
-Currently we support the ThF⁺ and H₃O⁺ molecules, and the exact, CUDA-Q or FNO dynamics engines.
+Currently we support the ²³²ThF⁺ (`thf`), ²²⁹ThF⁺ (`thf229`) and H₃O⁺ (`h3o`) molecules, and the exact, CUDA-Q or
+FNO dynamics engines. ²²⁹ThF⁺ (J ≤ 3, two nuclear spins) runs with exact dynamics only; no surrogate is trained for it.
+
+**Status (2026-10-08): ThF⁺ only.** The ThF⁺ model is J ≤ 7 with 8 motional levels, and its first
+surrogate set (tag `mix`, 28 per-block models) is trained. Manifests and checkpoints live under
+`$QLSGYM_WORK`, not in the repo. H₃O⁺ stays as a molecule pack but is not being developed.
 
 ## The problem
 
@@ -23,10 +28,26 @@ The episode ends when one population reaches
 
 ## Hamiltonian Generation and analysis
 
-This repo uses the effective Hamiltonian for the ThF⁺, to generate your Hamiltonian,
-and for further details:
+The ThF⁺ tables in `data/thf/` are built from the effective Hamiltonian package heff
+(https://github.com/arianjad/heff/tree/main) by `qlsgym.molecules.thf_tables`:
 
-https://github.com/arianjad/heff/tree/main
+```bash
+source scripts/env.sh                  # puts $HEFF_ROOT on PYTHONPATH
+python scripts/build_thf_tables.py     # rewrites data/thf/*.txt; every trained surrogate must then be retrained
+python scripts/build_thf229_tables.py  # data/thf229: 229ThF+, heff's rank-2 two-photon operator
+```
+
+`tests/test_thf_tables.py` and `tests/test_thf_physics.py` check the tables and the physics built on them.
+
+## Physical assumptions
+
+Every physical constant and modelling assumption is set in one file,
+[`src/qlsgym/physics.config`](src/qlsgym/physics.config) (TOML), and the code reads it from there:
+the heff table settings (J cutoff, fields, reference Rabi rate), the trap (ν_f, η, motional levels),
+the drive window and pulse grid, the RWA and coupling cutoffs, the carrier masks, the embedding
+constants, the task (temperature, purity target, pulse budget) and the primitive libraries.
+`QLSGYM_PHYSICS_CONFIG=<file>` points the package at another file. A changed value changes the
+molecule's fingerprint, so surrogates trained on the old values refuse to load.
 
 ## Install
 
@@ -34,8 +55,8 @@ https://github.com/arianjad/heff/tree/main
 source scripts/env.sh
 ```
 
-Sets `QLSGYM_ROOT`, `QLSGYM_WORK` (caches; defaults to
-`../CACHE`, and
+Activates the conda env and sets `QLSGYM_ROOT` and `QLSGYM_WORK` (caches, training splits, runs,
+checkpoint manifests; defaults to netscratch, purged after 90 days). For a new env:
 `pip install -e .[gym,fno]` for `gymnasium` and `neuraloperator`/`tensorly`.
 
 ## Quickstart
@@ -56,7 +77,8 @@ env = PurificationEnv(mol, library, tables, batch=64)
 transition = env.step(env.torch.randint(0, library.n_actions, (64,)))
 ```
 
-For the FNO surrogate (instead of exact propagation):
+For the FNO surrogate (instead of exact propagation), once a `mix` manifest has been trained
+(`scripts/train_fno.py` per block, then `scripts/make_manifest.py --molecule thf --tag mix`):
 
 ```python
 import numpy as np
@@ -69,11 +91,11 @@ p0, p1 = engine.branches_all_tau(belief, mol.trap.nu_f, "+")   # (n_tau, n_state
 
 The code also integrates several engines for the dynamics:
 
+| engine | how it gets there |
 |---|---|
 | `ExactEngine` | `eigh` of each block Hamiltonian, then `U(tau)` for the whole tau grid |
-| `CudaqEngine` | `cudaq.evolve` on the `dynamics` (cuDensityMat) |
+| `CudaqEngine` | `cudaq.evolve` on the `dynamics` (cuDensityMat) target: fixed-step RK4 on a GPU |
 | `FnoEngine` | the trained surrogate, with one of the above as fallback |
-
 
 To select one:
 
@@ -83,6 +105,49 @@ from qlsgym.physics.engines import select_engine
 engine = select_engine(mol, tau_indices)       # CUDA-Q if it can run here, else exact
 engine.selection            # {'requested': 'auto', 'selected': ..., 'reason': ...}
 ```
+
+`QLSGYM_ENGINE=auto|cudaq|exact`, `select_engine(prefer=...)` and `benchmark.py --engine` all
+override it: `cudaq` raises rather than falling back, `exact` never probes for a GPU. `auto`
+takes CUDA-Q only when the package is installed, a CUDA device is visible and
+`set_target("dynamics")` succeeds, and prints the engine and the reason either way -- the
+fallback is never silent. The choice, the integrator settings and the RK step count go into the
+benchmark JSON under `engine`.
+
+### How the CUDA-Q engine works
+
+`BlockOperator.build` is affine in the drive frequency, so each sector is registered once as
+`H(omega) = H_ref + (omega - omega_ref) dH/domega` -- two dense matrices shared by every drive on
+that sector, not one per drive. A single `evolve` call per `(sector, sigma, omega)` propagates
+the `nu = 0` basis states along a schedule that *is* the tau grid and keeps the intermediate
+states, so the whole tau library comes from one integration and is then cached like the exact
+engine's columns.
+
+The integrator is fixed-step RK4 and CUDA-Q's own default step diverges here, so the step is
+never left implicit. The knob is `atol`, the population the integration may lose over one pulse
+(default `1e-6`): `step_size` turns it into a step per drive from `||H||_inf` and the pulse
+length, capped by `max_step_size = 3e-5` ms. Every set of columns is checked against that budget
+and a larger loss raises instead of returning a number. Measured against `ExactEngine` over the
+production tau grid, worst block, window edges:
+
+| molecule | dt (ms) | RK steps per drive | norm lost | max abs population error |
+|---|---|---|---|---|
+| H3O+ (dim 128, 4 ms) | 1.7e-5 | 2.3e5 | 1.0e-6 | 2.5e-8 |
+| ThF+ (J ≤ 6, n_nu = 7: dim 182, 6 ms) | 1.7e-7 | 3.6e7 | 1.0e-6 | 3.3e-7 |
+
+### Which one to use
+
+**Exact, today, on both molecules.** Per RK step CUDA-Q costs `O(dim^2 M)` against `O(dim^3)`
+once per tau for `eigh`, so it does `4 n_steps / (n_nu n_tau)` -- about 2300x for H3O+ -- more
+arithmetic, and that ratio does not improve with `dim` because both sides are `O(dim^3)`. At
+FNO_REPL's measured 0.65 ms per RK step on an A100 that is ~150 s per drive for H3O+ and ~6.5 h
+for ThF+, against 0.2 s and 0.5 s for the whole exact tau grid on one CPU core;
+`scripts/slurm/benchmark.sbatch` pins `ENGINE=exact` for that reason.
+
+Nor is memory what it fixes: `operators.define` takes a dense `dim x dim` matrix, and the saved
+all-tau states are the same `O(n_tau dim M)` the exact path already stores. The asymptotic win
+needs the Hamiltonian expressed **sparsely** (ours has `O(dim)` non-zeros), which makes a step
+`O(dim M)` and puts the crossover against `eigh` near `dim ~ 2e3`. Until then CUDA-Q buys a
+workload with no dense eigendecomposition in it, not speed.
 
 A single-trajectory Gymnasium env (`pip install qlsgym[gym]`):
 
@@ -104,26 +169,78 @@ print(result.summary())
 
 ## Benchmark
 
-We played with a few benchmarks to then keep deveoping over:
+One plot, six arms, the comparison of arXiv:2410.11839 Fig. 4c / Fig. S7: the percentage of
+finished episodes against the number of pulses applied. Results and figures land in
+`OUTPUTS/benchmark/<molecule>/` (`QLSGYM_OUTPUTS` moves them elsewhere).
 
-One plot, six methods, the comparison of arXiv:2410.11839 Fig. 4c / Fig. S7:
-the percentage of finished episodes against the number of pulses applied.
+### Runbook
+
+Both molecules run the same way -- the horizon, the surrogate tag and the evaluation mode come
+from the molecule, so only the name changes, and `run` prints the three it resolved:
 
 ```bash
 source scripts/env.sh
-python scripts/benchmark.py run  h3o sweeping         # ~minutes
-python scripts/benchmark.py run  h3o planner-fno      #
-python scripts/benchmark.py run  h3o rl-fno --device cuda
-python scripts/benchmark.py plot h3o                  # OUTPUTS/benchmark/h3o/finished.{png,pdf}
-python scripts/benchmark.py table h3o
+for ARM in sweeping random planner-exact rl-exact rl-fno; do
+  python scripts/benchmark.py run thf "$ARM" --n-episodes 200      # or h3o
+done
+python scripts/benchmark.py plot  thf        # OUTPUTS/benchmark/thf/finished.{png,pdf} + table
+python scripts/benchmark.py table thf
 ```
+
+`planner-fno` is the slow arm (one surrogate call per candidate pulse per step), so it is chunked
+over a SLURM array and merged. Each part takes its own evaluation seed (`SEED + 1000 * part`) and
+`merge` refuses parts that share one:
+
+```bash
+ARM=planner-fno MOL=thf NEPS=20 SEED=880777 sbatch --array=0-9 --partition=sapphire \
+    --time=8:00:00 --cpus-per-task=4 --mem=32G scripts/slurm/benchmark.sbatch
+python scripts/benchmark.py merge thf planner-fno    # thf/planner-fno.part*.json -> planner-fno.json
+python scripts/benchmark.py plot  thf
+```
+
+`benchmark.sbatch` requires `ARM` and `MOL` and defaults everything else; `OUTROOT` is the only
+way results leave `OUTPUTS/benchmark/`. `plot`/`table` never skip an arm quietly: part files with
+no merged `<arm>.json`, and results whose `fingerprint` is not the molecule's current one, are
+reported loudly and left out.
+
+The RL arms want a GPU:
+
+```bash
+ARM=rl-fno MOL=thf NEPS=200 DEVICE=cuda sbatch --partition=gpu \
+    --gres=gpu:nvidia_a100-sxm4-80gb:1 --time=12:00:00 --cpus-per-task=8 --mem=64G \
+    scripts/slurm/benchmark.sbatch
+```
+
+### What differs between the molecules
+
+| | H3O+ | ThF+ |
+|---|---|---|
+| `--max-pulses` (horizon) | 400 | 800 |
+| `physics_subset` library | 167 actions | 416 actions |
+| `--ppo eval_greedy` | `true` | `false` |
+
+* **Horizon.** One full sweep of the action library has to fit, so the horizon is not
+  `molecule.task.max_pulses` (80 for both -- the *task* budget, drawn as the figure's vertical
+  guide). `scripts/slurm/benchmark.sbatch` leaves `MAXPULSES` unset and lets these apply.
+* **Tag.** `mix` unless `--fno-tag` says otherwise; an FNO arm without that manifest refuses to
+  run rather than picking another tag.
+* **Evaluation mode.** The argmax of ThF+'s 312-action stochastic policy (J ≤ 6 model) locks onto a single pulse
+  (0.005 success against 0.985 sampled), so ThF+ is evaluated by sampling. Every run records the
+  mode it used.
+
+### Current numbers
+
+None: the previous results were produced with surrogates that have since been deleted, and will be
+regenerated by the ThF+ pipeline.
 
 ## Repo structure
 
 ```
 src/qlsgym/
   spec.py          the contract: Molecule, Block, TauBatchedEngine
-  molecules/       h3o, thf, synthetic -- build a Molecule from data/
+  physics.config   every physical constant and modelling assumption; read by config.py
+  molecules/       h3o, thf, thf229, synthetic -- build a Molecule from data/; thf_tables and
+                   thf229_tables build data/thf and data/thf229 from heff
   physics/         exact dynamics: hamiltonian, propagate, spectrum, engines, cudaq_engine
   surrogate/       FNO: embedding, model, dataset, train, manifest, in-loop engine
   env/             action library, transfer-matrix cache, PurificationEnv, gym wrapper
@@ -131,12 +248,11 @@ src/qlsgym/
   rl/              PPO
   benchmark/       arm protocol, finished-episodes curve, figure
 
-data/              level energies and two-photon Rabi rates (h3o, thf)
-scripts/           env.sh, train_fno.py, make_manifest.py, benchmark.py, slurm/
+data/              level energies and two-photon Rabi rates (h3o, thf, thf229)
+scripts/           env.sh, build_thf_tables.py, build_thf229_tables.py, train_fno.py, make_manifest.py, benchmark.py, slurm/
 examples/          01 env, 02 baselines, 03 FNO engine
 tests/             pytest suite
-replication/       arXiv:2608.03702 walkthrough; deletable, not part of qlsgym
-OUTPUTS/           benchmark and replication results (JSON + figures)
+OUTPUTS/           benchmark results (JSON + figures), created by scripts/benchmark.py
 ```
 
 Caches, training splits go to `$QLSGYM_WORK`.

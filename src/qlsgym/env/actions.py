@@ -1,5 +1,3 @@
-"""qlsgym.env.actions -- the discrete action space of the belief MDP."""
-
 from __future__ import annotations
 
 import hashlib
@@ -11,13 +9,8 @@ import numpy as np
 from ..spec import SIGMAS, TWO_PI, Action, Molecule
 
 
-# Product control grids (paper Eqs. 23-24, Appendix C.1)
-
-
 @dataclass(frozen=True)
 class ControlGrid:
-    """A product grid sigmas x omegas x tau_indices of in-window pulses."""
-
     omegas: np.ndarray
     tau_indices: np.ndarray
     sigmas: tuple = SIGMAS
@@ -41,8 +34,6 @@ class ControlGrid:
     def n_actions(self) -> int:
         return len(self.sigmas) * self.n_freq * self.n_tau_slots
 
-    # constructors
-
     @staticmethod
     def _tau_defaults(molecule: Molecule, tau_lo, tau_hi, frac_lo: float):
         n_tau = molecule.window.n_tau
@@ -65,16 +56,10 @@ class ControlGrid:
         sigmas: tuple = SIGMAS,
         mask_carrier_bands: bool = True,
     ) -> "ControlGrid":
-        """Eq. 23 grid: frequencies every d_omega_khz across the window, durations every
-        tau_step-th step. Points inside a carrier band are dropped.
-        """
         w = molecule.window
         lo_khz, hi_khz = w.omega_min / TWO_PI, w.omega_max / TWO_PI
         n = int(np.floor((hi_khz - lo_khz) / d_omega_khz + 1e-9)) + 1
         omegas = TWO_PI * (lo_khz + d_omega_khz * np.arange(n))
-        # Round-tripping the bounds through kHz can put the first or last point
-        # one ULP outside the window, which ActionLibrary then refuses; that
-        # happens whenever the window width is an exact multiple of d_omega_khz.
         np.clip(omegas, w.omega_min, w.omega_max, out=omegas)
         if mask_carrier_bands:
             omegas = omegas[mask_carriers(molecule, omegas)]
@@ -94,7 +79,6 @@ class ControlGrid:
         tau_hi: int | None = None,
         mask_carrier_bands: bool = True,
     ) -> "ControlGrid":
-        """Appendix C.1: n_freq uniform frequencies and n_tau_slots equally spaced durations."""
         w = molecule.window
         rng = np.random.default_rng(seed)
         omegas = rng.uniform(w.omega_min, w.omega_max, n_freq)
@@ -113,21 +97,13 @@ class ControlGrid:
 
 
 def mask_carriers(molecule: Molecule, omegas: np.ndarray) -> np.ndarray:
-    """True where omegas is clear of every window.carrier_bands band."""
     ok = np.ones(np.shape(omegas), dtype=bool)
     for lo, hi in molecule.window.carrier_bands:
         ok &= ~((omegas >= lo) & (omegas <= hi))
     return ok
 
 
-# Resonances (the physics-informed subset needs them; kept local so the action
-# library does not depend on the physics package being importable)
-
-
 def resonant_frequencies(molecule: Molecule, block_index: int, sigma: str = "+") -> np.ndarray:
-    """Sideband resonance of every coupling of a block (paper Eq. 3): omega+ = nu_f + (E_f - E_i),
-    omega- = nu_f - (E_f - E_i).
-    """
     b = molecule.blocks[block_index]
     e = molecule.system.energies
     d = e[b.states[b.f_local]] - e[b.states[b.i_local]]
@@ -139,22 +115,15 @@ def resonant_frequencies(molecule: Molecule, block_index: int, sigma: str = "+")
 
 
 def pi_time_ms(molecule: Molecule, rabi: float) -> float:
-    """Blue-sideband pi-time pi / (eta e^{-eta^2/2} |Omega|) in ms."""
     eta = molecule.trap.eta
     return float(np.pi / (eta * np.exp(-eta ** 2 / 2.0) * abs(rabi)))
 
 
 def snap_tau(molecule: Molecule, tau_ms: float) -> int:
-    """Index of the tau-grid point nearest tau_ms."""
     return int(np.argmin(np.abs(molecule.tau_grid() - tau_ms)))
 
 
-# Action library
-
-
 class ActionLibrary:
-    """The integer <-> pulse bijection for one molecule."""
-
     def __init__(
         self,
         molecule: Molecule,
@@ -202,8 +171,6 @@ class ActionLibrary:
             for k, p in enumerate(molecule.primitives):
                 self._prim_lookup.setdefault((p.sigma, round(float(p.omega), 9)), k)
 
-    # constructors
-
     @classmethod
     def from_grid(cls, molecule: Molecule, grid: ControlGrid, include_primitives: bool = True):
         return cls(molecule, grid, include_primitives=include_primitives)
@@ -211,7 +178,6 @@ class ActionLibrary:
     @classmethod
     def from_actions(cls, molecule: Molecule, actions, include_primitives: bool = True,
                      kind: str = "list", meta: dict | None = None):
-        """Explicit list of (sigma, omega, tau_index) triples, in the given order."""
         sig = [str(a[0]) for a in actions]
         om = [float(a[1]) for a in actions]
         ti = [int(a[2]) for a in actions]
@@ -226,10 +192,9 @@ class ActionLibrary:
         omega_min_coupling: float | None = None,
         clip_tau: bool = False,
     ) -> "ActionLibrary":
-        """Port of scripts/baseline_protocol.py::build_actions (ThF+)."""
-        try:  # prefer the physics package's embedding rule when it is there
+        try:
             from ..physics.spectrum import embedding_transitions as _emb
-        except Exception:  # pragma: no cover - exercised only before agent A lands
+        except Exception:  # pragma: no cover
             _emb = None
         w = molecule.window
         omin = w.omega_min_coupling if omega_min_coupling is None else omega_min_coupling
@@ -268,8 +233,6 @@ class ActionLibrary:
                 "couplings": np.asarray(cpl, dtype=np.float64), "blocks": np.asarray(blk, dtype=np.int64)}
         return cls.from_actions(molecule, triples, include_primitives, kind="physics", meta=meta)
 
-    # sizes
-
     @property
     def n_grid(self) -> int:
         return int(self.omegas.size)
@@ -285,8 +248,6 @@ class ActionLibrary:
     def __len__(self) -> int:
         return self.n_actions
 
-    # the bijection
-
     def is_primitive(self, a: int) -> bool:
         a = int(a)
         if not 0 <= a < self.n_actions:
@@ -294,7 +255,6 @@ class ActionLibrary:
         return a >= self.n_grid
 
     def primitive_tau_index(self, k: int) -> int:
-        """Row of the tau grid nearest the primitive's own duration."""
         return snap_tau(self.molecule, self.molecule.primitives[k].tau_ms)
 
     def decode(self, a: int) -> Action:
@@ -316,7 +276,6 @@ class ActionLibrary:
         try:
             return self._lookup[key]
         except KeyError:
-            # an off-window (sigma, omega) matching a primitive is that primitive
             pk = self._prim_lookup.get((str(action.sigma), round(float(action.omega), 9)))
             if pk is not None:
                 return self.n_grid + pk
@@ -335,15 +294,9 @@ class ActionLibrary:
             yield self.decode(a)
 
     def indices_of_tau(self, tau_index: int) -> np.ndarray:
-        """Grid action indices at one tau slot (e.g. to restrict a policy)."""
         return np.where(self.tau_indices == int(tau_index))[0]
 
-    # grouping by drive (what an engine call answers)
-
     def drives(self) -> list:
-        """Unique grid (sigma, omega) pairs in first-occurrence order, each with the action indices
-        and tau indices it serves: [(sigma, omega, action_idx (k,), tau_idx (k,)), ...].
-        """
         order, groups = [], {}
         for a, (s, w) in enumerate(zip(self.sigmas, self.omegas)):
             key = (str(s), round(float(w), 9))
@@ -357,12 +310,7 @@ class ActionLibrary:
             out.append((key[0], w, idx, self.tau_indices[idx]))
         return out
 
-    # identity
-
     def tag(self) -> str:
-        """Content hash of the action list (and of the molecule's physics), used as the cache
-        directory name.
-        """
         h = hashlib.sha256()
         h.update(self.molecule.fingerprint().encode())
         h.update("".join(self.sigmas.tolist()).encode())
@@ -372,7 +320,6 @@ class ActionLibrary:
         return h.hexdigest()[:16]
 
     def describe(self) -> dict:
-        """JSON-able summary for cache manifests."""
         d = {"kind": self.kind, "n_grid": self.n_grid, "n_primitives": self.n_primitives,
              "n_actions": self.n_actions, "tag": self.tag(),
              "sigmas": sorted(set(self.sigmas.tolist())),

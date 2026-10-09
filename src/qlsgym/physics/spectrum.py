@@ -1,5 +1,3 @@
-"""Sideband resonances, embedding transitions and carrier bands."""
-
 from __future__ import annotations
 
 import numpy as np
@@ -12,7 +10,6 @@ def _block(molecule: Molecule, block) -> Block:
 
 
 def resonant_frequencies(molecule: Molecule, block, sigma: str = "+") -> np.ndarray:
-    """Sideband resonance omega^(+/-) of each coupling in the block (Eq. 3)."""
     b = _block(molecule, block)
     e = molecule.system.energies
     d_omega = e[b.states[b.f_local]] - e[b.states[b.i_local]]
@@ -32,7 +29,6 @@ def embedding_transitions(
     omega_lo: float | None = None,
     omega_hi: float | None = None,
 ) -> np.ndarray:
-    """Indices (into the block's coupling list) retained by the embedding."""
     w = molecule.window
     delta_max = float(molecule.provenance.get("delta_max", 1.0e4)) if delta_max is None else delta_max
     omega_min_coupling = w.omega_min_coupling if omega_min_coupling is None else omega_min_coupling
@@ -47,16 +43,12 @@ def embedding_transitions(
 
 
 def resonance_geometry(molecule: Molecule, block_index, sigma: str = "+"):
-    """(omega_res, hwhm) of the retained (embedding) transitions of one block; the half-linewidth
-    is eta |Omega_q| in rad/ms.
-    """
     b = _block(molecule, block_index)
     idx = embedding_transitions(molecule, b, sigma)
     return resonant_frequencies(molecule, b, sigma)[idx], molecule.trap.eta * np.abs(b.omega[idx])
 
 
 def resonance_distance(molecule: Molecule, omegas, block_index, sigma: str = "+") -> np.ndarray:
-    """min_q |omega_res,q - omega| / (eta |Omega_q|) -- distance in HWHM."""
     w_res, lw = resonance_geometry(molecule, block_index, sigma)
     om = np.atleast_1d(np.asarray(omegas, dtype=np.float64))
     if w_res.size == 0:
@@ -66,7 +58,6 @@ def resonance_distance(molecule: Molecule, omegas, block_index, sigma: str = "+"
 
 def is_on_resonance(molecule: Molecule, omegas, block_index, sigma: str = "+",
                     n_linewidths: float = 1.0) -> np.ndarray:
-    """Boolean mask: within n_linewidths HWHM of a retained transition."""
     return resonance_distance(molecule, omegas, block_index, sigma) <= n_linewidths
 
 
@@ -78,7 +69,6 @@ def carrier_bands(
     omega_lo: float | None = None,
     omega_hi: float | None = None,
 ) -> np.ndarray:
-    """Drive bands where a *carrier* is resonant -- (n, 2) of (lo, hi) rad/ms."""
     s = molecule.system
     w = molecule.window
     lo = w.omega_min if omega_lo is None else omega_lo
@@ -94,7 +84,6 @@ def carrier_bands(
 
 
 def mask_carriers(omegas, bands) -> np.ndarray:
-    """Boolean mask, True where omegas is clear of every (lo, hi) band."""
     om = np.asarray(omegas, dtype=np.float64)
     ok = np.ones(om.shape, dtype=bool)
     for lo, hi in bands:
