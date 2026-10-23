@@ -50,7 +50,7 @@ def cmd_run(a) -> None:
         f"eval_greedy {ppo.eval_greedy} (molecule defaults unless given on the command line)")
     cfg = BenchmarkConfig(
         molecule=a.molecule, library=a.library, n_episodes=a.n_episodes, seed=a.seed,
-        max_pulses=max_pulses, p_target=a.p_target, fno_tag=fno_tag, device=a.device,
+        max_pulses=max_pulses, p_target=a.p_target, fno_tag=fno_tag, exact_from_tables=a.exact_from_tables, device=a.device,
         engine=a.engine,
         n_pool=(None if a.n_pool in ("none", "None") else int(a.n_pool)), delta_s=a.delta_s,
         score=_typed(ScoreConfig, a.score), rho=a.rho, penalty_mode=a.penalty_mode,
@@ -123,6 +123,8 @@ def main() -> None:
     r.add_argument("--max-pulses", type=int, default=None,
                    help="episode horizon; default per molecule (h3o 400, thf 800)")
     r.add_argument("--p-target", type=float, default=None)
+    r.add_argument("--exact-from-tables", action="store_true",
+                   help="serve exact dynamics to the planners from the precomputed exact action tables")
     r.add_argument("--fno-tag", default=None,
                    help="surrogate manifest tag; default 'mix'")
     r.add_argument("--device", default="cpu")

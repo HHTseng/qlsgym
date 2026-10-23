@@ -23,7 +23,7 @@ def block_runs(work: str, tag: str, sigmas: tuple = ("+", "-"), blocks=range(12)
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--molecule", required=True, choices=["thf", "h3o", "synthetic"])
+    ap.add_argument("--molecule", required=True, choices=["thf", "thf229", "h3o", "synthetic"])
     ap.add_argument("--tag", required=True, help="the --tag the runs were trained with")
     ap.add_argument("--note", default="", help="free text stored in the manifest")
     ap.add_argument("--checkpoint", default="best_onres.pt", help="checkpoint file inside each run")

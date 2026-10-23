@@ -13,12 +13,13 @@ from qlsgym.surrogate.train import TrainConfig, evaluate_run, load_model, train
 
 def parse_args(argv=None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--molecule", default="thf", choices=["thf", "h3o", "synthetic"])
+    ap.add_argument("--molecule", default="thf", choices=["thf", "thf229", "h3o", "synthetic"])
     ap.add_argument("--block", type=int, required=True)
     ap.add_argument("--sigma", default="+", choices=["+", "-"])
     ap.add_argument("--tag", default="run", help="names the output directory "
                     "(<tag>_<sp|sm>_block<b> under $QLSGYM_WORK/runs, unless --out)")
     ap.add_argument("--out", default=None, help="output directory; overrides --tag's default")
+    ap.add_argument("--overwrite", action="store_true", help="allow replacing a finished run in the output directory")
 
     g = ap.add_argument_group("training data (qlsgym.surrogate.dataset.DataConfig)")
     g.add_argument("--alpha", type=float, default=1.0, help="Dirichlet concentration; "
@@ -94,6 +95,8 @@ def main(argv=None) -> None:
 
     out_dir = args.out or os.path.join(
         work_dir(), "runs", f"{args.tag}_{'sp' if args.sigma == '+' else 'sm'}_block{args.block}")
+    if os.path.exists(os.path.join(out_dir, "summary.json")) and not args.overwrite:
+        raise SystemExit(f"{out_dir} already holds a finished run; pick another --tag/--out or pass --overwrite")
     os.makedirs(out_dir, exist_ok=True)
 
     fno_cfg = FNOConfig(n_modes=args.n_modes, hidden_channels=args.hidden_channels, n_layers=args.n_layers,

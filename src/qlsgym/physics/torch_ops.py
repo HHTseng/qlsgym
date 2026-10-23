@@ -77,8 +77,8 @@ def propagator_columns(h: torch.Tensor, taus: torch.Tensor, n_cols: int | None =
     evals, evecs = torch.linalg.eigh(h)
     phases = torch.exp(-1j * taus.to(evals.dtype)[None, :, None] * evals[:, None, :])
     n_cols = h.shape[-1] if n_cols is None else n_cols
-    w = evecs[:, None, :, :] * phases[:, :, None, :]
-    return w @ evecs[:, None, :n_cols, :].conj().transpose(-1, -2)
+    right = evecs[:, :n_cols, :].conj().transpose(-1, -2)
+    return evecs[:, None, :, :] @ (phases[:, :, :, None] * right[:, None, :, :])
 
 
 _TORCH_OPS: dict = {}
@@ -128,7 +128,7 @@ def transfer_columns(
         taus_np = taus_np[np.asarray(tau_indices, dtype=np.int64)]
     taus = torch.as_tensor(taus_np, dtype=torch.float64, device=dev)
     n_tau, m, n_nu = taus.numel(), op.n_states, op.n_nu
-    per_freq = max(1, n_tau * (n_nu * m) ** 2 * 16)
+    per_freq = max(1, 3 * n_tau * (n_nu * m) * m * 16 + 2 * (n_nu * m) ** 2 * 16)
     chunk = max(1, min(256, int(chunk_bytes // per_freq)))
     out = torch.empty((om.numel(), n_tau, 2 * m, m), dtype=out_dtype, device=dev)
     for lo in range(0, om.numel(), chunk):

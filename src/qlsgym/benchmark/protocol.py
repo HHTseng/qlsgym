@@ -41,6 +41,7 @@ class BenchmarkConfig:
     max_pulses: int | None = None
     p_target: float | None = None
     fno_tag: str = "mix"
+    exact_from_tables: bool = False
     device: str = "cpu"
     engine: str = "auto"
     n_pool: int | None = 16
@@ -286,7 +287,12 @@ def run_arm(arm: str, cfg: BenchmarkConfig, log=None, progress: bool = False) ->
     elif arm == "random":
         policy = RandomPolicy(library.n_actions)
     elif arm.startswith("planner-"):
-        ref = default_engine(cfg, molecule, taus, log=say)
+        if cfg.exact_from_tables:
+            from ..physics.engines import ActionTableEngine
+            ref = ActionTableEngine(molecule, library, env.tables, taus)
+            say("[benchmark] exact dynamics served from the exact action tables")
+        else:
+            ref = default_engine(cfg, molecule, taus, log=say)
         if arm == "planner-exact":
             engine = ref
         elif arm == "planner-identity":

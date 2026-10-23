@@ -5,7 +5,7 @@ import numpy as np
 from ..spec import Block, Molecule
 from .hamiltonian import BlockOperator, lump, make_operator, operator
 
-__all__ = ["propagator_series", "transfer_matrix", "transfer_matrix_for_operator",
+__all__ = ["propagator_series", "propagator_column_series", "transfer_matrix", "transfer_matrix_for_operator",
            "population_trajectories"]
 
 
@@ -15,10 +15,17 @@ def propagator_series(h: np.ndarray, taus: np.ndarray) -> np.ndarray:
     return (evecs[None, :, :] * phases[:, None, :]) @ evecs.conj().T
 
 
+def propagator_column_series(h: np.ndarray, taus: np.ndarray, n_cols: int) -> np.ndarray:
+    evals, evecs = np.linalg.eigh(h)
+    phases = np.exp(-1j * np.outer(np.asarray(taus, dtype=np.float64), evals))
+    right = evecs[:n_cols, :].conj().T
+    return evecs[None, :, :] @ (phases[:, :, None] * right[None, :, :])
+
+
 def transfer_matrix_for_operator(op: BlockOperator, omega: float, taus: np.ndarray) -> np.ndarray:
     m = op.n_states
-    u = propagator_series(op.build(float(omega)), taus)
-    return lump(np.abs(u[:, :, :m]) ** 2, m)
+    u = propagator_column_series(op.build(float(omega)), taus, m)
+    return lump(np.abs(u) ** 2, m)
 
 
 def transfer_matrix(

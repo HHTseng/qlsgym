@@ -10,7 +10,7 @@ from .hamiltonian import rwa_sectors
 from .propagate import transfer_matrix
 from .spectrum import is_on_resonance
 
-__all__ = ["ExactEngine", "TorchExactEngine", "TrivialEngine", "NoisyExactEngine",
+__all__ = ["ExactEngine", "TorchExactEngine", "TrivialEngine", "NoisyExactEngine", "ActionTableEngine",
            "TableEngine", "BlockSubstituteEngine", "select_engine", "engine_choice", "ENGINE_ENV"]
 
 ENGINE_ENV = "QLSGYM_ENGINE"
@@ -370,6 +370,66 @@ class TableEngine(_EngineBase):
             tables[(sigma, float(omega))] = [(sec.states, engine.columns(sec, sigma, float(omega)))
                                              for sec in engine.sectors(sigma, float(omega))]
         return cls(engine.molecule, tables, engine.tau_indices)
+
+
+class ActionTableEngine(_EngineBase):
+    def __init__(self, molecule: Molecule, library, tables, tau_indices):
+        super().__init__(molecule, tau_indices)
+        self.library = library
+        self.blocks = [np.asarray(t) for t in tables.blocks]
+        self.primitives = list(tables.primitives)
+        self._row = {int(t): k for k, t in enumerate(self.tau_indices)}
+        self._grid: dict = {}
+        for sg, w, idx, ti in library.drives():
+            self._grid[(str(sg), round(float(w), 6))] = (np.asarray(idx), np.asarray([self._row[int(t)] for t in ti]))
+        self._prim: dict = {}
+        for k, q in enumerate(molecule.primitives):
+            self._prim[(q.sigma, round(float(q.omega), 6))] = k
+        self._cache_key = None
+        self._cache = None
+        self.stats = {"grid_drive": 0, "primitive": 0}
+
+    def _all_actions(self, p_in):
+        key = p_in.tobytes()
+        if key != self._cache_key:
+            self._cache = [t @ p_in[b.states] for t, b in zip(self.blocks, self.molecule.blocks)]
+            self._cache_key = key
+        return self._cache
+
+    def branches_batch(self, p_in, omegas, sigma):
+        p_in = np.asarray(p_in, dtype=np.float64)
+        omegas = np.asarray(omegas, dtype=np.float64).ravel()
+        nt, ns = self.tau_indices.size, p_in.size
+        out0 = np.tile(p_in, (omegas.size, nt, 1))
+        out1 = np.zeros((omegas.size, nt, ns))
+        res = None
+        for i, w in enumerate(omegas):
+            key = (str(sigma), round(float(w), 6))
+            if key in self._grid:
+                self.stats["grid_drive"] += 1
+                res = res if res is not None else self._all_actions(p_in)
+                acts, rows = self._grid[key]
+                for b, r in zip(self.molecule.blocks, res):
+                    m = b.n_states
+                    v = r[acts]
+                    out0[i][np.ix_(rows, b.states)] = v[:, :m]
+                    out1[i][np.ix_(rows, b.states)] = v[:, m:]
+            elif key in self._prim:
+                self.stats["primitive"] += 1
+                k = self._prim[key]
+                pt = self.primitives[k]
+                row = self._row[int(pt.tau_index)]
+                s_ = np.asarray(pt.states)
+                v = np.asarray(pt.table, dtype=np.float64) @ p_in[s_]
+                out0[i, row, s_] = v[:s_.size]
+                out1[i, row, s_] = v[s_.size:]
+            else:
+                raise KeyError(f"no exact table for sigma={sigma!r}, omega={w!r}")
+        return out0, out1
+
+    def branches_all_tau(self, p_in, omega, sigma):
+        a, c = self.branches_batch(p_in, np.array([float(omega)]), sigma)
+        return a[0], c[0]
 
 
 def engine_choice(prefer: str | None = None) -> str:

@@ -283,3 +283,9 @@ def test_render_marks_the_task_budget(tmp_path):
     paths = render(recs, str(tmp_path / "fig"), budget=10)
     assert all(os.path.exists(p) for p in paths)
     assert render(recs, str(tmp_path / "fig2"), budget=30)
+
+
+def test_exact_from_tables_reproduces_exact_planning(synthetic_cfg):
+    a = run_arm("planner-exact", synthetic_cfg)
+    b = run_arm("planner-exact", replace(synthetic_cfg, exact_from_tables=True))
+    assert a["lengths"] == b["lengths"] and a["successes"] == b["successes"]

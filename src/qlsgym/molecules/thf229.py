@@ -7,12 +7,13 @@ from pathlib import Path
 import numpy as np
 
 from ..config import molecule_config
-from ..spec import Block, Molecule, System, Task, Trap, Window, TWO_PI
-from .thf import read_rabi_file, read_table_header
+from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_PI
+from .thf import _with_sector_blocks, read_rabi_file, read_table_header
 
 CONFIG = molecule_config("thf229")
 _TAB, _TRAP, _WIN = CONFIG["tables"], CONFIG["trap"], CONFIG["window"]
 _EMB, _TASK = CONFIG["embedding"], CONFIG["task"]
+_PRIM = CONFIG.get("primitives", {"n": 0, "max_delta_j": 2, "dedupe_khz": 1.0})
 
 J_MAX = int(_TAB["j_max"])
 B_FIELD_GAUSS = float(_TAB["b_field_gauss"])
@@ -115,8 +116,68 @@ def build_system(levels_file, rabi_file) -> System:
     return System(tuple(levels), energies, i_idx, f_idx, omega_c, tuple(blocks), block_of_state)
 
 
+def reachable_states(molecule: Molecule) -> np.ndarray:
+    w = molecule.window
+    eta, nu_f = molecule.trap.eta, molecule.trap.nu_f
+    out = np.zeros(molecule.n_states, dtype=bool)
+    for b in molecule.blocks:
+        d = molecule.system.energies[b.states[b.f_local]] - molecule.system.energies[b.states[b.i_local]]
+        om = np.abs(b.omega)
+        pi_time = np.pi / np.maximum(eta * np.exp(-eta ** 2 / 2.0) * om, 1e-300)
+        for w_res in (nu_f + d, nu_f - d):
+            ok = (w_res >= w.omega_min) & (w_res <= w.omega_max) & (om >= w.omega_min_coupling) & (pi_time <= w.tau_max_ms)
+            out[b.states[b.i_local[ok]]] = True
+            out[b.states[b.f_local[ok]]] = True
+    return out
+
+
+def cross_block_primitives(molecule: Molecule, n_primitives: int = int(_PRIM["n"]),
+                           max_delta_j: int = int(_PRIM["max_delta_j"]),
+                           dedupe_khz: float = float(_PRIM["dedupe_khz"])) -> tuple:
+    from ..physics.thermal import boltzmann
+
+    s, w = molecule.system, molecule.window
+    eta, nu_f = molecule.trap.eta, molecule.trap.nu_f
+    lv = s.levels
+    p_th = boltzmann(molecule)
+    reach = reachable_states(molecule)
+    cands: dict = {}
+    for k in range(s.omega_c.size):
+        i, f = int(s.i_idx[k]), int(s.f_idx[k])
+        if s.block_of_state[i] == s.block_of_state[f] or abs(lv[f][0] - lv[i][0]) > max_delta_j:
+            continue
+        om = abs(s.omega_c[k])
+        if om < w.omega_min_coupling:
+            continue
+        tau_pi = np.pi / (eta * np.exp(-eta ** 2 / 2.0) * om)
+        if tau_pi > w.tau_max_ms:
+            continue
+        d = float(s.energies[f] - s.energies[i])
+        for sigma, freq, src, tgt in (("+", nu_f + d, i, f), ("-", nu_f - d, f, i)):
+            if w.contains(freq) or not reach[tgt]:
+                continue
+            cands.setdefault(src, []).append((om, sigma, freq, src, tgt, tau_pi))
+    order = sorted(cands, key=lambda q: (bool(reach[q]), -p_th[q]))
+    out: list = []
+    for src in order:
+        if len(out) >= n_primitives:
+            break
+        for om, sigma, freq, src_, tgt, tau_pi in sorted(cands[src], key=lambda c: -c[0]):
+            if any(p.sigma == sigma and abs(p.omega - freq) < TWO_PI * dedupe_khz for p in out):
+                continue
+            ls, lt = lv[src_], lv[tgt]
+            label = (f"sigma{sigma} |J={ls[0]} F1={ls[1]:g} F={ls[2]:g} {ls[3]} m={ls[4]:+g}> -> "
+                     f"|J={lt[0]} F1={lt[1]:g} F={lt[2]:g} {lt[3]} m={lt[4]:+g}>  w/2pi={freq / TWO_PI / 1e6:+.5f} GHz "
+                     f"|Om|/2pi={om / TWO_PI:.2f} kHz pi={tau_pi:.2f} ms src_pop={p_th[src_]:.4f} "
+                     f"{'unreachable source' if not reach[src_] else 'populated source'}")
+            out.append(Primitive(label, sigma, freq, tau_pi, (), source=src_, target=tgt))
+            break
+    return tuple(out)
+
+
 def build(n_nu: int = N_NU, temperature_k: float = T_INT_K, max_pulses: int = int(_TASK["max_pulses"]),
-          p_target: float = float(_TASK["p_target"]), levels_file=None, rabi_file=None) -> Molecule:
+          p_target: float = float(_TASK["p_target"]), levels_file=None, rabi_file=None,
+          n_primitives: int = int(_PRIM["n"])) -> Molecule:
     ddir = data_dir()
     lf = Path(levels_file) if levels_file else ddir / LEVELS_FILE
     rf = Path(rabi_file) if rabi_file else ddir / RABI_FILE
@@ -136,11 +197,14 @@ def build(n_nu: int = N_NU, temperature_k: float = T_INT_K, max_pulses: int = in
         "heff_git_rev": hdr["heff_git_rev"], "heff_spec_hash": hdr["heff_spec_hash"],
         "reference_rabi_khz": float(_TAB["reference_rabi_khz"]),
         "delta_max": DELTA_MAX, "s_emb": window.s_emb, "beta_emb": window.beta_emb,
-        "primitives": "none",
+        "primitives": f"cross_block_primitives(n_primitives={n_primitives})",
     }
     from ..physics.spectrum import carrier_bands
     mol = Molecule("thf229", system, trap, window, task, (), provenance)
     bands = tuple(tuple(map(float, b)) for sg in ("+", "-") for b in carrier_bands(
         mol, sg, half_width_khz=float(_WIN["carrier_half_width_khz"]),
         min_coupling=TWO_PI * float(_WIN["carrier_min_coupling_khz"])))
-    return dataclasses.replace(mol, window=dataclasses.replace(window, carrier_bands=bands))
+    mol = dataclasses.replace(mol, window=dataclasses.replace(window, carrier_bands=bands))
+    if n_primitives > 0:
+        mol = dataclasses.replace(mol, primitives=_with_sector_blocks(mol, cross_block_primitives(mol, n_primitives)))
+    return mol
