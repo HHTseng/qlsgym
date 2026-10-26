@@ -1,5 +1,3 @@
-"""qlsgym.policies.baselines -- the reference policies."""
-
 from __future__ import annotations
 
 import collections
@@ -16,16 +14,10 @@ from .score import ScoreConfig, score_batch
 @runtime_checkable
 class Policy(Protocol):
     def act(self, belief: np.ndarray, t: int, rng: np.random.Generator):
-        """Action index (int), a Action, or None."""
         ...
 
 
-# trivial baselines
-
-
 class SweepingPolicy:
-    """Deterministic cycle through the library: action t mod n_actions."""
-
     stateful = False
 
     def __init__(self, n_actions: int):
@@ -39,8 +31,6 @@ class SweepingPolicy:
 
 
 class RandomPolicy:
-    """Uniform over the library (draws from the rollout's generator)."""
-
     stateful = False
 
     def __init__(self, n_actions: int):
@@ -54,9 +44,6 @@ class RandomPolicy:
 
 
 def yield_table(library: ActionLibrary, tables: ActionTables) -> np.ndarray:
-    """q[a, s] = population of state s that action a moves into nu >= 1 (column sums of the nu >= 1
-    half of each table).
-    """
     n = library.molecule.n_states
     q = np.zeros((library.n_actions, n))
     for b, T in zip(library.molecule.blocks, tables.blocks):
@@ -69,15 +56,11 @@ def yield_table(library: ActionLibrary, tables: ActionTables) -> np.ndarray:
 
 
 class DescendingPopulationPolicy:
-    """Address the most populated state with the action that best empties it into nu >= 1 (old gym
-    descending_population).
-    """
-
     stateful = False
 
     def __init__(self, library: ActionLibrary, tables: ActionTables):
         q = yield_table(library, tables)
-        self.best_action = np.argmax(q, axis=0).astype(np.int64)      # (n_states,)
+        self.best_action = np.argmax(q, axis=0).astype(np.int64)
         self.selectivity = q[self.best_action, np.arange(q.shape[1])]
 
     def act(self, belief, t, rng):
@@ -87,19 +70,14 @@ class DescendingPopulationPolicy:
         return self.best_action[np.argmax(beliefs, axis=1)]
 
 
-# ThF+ physics-designed elimination rule
-
-
 def _expected_purity_best_tau(engine, p, omega, sigma):
     a, c = engine.branches_all_tau(p, float(omega), sigma)
-    val = np.asarray(a).max(1) + np.asarray(c).max(1)     # Pi_nu cancels against 1/Pi_nu
+    val = np.asarray(a).max(1) + np.asarray(c).max(1)
     k = int(np.argmax(val))
     return int(np.asarray(engine.tau_indices)[k]), float(val[k])
 
 
 class PhysicsEliminationPolicy:
-    """Port of baseline_protocol.py::choose (module docstring)."""
-
     stateful = True
 
     def __init__(self, molecule: Molecule, library: ActionLibrary, eps: float = 1e-4, n_cand: int = 3,
@@ -121,12 +99,11 @@ class PhysicsEliminationPolicy:
         lad_ids = {L: i for i, L in enumerate(sorted(set(self.ladder)))}
         self._lad_index = np.asarray([lad_ids[L] for L in self.ladder])
         self._lad_list = sorted(set(self.ladder))
-        # per-ladder candidate actions in library (= script) order
         self.actions: dict = collections.defaultdict(list)
         src, tgt, cpl = library.meta["sources"], library.meta["targets"], library.meta["couplings"]
         for a in range(library.n_grid):
             sg = str(library.sigmas[a])
-            gi = int(src[a]) if sg == "+" else int(tgt[a])      # the sigma+ source keys the ladder
+            gi = int(src[a]) if sg == "+" else int(tgt[a])
             self.actions[self.ladder[gi]].append(
                 (a, sg, float(library.omegas[a]), int(library.tau_indices[a]), int(src[a]), int(tgt[a]), float(cpl[a])))
         self.actions = dict(self.actions)
@@ -136,7 +113,6 @@ class PhysicsEliminationPolicy:
 
     @staticmethod
     def ladder_of(level) -> tuple:
-        """(J, F, parity) of a level tuple (J, F, parity, m_F, ...)."""
         return (level[0], level[1], level[2])
 
     def reset(self):
@@ -152,7 +128,6 @@ class PhysicsEliminationPolicy:
         np.add.at(mass_arr, self._lad_index, p)
         mass = {L: float(mass_arr[i]) for i, L in enumerate(self._lad_list)}
 
-        # 1. strip one of the heaviest ladders that is not the one we are keeping
         others = sorted(((m, L) for L, m in mass.items() if L != home and m > eps and L in self.actions),
                         reverse=True)
         best = None
@@ -175,7 +150,6 @@ class PhysicsEliminationPolicy:
             self.why = f"strip {L} (mass {m:.3f}) with sigma{a[1]}"
             return self._emit(a, ti)
 
-        # 2. nothing else left: concentrate inside the home ladder
         cand = [a for a in self.actions.get(home, []) if p[a[4]] > eps and a[4] != star]
         if cand:
             a = max(cand, key=lambda a: (p[a[4]], a[6]))
@@ -183,7 +157,6 @@ class PhysicsEliminationPolicy:
             self.why = f"collapse {home} rung {self.molecule.system.levels[a[4]][3]:+.1f}"
             return self._emit(a, ti)
 
-        # 3. the remaining population is dark to every in-window pulse -> primitive
         dark = sorted(((p[s], k) for k, s in self.prims if p[s] > eps and s != star), reverse=True,
                       key=lambda x: x[0])
         if dark:
@@ -199,12 +172,7 @@ class PhysicsEliminationPolicy:
         return Action(a[1], a[2], int(ti), -1)
 
 
-# Eq. 25 closed-loop planner
-
-
 class ScorePlannerPolicy:
-    """Port of baseline_protocol.py::choose_by_score (module docstring)."""
-
     stateful = False
 
     def __init__(self, engine: TauBatchedEngine, library: ActionLibrary, cfg: ScoreConfig | None = None,
@@ -219,7 +187,6 @@ class ScorePlannerPolicy:
         self.cfg = cfg if cfg is not None else ScoreConfig().for_molecule(library.molecule)
         self.calls = 0
         eng_rows = {int(t): i for i, t in enumerate(np.asarray(engine.tau_indices))}
-        # drive -> (omega, sigma, [(engine_row, action_index)])
         drives: dict = {}
         for sg, w, a_idx, t_idx in library.drives():
             key = (round(float(w), 6), sg)
@@ -245,7 +212,7 @@ class ScorePlannerPolicy:
 
     def act(self, p, t, rng):
         p = np.asarray(p, dtype=np.float64)
-        cands: list = []                       # (value, pick) per drive, in visiting order
+        cands: list = []
         for sg, ws, rows_list in self._groups:
             P0, P1 = branches_batch_fallback(self.engine, p, ws, sg)
             self.calls += int(ws.size)
@@ -253,11 +220,14 @@ class ScorePlannerPolicy:
                 sc = score_batch(p, np.asarray(a), np.asarray(c), self.cfg)
                 if self.tau_mode == "library":
                     r = np.asarray([r for r, _ in rows])
-                    j = int(np.argmax(sc[r]))
-                    cands.append((float(sc[r[j]]), rows[j][1]))
+                    if self.n_pool is not None:
+                        cands.extend((float(sc[row]), action) for row, action in rows)
+                    else:
+                        j = int(np.argmax(sc[r]))
+                        cands.append((float(sc[r[j]]), rows[j][1]))
                 else:
-                    k = int(np.argmax(sc))
-                    cands.append((float(sc[k]), (sg, float(w), int(self._eng_tau[k]), rows)))
+                    indices = range(len(sc)) if self.n_pool is not None else [int(np.argmax(sc))]
+                    cands.extend((float(sc[k]), (sg, float(w), int(self._eng_tau[k]), rows)) for k in indices)
         if not cands:
             return None
         pick = self._choose(cands, rng)
@@ -265,7 +235,7 @@ class ScorePlannerPolicy:
             sg, w, ti, rows = pick
             prim = rows[0][1] - self.library.n_grid if rows and rows[0][1] >= self.library.n_grid else -1
             act = Action(sg, w, ti, prim)
-            try:                      # return the index when the library has it
+            try:
                 a = self.library.encode(act)
                 if self.library.decode(a).tau_index == ti:
                     return a
@@ -277,7 +247,7 @@ class ScorePlannerPolicy:
     def _choose(self, cands: list, rng):
         vals = np.asarray([v for v, _ in cands])
         if self.n_pool is None:
-            return cands[int(np.argmax(vals))][1]          # first maximum, as the script
+            return cands[int(np.argmax(vals))][1]
         order = np.argsort(-vals, kind="stable")
         pool = set(order[:self.n_pool].tolist())
         pool.update(np.where(vals >= vals[order[0]] - self.delta_s)[0].tolist())

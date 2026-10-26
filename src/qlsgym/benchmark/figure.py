@@ -1,27 +1,23 @@
-"""The finished-episodes figure (arXiv:2410.11839 Fig. 4c / Fig. S7 layout)."""
-
 from __future__ import annotations
 
 import os
 
-# arm -> (colour, linestyle, class)
 STYLE = {
     "sweeping": ("C4", ":", "baseline"),
     "random": ("C1", ":", "baseline"),
     "planner-exact": ("C2", "--", "exact dynamics"),
+    "planner-identity": ("C3", ":", "no Raman dynamics"),
     "planner-fno": ("C2", "-", "surrogate in the loop"),
     "rl-exact": ("C0", "--", "exact dynamics"),
     "rl-fno": ("C0", "-", "surrogate in the loop"),
 }
 DEFAULT_STYLE = ("k", "-", "unknown")
-# guides: thin, light grey, solid -- deliberately unlike every arm
 GUIDE_COLOUR = "0.78"
 GUIDE_WIDTH = 0.8
 BUDGET_COLOUR = "0.55"
 
 
 def style_legend(results: list | None = None) -> str:
-    """The colour/linestyle -> arm mapping, for the terminal table."""
     arms = [r["arm"] for r in results] if results else list(STYLE)
     lines = [f"{'arm':>14s}  {'colour':>7s}  {'style':>5s}  class"]
     for arm in arms:
@@ -35,16 +31,8 @@ def style_legend(results: list | None = None) -> str:
 
 def draw(ax, results: list, frac: float = 0.85, budget: int | None = None,
          legend: bool = True) -> None:
-    """Draw the curves on ax.
-
-    A legend names the curves and is the one piece of text the figure needs:
-    without it the reader cannot tell the arms apart, which is content, not
-    decoration.  Everything else stays off the image -- no title, no caption,
-    no annotation.  `legend=False` for the bare curves.
-    """
     import numpy as np
 
-    # guides first, so every arm is drawn over them
     ax.axhline(100.0 * frac, color=GUIDE_COLOUR, linestyle="-", linewidth=GUIDE_WIDTH, zorder=1)
     if budget is not None and results and budget < max(len(r["curve"]) for r in results) - 1:
         ax.axvline(budget, color=BUDGET_COLOUR, linestyle="-", linewidth=GUIDE_WIDTH, zorder=1)
@@ -65,7 +53,6 @@ def draw(ax, results: list, frac: float = 0.85, budget: int | None = None,
 
 def render(results: list, out_stem: str, frac: float = 0.85, budget: int | None = None,
            legend: bool = True) -> list:
-    """Write <out_stem>.png and .pdf from run_arm records."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -81,7 +68,6 @@ def render(results: list, out_stem: str, frac: float = 0.85, budget: int | None 
 
 
 def table(results: list) -> str:
-    """One line per arm: success, mean pulses, P85 -- then the figure's style mapping."""
     lines = [f"{'arm':>14s}  {'success':>8s}  {'pulses':>7s}  {'P85':>4s}  {'n':>5s}"]
     for r in results:
         p85 = "-" if r.get("p85") is None else str(r["p85"])

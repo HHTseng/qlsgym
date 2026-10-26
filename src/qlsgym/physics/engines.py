@@ -1,5 +1,3 @@
-"""Implementations of qlsgym.spec.TauBatchedEngine."""
-
 from __future__ import annotations
 
 import os
@@ -20,8 +18,6 @@ CHOICES = ("auto", "cudaq", "exact")
 
 
 class _EngineBase:
-    """Shared bookkeeping: tau grid, sector dispatch, per-drive column cache."""
-
     def __init__(self, molecule: Molecule, tau_indices=None):
         self.molecule = molecule
         n_tau = molecule.window.n_tau
@@ -30,12 +26,10 @@ class _EngineBase:
         if self.tau_indices.size and (self.tau_indices.min() < 0 or self.tau_indices.max() >= n_tau):
             raise ValueError(f"tau_indices must lie in [0, {n_tau})")
         self.taus = molecule.tau_grid()[self.tau_indices]
-        # maps a global tau index to its row in the subsampled outputs
         self._row = {int(t): k for k, t in enumerate(self.tau_indices)}
         self._cache: dict = {}
         self._sectors_cache: dict = {}
 
-    # dispatch
     @property
     def n_states(self) -> int:
         return self.molecule.n_states
@@ -48,9 +42,6 @@ class _EngineBase:
         return self.molecule.window.contains(float(omega))
 
     def primitive_for(self, omega: float, sigma: str | None = None) -> Primitive | None:
-        """The molecule primitive whose omega matches (relative 1e-9); sigma narrows the match when
-        several share a frequency.
-        """
         best = None
         for p in self.molecule.primitives:
             if abs(p.omega - omega) <= 1e-9 * max(1.0, abs(p.omega)):
@@ -60,9 +51,6 @@ class _EngineBase:
         return best
 
     def sectors(self, sigma: str, omega: float) -> tuple:
-        """Independently propagated sectors at this drive: the blocks in-window, the RWA sectors at
-        a primitive frequency.
-        """
         omega = float(omega)
         if self.in_window(omega):
             return self.molecule.blocks
@@ -78,13 +66,11 @@ class _EngineBase:
             self._sectors_cache[key] = sec
         return sec
 
-    # columns
     def _compute_columns(self, sector: Block, sigma: str, omega: float) -> np.ndarray:
         return transfer_matrix(self.molecule, sector if sector.index < 0 else int(sector.index),
                                omega, sigma, self.tau_indices)
 
     def columns(self, sector: Block, sigma: str, omega: float) -> np.ndarray:
-        """(len(tau_indices), 2 M, M) lumped transfer columns, cached per (sector, sigma, omega)."""
         key = (int(sector.index), tuple(sector.key), sigma, float(omega))
         t = self._cache.get(key)
         if t is None:
@@ -93,7 +79,6 @@ class _EngineBase:
         return t
 
     def exact_branches_all_tau(self, p_in, omega, sigma):
-        """Exact (P0, P1) over tau_indices through the sectors of this drive."""
         p_in = np.asarray(p_in, dtype=np.float64)
         nt = self.tau_indices.size
         out0 = np.tile(p_in, (nt, 1))
@@ -102,7 +87,7 @@ class _EngineBase:
             sub = p_in[sec.states]
             if sub.sum() <= 0.0:
                 continue
-            t = self.columns(sec, sigma, omega)                 # (nt, 2M, M)
+            t = self.columns(sec, sigma, omega)
             out = t @ sub
             m = sec.n_states
             out0[:, sec.states] = out[:, :m]
@@ -110,22 +95,17 @@ class _EngineBase:
         return out0, out1
 
     def branches(self, p_in, omega, sigma, tau_index: int):
-        """Single-duration convenience: (P0, P1) at global tau_index."""
         a, c = self.branches_all_tau(p_in, omega, sigma)
         r = self._row[int(tau_index)]
         return a[r], c[r]
 
 
 class ExactEngine(_EngineBase):
-    """Ground truth: exact block (or sector) propagators in numpy."""
-
     def branches_all_tau(self, p_in, omega, sigma):
         return self.exact_branches_all_tau(p_in, omega, sigma)
 
 
 class TorchExactEngine(_EngineBase):
-    """Exact propagation through qlsgym.physics.torch_ops."""
-
     def __init__(self, molecule: Molecule, device="cpu", tau_indices=None, chunk_bytes: float = 2.0e9):
         super().__init__(molecule, tau_indices)
         import torch
@@ -144,7 +124,6 @@ class TorchExactEngine(_EngineBase):
         return self.exact_branches_all_tau(p_in, omega, sigma)
 
     def branches_batch(self, p_in, omegas, sigma):
-        """(P0, P1), each (n_omega, len(tau_indices), n_states)."""
         import torch
         from .torch_ops import transfer_columns
         omegas = np.asarray(omegas, dtype=np.float64).reshape(-1)
@@ -160,7 +139,7 @@ class TorchExactEngine(_EngineBase):
             if sub.sum() <= 0.0:
                 continue
             t = transfer_columns(self.molecule, b.index, omegas, sigma, self.tau_indices,
-                                 self.device, torch.float64, self.chunk_bytes)     # (W, nt, 2M, M)
+                                 self.device, torch.float64, self.chunk_bytes)
             out = (t @ torch.as_tensor(sub, dtype=torch.float64, device=self.device)).cpu().numpy()
             m = b.n_states
             out0[:, :, b.states] = out[:, :, :m]
@@ -168,12 +147,7 @@ class TorchExactEngine(_EngineBase):
         return out0, out1
 
 
-# Counterfactual engines (ThF control_engines, referee response Sec. VI)
-
-
 class BlockSubstituteEngine(ExactEngine):
-    """Exact engine with in-window pulses replaced on selected blocks."""
-
     kind = "substitute"
 
     def __init__(self, molecule: Molecule, tau_indices=None, blocks=None, sigmas=("+",)):
@@ -188,7 +162,6 @@ class BlockSubstituteEngine(ExactEngine):
         return self.calls["substituted"] / tot if tot else float("nan")
 
     def _substitute_block(self, b: int, sub: np.ndarray, omega: float) -> np.ndarray:
-        """(len(tau_indices), 2 M) populations, summing to sub.sum."""
         raise NotImplementedError
 
     def branches_all_tau(self, p_in, omega, sigma):
@@ -222,8 +195,6 @@ class BlockSubstituteEngine(ExactEngine):
 
 
 class TrivialEngine(BlockSubstituteEngine):
-    """p(tau) = p(0): the static baseline, in the planning loop."""
-
     kind = "trivial"
 
     def _substitute_block(self, b: int, sub: np.ndarray, omega: float) -> np.ndarray:
@@ -234,8 +205,6 @@ class TrivialEngine(BlockSubstituteEngine):
 
 
 class NoisyExactEngine(BlockSubstituteEngine):
-    """Exact propagation on the substituted blocks, plus calibrated error."""
-
     kind = "noisy"
 
     def __init__(self, molecule: Molecule, tau_indices=None, blocks=None, sigmas=("+",),
@@ -285,7 +254,6 @@ class NoisyExactEngine(BlockSubstituteEngine):
         return self.rel_l1_on if on else self.rel_l1_off
 
     def _noise_field(self, b: int, omega: float, shape, kind: str = "n") -> np.ndarray:
-        """Deterministic field for (block, omega), keyed on the frequency rounded to 1e-6 rad/ms."""
         key = (b, int(round(float(omega) * 1e6)), kind)
         f = self._field.get(key)
         if f is None or f.shape != tuple(shape):
@@ -298,7 +266,7 @@ class NoisyExactEngine(BlockSubstituteEngine):
         m = sub.size
         mass = float(sub.sum())
         sigma = self._current_sigma
-        out = self.columns(self.molecule.blocks[b], sigma, omega) @ sub      # (nt, 2M)
+        out = self.columns(self.molecule.blocks[b], sigma, omega) @ sub
 
         h = self.halluc_nu1.get(b, 0.0)
         if h > 0.0:
@@ -352,12 +320,7 @@ class NoisyExactEngine(BlockSubstituteEngine):
         return out * (mass / s)
 
 
-# Dense tables
-
-
 class TableEngine(_EngineBase):
-    """Engine backed by pre-computed lumped transfer tables."""
-
     def __init__(self, molecule: Molecule, tables: dict, tau_indices=None):
         super().__init__(molecule, tau_indices)
         self.tables = {}
@@ -402,7 +365,6 @@ class TableEngine(_EngineBase):
 
     @classmethod
     def from_engine(cls, engine: _EngineBase, pulses) -> "TableEngine":
-        """Tabulate pulses (iterable of (sigma, omega)) from an exact engine's sectors and columns."""
         tables = {}
         for sigma, omega in pulses:
             tables[(sigma, float(omega))] = [(sec.states, engine.columns(sec, sigma, float(omega)))
@@ -410,11 +372,7 @@ class TableEngine(_EngineBase):
         return cls(engine.molecule, tables, engine.tau_indices)
 
 
-# Which engine the gym reaches for
-
-
 def engine_choice(prefer: str | None = None) -> str:
-    """"auto" (CUDA-Q when it can run), "cudaq" or "exact", from prefer, else $QLSGYM_ENGINE."""
     c = str(prefer if prefer is not None else os.environ.get(ENGINE_ENV, "auto")).strip().lower()
     if c not in CHOICES:
         raise ValueError(f"engine must be one of {CHOICES}, got {c!r}")
@@ -422,11 +380,6 @@ def engine_choice(prefer: str | None = None) -> str:
 
 
 def select_engine(molecule: Molecule, tau_indices=None, prefer: str | None = None, log=None):
-    """The default dynamics engine, with the choice and its reason on engine.selection.
-
-    "auto" takes CudaqEngine when CUDA-Q, a GPU and the dynamics target are all there, and
-    ExactEngine otherwise; the fallback is announced, never silent.
-    """
     choice = engine_choice(prefer)
     if choice == "exact":
         return _announce(ExactEngine(molecule, tau_indices=tau_indices), choice, "asked for", log)

@@ -1,4 +1,3 @@
-"""Table cache provenance: exact arms must never load surrogate-probed tables."""
 import json
 import os
 
@@ -26,13 +25,10 @@ def test_cache_refuses_tables_built_by_a_different_builder(setup, tmp_path):
     d = tables_dir(mol, lib, str(tmp_path))
     with open(os.path.join(d, "manifest.json")) as fh:
         assert json.load(fh)["builder"] == "engine:FakeEngine"
-    # the cache path is keyed on (molecule, fingerprint, library tag) only, so without
-    # the builder check the next "exact" caller would silently reuse these tables
     with pytest.raises(RuntimeError, match="builder|built by"):
         build_action_tables(mol, lib, out_dir=str(tmp_path))
     with pytest.raises(RuntimeError, match="built by"):
         load_action_tables(mol, lib, out_dir=str(tmp_path), builder_prefix="physics:")
-    # asking for what is actually there still works
     assert load_action_tables(mol, lib, out_dir=str(tmp_path), builder_prefix="engine:") is not None
 
 
@@ -40,7 +36,7 @@ def test_physics_tables_round_trip_through_the_builder_check(setup, tmp_path):
     mol, lib = setup
     t = build_action_tables(mol, lib, out_dir=str(tmp_path))
     assert t.manifest["builder"].startswith("physics:")
-    again = build_action_tables(mol, lib, out_dir=str(tmp_path))       # cache hit, no error
+    again = build_action_tables(mol, lib, out_dir=str(tmp_path))
     assert again.manifest["builder"] == t.manifest["builder"]
     with pytest.raises(RuntimeError, match="built by"):
         load_action_tables(mol, lib, out_dir=str(tmp_path), builder_prefix="engine:FakeEngine")

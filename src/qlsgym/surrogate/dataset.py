@@ -1,5 +1,3 @@
-"""Ground-truth data generation for the FNO surrogate, one (molecule, block, sigma) at a time."""
-
 from __future__ import annotations
 
 import hashlib
@@ -11,24 +9,19 @@ import numpy as np
 import torch
 
 from ..spec import Molecule
-from .embedding import TorchEmbedding, resonance_geometry_of
+from .embedding import TorchEmbedding, embedding_delta_max, resonance_geometry_of
 from .metrics import is_on_resonance
 
 Tensor = torch.Tensor
 
 
 def work_dir() -> str:
-    """$QLSGYM_WORK (set by scripts/env.sh), else ~/.qlsgym."""
     return os.environ.get("QLSGYM_WORK") or os.path.expanduser("~/.qlsgym")
-
-
-# Initial states
 
 
 def random_mixed_populations(
     n_states: int, n_samples: int, rng: np.random.Generator, alpha: float = 1.0
 ) -> np.ndarray:
-    """(n_samples, n_states) random points on the probability simplex."""
     if alpha > 0:
         return rng.dirichlet(np.full(n_states, alpha), size=n_samples)
     lo = float(alpha)
@@ -36,11 +29,7 @@ def random_mixed_populations(
     return np.stack([rng.dirichlet(np.full(n_states, ai)) for ai in a])
 
 
-# Frequency sampling
-
-
 def mask_carriers(molecule: Molecule, omegas: np.ndarray) -> np.ndarray:
-    """Boolean mask, True where omegas is clear of every window.carrier_bands entry."""
     ok = np.ones(np.shape(omegas), dtype=bool)
     for lo, hi in molecule.window.carrier_bands:
         ok &= ~((omegas >= lo) & (omegas <= hi))
@@ -55,7 +44,6 @@ def sample_frequencies(
     hi: float | None = None,
     mask_carrier_bands: bool = True,
 ) -> np.ndarray:
-    """Uniform drive frequencies in [lo, hi] (default: the window), sorted."""
     w = molecule.window
     lo = w.omega_min if lo is None else float(lo)
     hi = w.omega_max if hi is None else float(hi)
@@ -81,7 +69,6 @@ def resonant_frequency_sample(
     hi: float | None = None,
     max_tries: int = 200,
 ) -> np.ndarray:
-    """n frequencies within n_linewidths HWHM of a retained transition."""
     w = molecule.window
     lo = w.omega_min if lo is None else float(lo)
     hi = w.omega_max if hi is None else float(hi)
@@ -113,7 +100,6 @@ def off_resonant_frequency_sample(
     hi: float | None = None,
     max_tries: int = 200,
 ) -> np.ndarray:
-    """n uniform frequencies that are *not* on resonance (rejection)."""
     w = molecule.window
     lo = w.omega_min if lo is None else float(lo)
     hi = w.omega_max if hi is None else float(hi)
@@ -134,8 +120,6 @@ def off_resonant_frequency_sample(
 
 @dataclass(frozen=True)
 class DataConfig:
-    """How one split is drawn."""
-
     n_freq: int = 1000
     n_init: int = 1000
     n_pairs: int | None = None
@@ -149,14 +133,12 @@ class DataConfig:
     omega_hi: float | None = None
 
     def key(self) -> str:
-        """Short hash naming the split on disk."""
         return hashlib.sha256(json.dumps(asdict(self), sort_keys=True).encode()).hexdigest()[:10]
 
 
 def sample_training_frequencies(
     molecule: Molecule, block_index: int, cfg: DataConfig, rng: np.random.Generator, sigma: str = "+"
 ) -> np.ndarray:
-    """Draw the drive frequencies of a split according to cfg.freq_sampling."""
     if cfg.freq_sampling == "uniform":
         return sample_frequencies(molecule, cfg.n_freq, rng, cfg.omega_lo, cfg.omega_hi)
     if cfg.freq_sampling == "mixture":
@@ -186,9 +168,6 @@ def pair_indices(cfg: DataConfig, rng: np.random.Generator) -> tuple[np.ndarray,
     raise ValueError(f"unknown pairing {cfg.pairing!r}")
 
 
-# Ground truth
-
-
 def transfer_columns(
     molecule: Molecule,
     block_index: int,
@@ -198,7 +177,6 @@ def transfer_columns(
     out_dtype: torch.dtype = torch.float64,
     **kw,
 ) -> Tensor:
-    """(n_omega, P_tau, 2 M_f, M_f) nu = 0 columns of T(tau), the FNO's exact reference."""
     from ..physics.torch_ops import transfer_columns as _tc
 
     return _tc(molecule, block_index, omegas, sigma, tau_indices=None,
@@ -206,27 +184,23 @@ def transfer_columns(
 
 
 def trajectories_from_columns(t0: Tensor, p0: Tensor) -> Tensor:
-    """p(tau) = T0(tau) p0."""
     return (t0 * p0[..., None, None, :]).sum(-1)
 
 
 def activity_weights(p_true: Tensor, lam: float = 1.0, eps: float = 1e-8) -> Tensor:
-    """Eqs. 19-20: A_b = max_r |p_b(tau_r) - p_b(tau_1)|, w_b = 1 + lam A_b / (max A + eps)."""
     a = (p_true - p_true[..., :1, :]).abs().amax(dim=-2)
     return 1.0 + lam * a / (a.amax(dim=-1, keepdim=True) + eps)
 
 
 @dataclass
 class BlockSplit:
-    """One materialised split, resident on storage_device."""
-
-    omegas: Tensor          # (n_freq,) float64
-    p0: Tensor              # (n_init, M_f) float64
-    pair_freq: Tensor       # (n_pairs,) int64
-    pair_init: Tensor       # (n_pairs,) int64
-    x: Tensor               # (n_pairs, M_f + Q + 1, P_tau) float32
-    p_true: Tensor          # (n_pairs, P_tau, 2 M_f) float32
-    weights: Tensor         # (n_pairs, 2 M_f) float32
+    omegas: Tensor
+    p0: Tensor
+    pair_freq: Tensor
+    pair_init: Tensor
+    x: Tensor
+    p_true: Tensor
+    weights: Tensor
     config: DataConfig
     block_index: int = -1
     sigma: str = "+"
@@ -263,7 +237,6 @@ def build_split(
     freq_chunk: int | None = None,
     storage_device: torch.device | str | None = None,
 ) -> BlockSplit:
-    """Draw a split and materialise its FNO inputs and exact targets."""
     rng = np.random.default_rng(cfg.seed)
     block = molecule.blocks[block_index]
     m = block.n_states
@@ -291,13 +264,11 @@ def build_split(
         if sel.numel() == 0:
             continue
         t0 = transfer_columns(molecule, block_index, omegas[lo:hi], sigma, device=device,
-                              out_dtype=torch.float64)                       # (chunk, P, 2M, M)
+                              out_dtype=torch.float64)
         p_true[sel.to(store)] = trajectories_from_columns(
             t0[pair_freq[sel] - lo], p0[pair_init[sel]]).to(dtype=torch.float32, device=store)
         del t0
 
-    # The embedding is evaluated in float64 and only then cast, so it is built
-    # in pair-chunks to keep the float64 intermediate off the memory budget.
     x = torch.empty((n_pairs, emb.n_channels, n_tau), dtype=torch.float32, device=store)
     pair_chunk = max(1, int(2.0e8 // max(emb.n_channels * n_tau, 1)))
     for lo in range(0, n_pairs, pair_chunk):
@@ -308,16 +279,18 @@ def build_split(
                       int(block_index), sigma, molecule.fingerprint())
 
 
-# On disk
-
-
 def dataset_dir(molecule: Molecule, work: str | None = None) -> str:
     return os.path.join(work or work_dir(), "data", molecule.name, molecule.fingerprint())
 
 
-def split_path(molecule: Molecule, block_index: int, sigma: str, cfg: DataConfig, work: str | None = None) -> str:
+def split_path(molecule: Molecule, block_index: int, sigma: str, cfg: DataConfig, work: str | None = None,
+               activity_lambda: float = 1.0, activity_eps: float = 1e-8) -> str:
     s = "sp" if sigma == "+" else "sm"
-    return os.path.join(dataset_dir(molecule, work), f"block{int(block_index)}_{s}_{cfg.key()}.pt")
+    recipe = {"data": asdict(cfg), "s_emb": molecule.window.s_emb, "beta_emb": molecule.window.beta_emb,
+              "delta_max": embedding_delta_max(molecule),
+              "activity": [float(activity_lambda), float(activity_eps)]}
+    key = hashlib.sha256(json.dumps(recipe, sort_keys=True).encode()).hexdigest()[:10]
+    return os.path.join(dataset_dir(molecule, work), f"block{int(block_index)}_{s}_{key}.pt")
 
 
 def save_split(path: str, split: BlockSplit) -> None:
@@ -338,8 +311,8 @@ def build_or_load_split(
     molecule: Molecule, block_index: int, cfg: DataConfig, sigma: str = "+", device="cpu",
     storage_device=None, work: str | None = None, cache: bool = True, **kw,
 ) -> BlockSplit:
-    """build_split, memoised under split_path."""
-    path = split_path(molecule, block_index, sigma, cfg, work)
+    path = split_path(molecule, block_index, sigma, cfg, work,
+                      kw.get("activity_lambda", 1.0), kw.get("activity_eps", 1e-8))
     store = storage_device if storage_device is not None else device
     if cache and os.path.exists(path):
         return load_split(path, store)

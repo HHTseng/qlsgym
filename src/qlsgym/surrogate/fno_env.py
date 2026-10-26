@@ -1,5 +1,3 @@
-"""An env whose covered blocks are propagated by the FNO on the belief the agent holds."""
-
 from __future__ import annotations
 
 import numpy as np
@@ -12,8 +10,6 @@ from .fno_engine import FnoEngine
 
 
 class FnoEnv(PurificationEnv):
-    """PurificationEnv with the surrogate in the step."""
-
     def __init__(self, molecule: Molecule, library: ActionLibrary, tables: ActionTables,
                  engine: FnoEngine, cfg: EnvConfig | None = None, device: str = "cpu",
                  batch: int = 1, p_init: np.ndarray | None = None):
@@ -30,17 +26,14 @@ class FnoEnv(PurificationEnv):
         self._row_tau = np.asarray([pos[int(t)] for t in library.tau_indices], dtype=np.int64)
         self._row_sigma = np.asarray(library.sigmas, dtype=object)
         self._row_omega = np.asarray(library.omegas, dtype=np.float64)
-        # (block, sigma) the surrogate answers for, in block order
         self._covered = sorted(engine.trained)
         if not self._covered:
             raise ValueError("this manifest covers no (block, sigma); there is nothing to substitute")
 
     def substituted_fraction(self) -> float:
-        """Share of this env's block propagations that went through the network."""
         return self.engine.surrogate_fraction()
 
     def apply(self, belief, actions):
-        """Exact everywhere, then the covered blocks replaced by the surrogate."""
         torch = self.torch
         out0, out1 = super().apply(belief, actions)
         belief_t = torch.as_tensor(belief, dtype=torch.float64, device=self.device)
@@ -63,7 +56,7 @@ class FnoEnv(PurificationEnv):
                 m = states.size
                 res = self.engine.block_branches(b_index, sigma, p[np.ix_(rows, states)],
                                                  self._row_omega[a[rows]])
-                take = res[np.arange(rows.size), self._row_tau[a[rows]]]        # (r, 2M)
+                take = res[np.arange(rows.size), self._row_tau[a[rows]]]
                 idx_r = torch.as_tensor(rows, dtype=torch.long, device=self.device)[:, None]
                 idx_s = torch.as_tensor(states, dtype=torch.long, device=self.device)[None, :]
                 out0[idx_r, idx_s] = torch.as_tensor(np.ascontiguousarray(take[:, :m]),

@@ -1,5 +1,3 @@
-"""qlsgym.env.cache -- precomputed transfer matrices for an action library."""
-
 from __future__ import annotations
 
 import datetime as _dt
@@ -15,18 +13,18 @@ from .actions import ActionLibrary
 
 @dataclass
 class PrimitiveTable:
-    states: np.ndarray        # (S,) sorted global indices of the union sector
-    table: np.ndarray         # (2S, S) lumped transfer matrix at the primitive's tau
-    tau_index: int            # row of the tau grid used
-    blocks: tuple = ()        # block indices in the sector
+    states: np.ndarray
+    table: np.ndarray
+    tau_index: int
+    blocks: tuple = ()
 
 
 @dataclass
 class ActionTables:
     fingerprint: str
     library_tag: str
-    blocks: list                    # per block: (n_grid, 2M, M)
-    primitives: list                # list[PrimitiveTable]
+    blocks: list
+    primitives: list
     manifest: dict = field(default_factory=dict)
 
     @property
@@ -58,21 +56,16 @@ class ActionTables:
             raise RuntimeError("primitive count mismatch")
 
 
-# helpers
-
-
 def work_dir() -> str:
     return os.environ.get("QLSGYM_WORK", os.path.join(os.path.expanduser("~"), "qlsgym_work"))
 
 
 def tables_dir(molecule: Molecule, library: ActionLibrary, out_dir: str | None = None) -> str:
-    """<out_dir or $QLSGYM_WORK/cache>/<name>/<fingerprint>/<library tag>."""
     root = out_dir if out_dir is not None else os.path.join(work_dir(), "cache")
     return os.path.join(root, molecule.name, molecule.fingerprint(), library.tag())
 
 
 def primitive_sector(molecule: Molecule, k: int) -> np.ndarray:
-    """Sorted union of the states of the blocks a primitive couples."""
     p = molecule.primitives[k]
     if not p.blocks:
         raise ValueError(f"primitive {k} ({p.label}) declares no blocks")
@@ -80,7 +73,6 @@ def primitive_sector(molecule: Molecule, k: int) -> np.ndarray:
 
 
 def _engine_rows(engine: TauBatchedEngine, needed: np.ndarray) -> np.ndarray:
-    """Map global tau indices to rows of the engine's branches_all_tau output."""
     eng = np.asarray(engine.tau_indices, dtype=np.int64)
     pos = {int(t): i for i, t in enumerate(eng)}
     try:
@@ -114,12 +106,8 @@ def _primitive_table_from_engine(molecule: Molecule, library: ActionLibrary, eng
     return PrimitiveTable(states, T.astype(dtype), ti, tuple(int(b) for b in p.blocks))
 
 
-# generic builder (any engine)
-
-
 def tables_from_engine(molecule: Molecule, library: ActionLibrary, engine: TauBatchedEngine,
                        dtype=np.float32, progress: bool = False) -> ActionTables:
-    """Build tables by probing engine with unit vectors (module docstring)."""
     n = molecule.n_states
     blocks = molecule.blocks
     n_grid = library.n_grid
@@ -149,14 +137,8 @@ def tables_from_engine(molecule: Molecule, library: ActionLibrary, engine: TauBa
                         _manifest(molecule, library, out, prims, "engine:" + type(engine).__name__))
 
 
-# production builder (physics package)
-
-
 def tables_from_physics(molecule: Molecule, library: ActionLibrary, device: str = "cpu",
                         dtype=np.float32, progress: bool = False, chunk: int = 256) -> ActionTables:
-    """Grid tables via physics.torch_ops.transfer_columns (batched over omega, chunked so a 35
-    280-action grid fits in memory) and primitive tables via the exact engine.
-    """
     import torch
 
     from ..physics.engines import ExactEngine
@@ -166,11 +148,9 @@ def tables_from_physics(molecule: Molecule, library: ActionLibrary, device: str 
     blocks = molecule.blocks
     out = [np.zeros((n_grid, 2 * b.n_states, b.n_states), dtype=dtype) for b in blocks]
     tdt = torch.float64 if np.dtype(dtype) == np.float64 else torch.float32
-    # group actions by sigma, then unique omega; every action of one drive
-    # shares the propagator and differs only in the tau row gathered.
     for sigma in sorted(set(library.sigmas.tolist())):
         sel = np.where(library.sigmas == sigma)[0]
-        om_r = np.round(library.omegas[sel], 9)
+        om_r = library.omegas[sel]
         uniq, inv = np.unique(om_r, return_inverse=True)
         need_tau = np.unique(library.tau_indices[sel])
         pos = {int(t): i for i, t in enumerate(need_tau)}
@@ -180,7 +160,7 @@ def tables_from_physics(molecule: Molecule, library: ActionLibrary, device: str 
             in_chunk = (inv >= lo) & (inv < lo + chunk)
             for b in blocks:
                 cols = transfer_columns(molecule, b.index, omegas, sigma, tau_indices=need_tau,
-                                        device=device, out_dtype=tdt)        # (n_w, n_t, 2M, M)
+                                        device=device, out_dtype=tdt)
                 cols = cols.detach().cpu().numpy()
                 out[b.index][sel[in_chunk]] = cols[inv[in_chunk] - lo, t_rows[in_chunk]]
             if progress:
@@ -214,9 +194,6 @@ def _manifest(molecule, library, blocks, prims, builder: str) -> dict:
     }
 
 
-# disk
-
-
 def save_action_tables(tables: ActionTables, d: str) -> str:
     os.makedirs(d, exist_ok=True)
     for i, b in enumerate(tables.blocks):
@@ -247,7 +224,6 @@ def build_action_tables(
     overwrite: bool = False,
     write: bool = True,
 ) -> ActionTables:
-    """Build (or reuse) the tables of library and write them under tables_dir."""
     d = tables_dir(molecule, library, out_dir)
     want = "physics:" if engine is None else f"engine:{type(engine).__name__}"
     if write and not overwrite and os.path.exists(os.path.join(d, "manifest.json")):
@@ -264,7 +240,6 @@ def build_action_tables(
 
 def load_action_tables(molecule: Molecule, library: ActionLibrary, out_dir: str | None = None,
                        mmap: bool = True, builder_prefix: str | None = None) -> ActionTables:
-    """Memory-map the tables of library; fingerprint/tag/builder mismatch is an error."""
     d = tables_dir(molecule, library, out_dir)
     mpath = os.path.join(d, "manifest.json")
     if not os.path.exists(mpath):

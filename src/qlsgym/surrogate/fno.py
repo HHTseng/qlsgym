@@ -1,5 +1,3 @@
-"""The per-block FNO surrogate (paper Sec. II.3, Eqs. 16-17; Appendix B)."""
-
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -12,8 +10,6 @@ from ..spec import Molecule
 
 @dataclass(frozen=True)
 class FNOConfig:
-    """Paper Table 2, architecture rows."""
-
     n_modes: int = 60
     hidden_channels: int = 256
     n_layers: int = 4
@@ -22,14 +18,10 @@ class FNOConfig:
     factorization: str = "tucker"
     rank: float = 0.8
     domain_padding: float = 0.1
-    # Not specified in the paper; neuralop's default is a concatenated
-    # coordinate grid, which is what an out-of-the-box FNO uses.
     positional_embedding: str | None = "grid"
 
 
 class BlockFNO(nn.Module):
-    """FNO surrogate G_theta^(f) for one Hamiltonian block and one sigma."""
-
     def __init__(
         self,
         in_channels: int,
@@ -42,7 +34,7 @@ class BlockFNO(nn.Module):
         n_nu: int | None = None,
     ) -> None:
         super().__init__()
-        from neuralop.models import FNO   # heavy import; only needed here
+        from neuralop.models import FNO
 
         cfg = config or FNOConfig()
         self.config = cfg
@@ -75,7 +67,6 @@ class BlockFNO(nn.Module):
         sigma: str = "+",
         config: FNOConfig | None = None,
     ) -> "BlockFNO":
-        """Instantiate with the channel counts implied by the block geometry."""
         from .embedding import block_shapes
 
         m, _q, n_in = block_shapes(molecule, block_index, sigma)
@@ -84,18 +75,15 @@ class BlockFNO(nn.Module):
                    n_nu=int(molecule.trap.n_nu))
 
     def logits(self, x: torch.Tensor) -> torch.Tensor:
-        """Raw (B, 2 M_f, P_tau) network output, before normalisation."""
         return self.net(x)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Predicted populations, normalised at each time step (Sec. II.3)."""
         return torch.softmax(self.net(x), dim=1)
 
     def n_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
     def metadata(self) -> dict:
-        """What a checkpoint records about this model."""
         return {
             "in_channels": self.in_channels,
             "out_channels": self.out_channels,

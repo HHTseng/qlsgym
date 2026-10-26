@@ -1,4 +1,3 @@
-"""A tiny random molecule for unit tests: 2-3 small blocks, a few couplings, one primitive."""
 from __future__ import annotations
 import numpy as np
 from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_PI
@@ -6,14 +5,14 @@ from ..spec import Block, Molecule, Primitive, System, Task, Trap, Window, TWO_P
 
 def build(seed: int = 0, block_sizes=(4, 3, 3), n_nu: int = 2, n_tau: int = 16) -> Molecule:
     rng = np.random.default_rng(seed)
-    nu_f = TWO_PI * 1000.0                      # rad/ms
+    nu_f = TWO_PI * 1000.0
     n = int(sum(block_sizes))
-    energies = np.cumsum(rng.uniform(TWO_PI * 5, TWO_PI * 40, n))   # spread ladder, rad/ms
+    energies = np.cumsum(rng.uniform(TWO_PI * 5, TWO_PI * 40, n))
     levels, blocks, i_idx, f_idx, om, bos = [], [], [], [], [], np.full(n, -1)
     off = 0
     for bi, M in enumerate(block_sizes):
         states = np.arange(off, off + M)
-        il, fl = np.arange(M - 1), np.arange(1, M)              # nearest-neighbour chain
+        il, fl = np.arange(M - 1), np.arange(1, M)
         w = rng.uniform(TWO_PI * 1.0, TWO_PI * 3.0, M - 1) * np.exp(1j * rng.uniform(0, TWO_PI, M - 1))
         blocks.append(Block(bi, states, (bi, "+"), il, fl, w))
         levels += [(bi, k) for k in range(M)]

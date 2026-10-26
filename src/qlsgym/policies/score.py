@@ -1,5 +1,3 @@
-"""qlsgym.policies.score -- the one-step pulse score of arXiv:2410.11839 Eq. 25."""
-
 from __future__ import annotations
 
 import math
@@ -10,13 +8,11 @@ import numpy as np
 
 @dataclass(frozen=True)
 class ScoreConfig:
-    """Weights and functional choices for Eq. 25 (module docstring)."""
-
     w_tr: float = 0.5
     w_br: float = 1.5
     w1_scale: float = 1.0
-    br_mode: str = "expected"       # 'expected' | 'best' | 'success' | 'progress'
-    success_width: float = 0.005    # width of the soft threshold ('success', 'progress')
+    br_mode: str = "expected"
+    success_width: float = 0.005
     p_target: float = 0.98
     eps: float = 1e-12
 
@@ -31,7 +27,6 @@ def _clears(q, cfg: ScoreConfig):
 
 def score_terms(p_in: np.ndarray, p0: np.ndarray, p1: np.ndarray,
                 cfg: ScoreConfig = ScoreConfig()) -> tuple[float, float, float]:
-    """(S_tr, S_br, Pi_1) for one candidate pulse (scalar version)."""
     pi1 = float(p1.sum())
     pi0 = float(p0.sum())
     j_star = int(np.argmax(p_in))
@@ -60,16 +55,12 @@ def score_terms(p_in: np.ndarray, p0: np.ndarray, p1: np.ndarray,
 
 
 def score(p_in: np.ndarray, p0: np.ndarray, p1: np.ndarray, cfg: ScoreConfig = ScoreConfig()) -> float:
-    """Eq. 25 for one candidate."""
     s_tr, s_br, pi1 = score_terms(p_in, p0, p1, cfg)
     w1 = cfg.w1_scale * (1.0 - float(p_in.max()))
     return cfg.w_tr * s_tr + cfg.w_br * s_br + w1 * pi1
 
 
 def score_batch(p_in: np.ndarray, p0: np.ndarray, p1: np.ndarray, cfg: ScoreConfig = ScoreConfig()) -> np.ndarray:
-    """Vectorised Eq. 25 over any leading candidate axes: p0, p1 of shape (..., n) for one p_in of
-    shape (n,) -> scores (...).
-    """
     p_in = np.asarray(p_in, dtype=np.float64)
     p0 = np.asarray(p0, dtype=np.float64)
     p1 = np.asarray(p1, dtype=np.float64)

@@ -1,5 +1,3 @@
-"""qlsgym.env.gym -- a thin single-trajectory Gymnasium view of PurificationEnv."""
-
 from __future__ import annotations
 
 import numpy as np
@@ -15,7 +13,7 @@ try:
 
     HAS_GYMNASIUM = True
     _Base = _gym.Env
-except ImportError:  # pragma: no cover - depends on the install
+except ImportError:  # pragma: no cover
     _gym = None
     _spaces = None
     HAS_GYMNASIUM = False
@@ -23,8 +21,6 @@ except ImportError:  # pragma: no cover - depends on the install
 
 
 class QLSGymEnv(_Base):
-    """Gymnasium wrapper; one trajectory; float64 observations."""
-
     metadata = {"render_modes": []}
 
     def __init__(
@@ -51,8 +47,6 @@ class QLSGymEnv(_Base):
         self._t = 0
         if seed is not None:
             self.core.seed(seed)
-
-    # Gymnasium API
 
     def _obs(self):
         return self.core.state[0].detach().cpu().numpy().astype(np.float64)
@@ -84,7 +78,7 @@ class QLSGymEnv(_Base):
         }
         return obs, float(tr.reward[0]), bool(tr.done[0]), bool(tr.truncated[0]), info
 
-    def render(self):  # pragma: no cover - nothing to draw
+    def render(self):  # pragma: no cover
         return None
 
     def close(self):

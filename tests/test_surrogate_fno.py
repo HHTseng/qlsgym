@@ -1,4 +1,3 @@
-"""BlockFNO forward shape, softmax normalisation, checkpoint meta and load_model checks."""
 import numpy as np
 import pytest
 import torch
@@ -47,21 +46,16 @@ def test_checkpoint_roundtrip_and_fingerprint_checks(mol, tmp_path):
     x = torch.randn(2, e.n_channels, mol.window.n_tau)
     torch.testing.assert_close(m(x), m2(x))
     assert m2.fingerprint == mol.fingerprint() and m2.sigma == "-" and m2.block_index == 1
-    # different physics -> refused
     other = load_molecule("synthetic", seed=1)
     assert other.fingerprint() != mol.fingerprint()
     with pytest.raises(FingerprintMismatch):
         load_model(str(p), "cpu", molecule=other)
-    load_model(str(p), "cpu", molecule=other, allow_mismatch=True)   # same geometry, explicit override
-    # legacy (no fingerprint in meta) -> refused unless legacy=True
-    ck["meta"].pop("fingerprint"); ck["meta"].pop("molecule"); ck["meta"].pop("n_nu")
-    torch.save(ck, p)
-    with pytest.raises(FingerprintMismatch):
-        load_model(str(p), "cpu", molecule=mol)
-    m3 = load_model(str(p), "cpu", molecule=mol, legacy=True)
-    torch.testing.assert_close(m(x), m3(x))
-    # wrong block geometry is always refused, legacy or not
+    load_model(str(p), "cpu", molecule=other, allow_mismatch=True)
     ck["meta"]["block_index"] = 0
     torch.save(ck, p)
     with pytest.raises(FingerprintMismatch):
-        load_model(str(p), "cpu", molecule=mol, legacy=True)
+        load_model(str(p), "cpu", molecule=mol, allow_mismatch=True)
+    ck["meta"]["block_index"] = 1; ck["meta"].pop("fingerprint")
+    torch.save(ck, p)
+    with pytest.raises(FingerprintMismatch, match="no qlsgym fingerprint"):
+        load_model(str(p), "cpu", molecule=mol)
